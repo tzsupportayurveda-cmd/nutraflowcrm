@@ -12,7 +12,8 @@ import {
   ChevronDown,
   Target,
   CheckCircle,
-  FileText
+  FileText,
+  Trophy
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -27,6 +28,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,6 +117,35 @@ export function Dashboard() {
   }, [leads, orders, dateFilter, selectedAgentId, currentUser, customStartDate, customEndDate]);
 
   const { filteredLeads, filteredOrders } = filteredData;
+
+  const leaderboardData = useMemo(() => {
+    const leaderMap: Record<string, { id: string, name: string, confirmed: number, revenue: number, avatar?: string }> = {};
+
+    leads.forEach(l => {
+      if (l.status === 'Confirmed') {
+        if (!leaderMap[l.assignedToId]) {
+          leaderMap[l.assignedToId] = { id: l.assignedToId, name: l.assignedTo, confirmed: 0, revenue: 0 };
+        }
+        leaderMap[l.assignedToId].confirmed++;
+      }
+    });
+
+    orders.forEach(o => {
+      if (!leaderMap[o.agentId || '']) {
+        leaderMap[o.agentId || ''] = { id: o.agentId || '', name: o.agentName || 'Unknown Agent', confirmed: 0, revenue: 0 };
+      }
+      leaderMap[o.agentId || ''].revenue += o.total;
+    });
+
+    // Match with team members for avatars/roles
+    const finalData = Object.values(leaderMap).map(l => {
+      const member = teamMembers.find(m => m.id === l.id);
+      return { ...l, avatar: member?.avatar };
+    });
+
+    // Sort by revenue primarily, then confirmed
+    return finalData.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [leads, orders, teamMembers]);
 
   const stats = {
     leads: filteredLeads.length,
@@ -317,9 +348,21 @@ export function Dashboard() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-50">
-            <CardTitle className="text-lg font-black text-slate-900">Revenue Growth</CardTitle>
-            <CardDescription className="font-medium">Company earnings over time based on confirmed orders.</CardDescription>
+          <CardHeader className="bg-white border-b border-slate-50 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-black text-slate-900">Revenue Growth</CardTitle>
+              <CardDescription className="font-medium">Company earnings over time based on confirmed orders.</CardDescription>
+            </div>
+            <div className="flex -space-x-2">
+              {leaderboardData.slice(0, 3).map((agent, i) => (
+                <div key={agent.id} className={cn(
+                  "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-1 ring-slate-100",
+                  i === 0 ? "bg-amber-400" : i === 1 ? "bg-slate-300" : "bg-amber-600"
+                )}>
+                  {agent.name.charAt(0)}
+                </div>
+              ))}
+            </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="h-[350px] w-full">
@@ -346,14 +389,87 @@ export function Dashboard() {
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
                     cursor={{ fill: '#f8fafc' }}
                   />
-                  <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} />
+                  <Bar dataKey="revenue" fill={cn(currentUser?.role === 'Admin' ? "#10b981" : "#3b82f6")} radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
+        {/* Sales Leaderboard */}
         <Card className="lg:col-span-3 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+          <CardHeader className="bg-slate-900 text-white border-none">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-black flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  Sales Superstars
+                </CardTitle>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">This Month's Leaderboard</p>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-2 font-black text-[9px] uppercase tracking-tighter">
+                Live
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-100">
+              {leaderboardData.length > 0 ? leaderboardData.map((agent, index) => (
+                <div key={agent.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      {index === 0 && <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center z-10 shadow-sm"><Trophy className="w-2.5 h-2.5 text-slate-900" /></div>}
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm",
+                        index === 0 ? "bg-amber-100 text-amber-700" : 
+                        index === 1 ? "bg-slate-100 text-slate-600" : 
+                        index === 2 ? "bg-orange-50 text-orange-700" : "bg-blue-50 text-blue-600"
+                      )}>
+                        {agent.name.charAt(0)}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 flex items-center gap-2">
+                        {agent.name}
+                        {index < 3 && (
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-tighter px-1 rounded-sm",
+                            index === 0 ? "bg-amber-400 text-slate-900" : 
+                            index === 1 ? "bg-slate-300 text-slate-700" : "bg-orange-400 text-white"
+                          )}>
+                            Rank #{index + 1}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        {agent.confirmed} Orders Confirmed
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-emerald-600">₹{agent.revenue.toLocaleString()}</p>
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">Revenue</p>
+                  </div>
+                </div>
+              )) : (
+                <div className="p-20 text-center text-slate-400 italic text-sm font-medium">
+                  No sales recorded yet.
+                </div>
+              )}
+            </div>
+            {leaderboardData.length > 3 && (
+              <div className="p-4 bg-slate-50 text-center">
+                <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 w-full">
+                  View Full Rankings
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="lg:col-span-7 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
           <CardHeader className="bg-white border-b border-slate-50">
             <CardTitle className="text-lg font-black text-slate-900">Lead Conversion</CardTitle>
             <CardDescription className="font-medium">Total leads assigned vs processed.</CardDescription>

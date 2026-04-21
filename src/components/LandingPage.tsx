@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Stethoscope, LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
+import { cn } from '@/src/lib/utils';
 
 export function LandingPage() {
   const { signIn, login, signup, error, loading } = useAuth();

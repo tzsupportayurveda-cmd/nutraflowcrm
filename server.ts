@@ -12,32 +12,91 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Firebase Admin
-// Note: In AI Studio, we often use the client config for simplicity if service account is not available
-// but for a real integration, a service account is recommended.
-// For now, we assume the environment might have what's needed or we use a fallback.
-// We'll use the firestore collection directly if we can.
+import fs from 'fs';
+
+const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+if (!getApps().length) {
+  initializeApp({
+    projectId: firebaseConfig.projectId,
+  });
+}
+
+const db = getFirestore(firebaseConfig.firestoreDatabaseId);
 
 async function startServer() {
   // API Routes
   app.post('/api/webhook/lead', async (req, res) => {
     try {
-      const { name, email, phone, value, source, address, city, pincode, package: selectedPackage } = req.body;
+      const { 
+        name, 
+        email, 
+        phone, 
+        source = 'Website API', 
+        address = '', 
+        city = '', 
+        pincode = '', 
+        product = 'Thunder of Zosh Gel',
+        quantity = 1,
+        affiliateId = ''
+      } = req.body;
       
       if (!name || !phone) {
         return res.status(400).json({ error: 'Name and Phone are required' });
       }
 
-      console.log('Received Lead:', { name, email, phone, value, source, address, city, pincode, selectedPackage });
-      
-      // In a real setup with service account:
-      // const db = getFirestore();
-      // await db.collection('leads').add({ name, email, phone, value, source, createdAt: new Date().toISOString(), status: 'New' });
+      // Standard Pricing Logic: 1 bottle = 2999, 2 bottles = 3999
+      let value = 2999;
+      if (Number(quantity) === 2) value = 3999;
+      else if (Number(quantity) > 2) value = 3999 + ((Number(quantity) - 2) * 1500);
 
-      res.status(201).json({ message: 'Lead received successfully! (Simulation)' });
+      const leadData = {
+        name,
+        email: email || '',
+        phone,
+        value,
+        source,
+        address,
+        city,
+        pincode,
+        product,
+        quantity: Number(quantity),
+        affiliateId,
+        status: 'New',
+        paymentMode: 'COD',
+        assignedTo: 'Unassigned',
+        assignedToId: '',
+        package: `${quantity} Bottle${Number(quantity) !== 1 ? 's' : ''}`,
+        createdAt: new Date().toISOString(),
+        history: [{
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'other',
+          updatedBy: 'System API',
+          updatedById: 'api',
+          timestamp: new Date().toISOString(),
+          note: 'Lead received via Website API'
+        }]
+      };
+
+      const docRef = await db.collection('leads').add(leadData);
+      
+      console.log('Lead Saved:', docRef.id);
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Lead received and saved successfully!',
+        leadId: docRef.id,
+        value: value
+      });
     } catch (error) {
       console.error('Webhook Error:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
+  });
+
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', serverTime: new Date().toISOString() });
   });
 
   // Vite middleware for development

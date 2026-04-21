@@ -12,7 +12,8 @@ import {
   UserPlus,
   Loader2,
   ChevronDown,
-  MapPin
+  MapPin,
+  CheckCircle
 } from 'lucide-react';
 import { 
   Table, 
@@ -57,6 +58,7 @@ const statusColors: Record<LeadStatus, string> = {
   'Confirmed': 'bg-indigo-600 text-white hover:bg-indigo-700',
   'Wrong Number': 'bg-slate-200 text-slate-700 hover:bg-slate-200',
   'Rejected': 'bg-red-100 text-red-700 hover:bg-red-100',
+  'Not Interested': 'bg-slate-100 text-slate-500 hover:bg-slate-100',
 };
 
 export function LeadManager() {
@@ -590,31 +592,14 @@ export function LeadManager() {
                   )}
                 </div>
                 
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
-                      Update Status <ChevronDown className="w-3 h-3" />
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)} className="h-8 text-slate-400">Cancel</Button>
+                  {hasChanges && (
+                    <Button onClick={handleSaveChanges} size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest px-4 shadow-sm shadow-blue-200">
+                      Save Changes
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                    {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
-                      <DropdownMenuItem 
-                        key={status} 
-                        onSelect={() => {
-                          if (status === 'Call Back') {
-                            const time = prompt('Enter callback time (e.g. 5:00 PM today)');
-                            if (time) handleUpdateStatus(editableLead.id, status, { callbackTime: time });
-                          } else {
-                            handleUpdateStatus(editableLead.id, status);
-                          }
-                        }}
-                      >
-                        {status}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-4">
@@ -834,6 +819,57 @@ export function LeadManager() {
                 />
               </div>
 
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block">Update Status</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected', 'Not Interested'] as LeadStatus[]).map(status => (
+                      <Button
+                        key={status}
+                        variant={editableLead.status === status ? 'default' : 'outline'}
+                        size="sm"
+                        className={cn(
+                          "h-10 text-[10px] font-bold border-slate-200",
+                          editableLead.status === status ? statusColors[status] : "bg-white text-slate-600 hover:bg-slate-50"
+                        )}
+                        onClick={() => {
+                          if (status === 'Call Back') {
+                            const time = prompt('Enter callback time (e.g. 5:00 PM today)');
+                            if (time) handleUpdateStatus(editableLead.id, status, { callbackTime: time });
+                          } else {
+                            handleUpdateStatus(editableLead.id, status);
+                          }
+                        }}
+                      >
+                        {status}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <CheckCircle className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-emerald-900">Final Confirmation</h4>
+                      <p className="text-[11px] text-emerald-700/70">Create a dispatch order for this customer.</p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => handleCreateOrder(editableLead)} 
+                    disabled={editableLead.status !== 'Confirmed'}
+                    className={cn(
+                      "font-bold h-10 px-6 rounded-xl shadow-sm",
+                      editableLead.status === 'Confirmed' ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-slate-200 text-slate-400"
+                    )}
+                  >
+                    Confirm Order
+                  </Button>
+                </div>
+              </div>
+
               {/* Status History Timeline */}
               <div className="space-y-4 pt-4 border-t border-slate-100">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity History</label>
@@ -887,23 +923,13 @@ export function LeadManager() {
             </div>
 
             <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 z-20">
-              <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close</Button>
-              
+              <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close Modal</Button>
               {hasChanges && (
                 <Button 
                   onClick={handleSaveChanges}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 shadow-lg shadow-blue-500/20 font-bold"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-10 shadow-lg shadow-blue-500/20 font-bold"
                 >
-                  Save Changes
-                </Button>
-              )}
-
-              {editableLead.status === 'Confirmed' && !hasChanges && (
-                <Button 
-                  onClick={() => handleCreateOrder(editableLead)}
-                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-10 shadow-lg shadow-emerald-500/20"
-                >
-                  Create Dispatch Order
+                  Save Everything
                 </Button>
               )}
             </div>

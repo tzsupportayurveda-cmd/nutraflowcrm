@@ -1,5 +1,5 @@
 
-export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Wrong Number' | 'Rejected';
+export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Wrong Number' | 'Rejected' | 'Not Interested';
 
 export interface HistoryItem {
   id: string;

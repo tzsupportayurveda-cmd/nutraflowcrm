@@ -23,7 +23,7 @@ interface SidebarProps {
 }
 
 import { useAuth } from '@/src/contexts/AuthContext';
-import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +31,7 @@ const navItems = [
   { id: 'confirmed', label: 'Confirmed Orders', icon: CheckCircle2 },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'orders', label: 'Dispatched', icon: ShoppingCart },
+  { id: 'affiliate', label: 'Affiliates', icon: TrendingUp, adminOnly: true },
   { id: 'team', label: 'Admin & Team', icon: ShieldCheck, adminOnly: true },
   { id: 'settings', label: 'System Settings', icon: Settings, adminOnly: true },
 ];

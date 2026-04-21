@@ -250,6 +250,40 @@ export function Settings() {
               </div>
             </section>
 
+            <section className="p-8 bg-white rounded-[32px] border border-slate-200 shadow-sm space-y-6">
+              <div className="flex items-center gap-3 text-slate-900 mb-2">
+                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl"><Database className="w-5 h-5" /></div>
+                <div>
+                  <h3 className="font-black tracking-tight">Developer & API Integration</h3>
+                  <p className="text-xs text-slate-500 font-medium">Connect your website and ads to track lead sources Automatically.</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 font-mono text-[11px] space-y-3">
+                  <p className="text-slate-900 font-bold uppercase tracking-widest border-b border-slate-200 pb-2">Tracking Parameters</p>
+                  <p className="text-slate-500 italic">// Pass these parameters in your lead capture form or API call</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <span className="text-purple-600 font-bold">"source":</span>
+                    <span className="text-slate-700">"Capsule Ads" | "Gel Ads" | "Website"</span>
+                    <span className="text-purple-600 font-bold">"affiliateId":</span>
+                    <span className="text-slate-700">"AFF-123" // (Unique Tracking Number)</span>
+                  </div>
+                  <div className="pt-4 mt-4 border-t border-slate-200">
+                    <p className="text-slate-400 mb-1">Example Payload:</p>
+                    <pre className="text-emerald-600">
+{`{
+  "name": "John Doe",
+  "phone": "9999999999",
+  "source": "Capsule Ads",
+  "affiliateId": "AFF-001"
+}`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <div className="flex justify-end pt-4 pb-10">
               <Button 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 h-14 text-lg font-black rounded-[20px] shadow-xl shadow-emerald-500/20 gap-3"

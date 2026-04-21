@@ -11,7 +11,8 @@ export interface Lead {
   pincode?: string;
   status: LeadStatus;
   value: number;
-  source: string;
+  source: string; // e.g., 'Capsule Ads', 'Gel Ads', 'Website'
+  affiliateId?: string; // Tracking ID or number
   assignedTo: string;
   assignedToId: string;
   createdAt: string;
@@ -40,6 +41,8 @@ export interface Order {
   total: number;
   agentId?: string;
   agentName?: string;
+  source?: string;
+  affiliateId?: string;
   createdAt: string;
 }
 

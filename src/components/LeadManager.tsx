@@ -79,6 +79,7 @@ export function LeadManager() {
     package: '',
     value: 0,
     source: 'Direct',
+    affiliateId: '',
     status: 'New' as LeadStatus
   });
 
@@ -145,7 +146,8 @@ export function LeadManager() {
         pincode: '', 
         package: '', 
         value: 0, 
-        source: 'Direct', 
+        source: 'Direct',
+        affiliateId: '',
         status: 'New' 
       });
     } catch (error) {
@@ -309,6 +311,32 @@ export function LeadManager() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">Lead Source</label>
+                  <select 
+                    value={newLead.source}
+                    onChange={e => setNewLead({...newLead, source: e.target.value})}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="Direct">Direct/Organic</option>
+                    <option value="Website">Website</option>
+                    <option value="Capsule Ads">Capsule Ads</option>
+                    <option value="Gel Ads">Gel Ads</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600">Affiliate No. / Code</label>
+                  <Input 
+                    placeholder="AFF-001" 
+                    value={newLead.affiliateId}
+                    onChange={e => setNewLead({...newLead, affiliateId: e.target.value})}
+                    className="border-slate-200"
+                  />
+                </div>
+              </div>
+
               <DialogFooter className="pt-4 sticky bottom-0 bg-white">
                 <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                 <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 px-8 shadow-lg shadow-emerald-500/20">Save Lead</Button>
@@ -393,8 +421,17 @@ export function LeadManager() {
                 <TableCell className="font-semibold text-slate-700">
                   ${lead.value.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-sm text-slate-600">
-                  {lead.source}
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant="outline" className="w-fit text-[10px] font-bold border-slate-200 text-slate-500 h-5 px-1.5 rounded uppercase">
+                      {lead.source}
+                    </Badge>
+                    {lead.affiliateId && (
+                      <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded w-fit">
+                        #{lead.affiliateId}
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-slate-600">
                   {lead.assignedTo}
@@ -442,7 +479,18 @@ export function LeadManager() {
                 <Badge className={cn(statusColors[selectedLead.status] || 'bg-slate-100 text-slate-700', "border-transparent")}>
                   {selectedLead.status}
                 </Badge>
-                <span className="text-xs text-slate-500">Source: {selectedLead.source || 'Unknown'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Affiliate Tracking</span>
+                  {selectedLead.affiliateId ? (
+                    <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-black rounded uppercase tracking-tighter">
+                      ID: {selectedLead.affiliateId}
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-slate-200 text-slate-500 text-[10px] font-black rounded uppercase tracking-tighter">
+                      No Affiliate
+                    </span>
+                  )}
+                </div>
               </div>
               <h2 className="text-2xl font-bold text-slate-900">{selectedLead.name}</h2>
               <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
@@ -453,6 +501,30 @@ export function LeadManager() {
 
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Source Channel</label>
+                  <select 
+                    defaultValue={selectedLead.source}
+                    onChange={(e) => dataService.updateLead(selectedLead.id, { source: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
+                  >
+                    <option value="Direct">Direct/Organic</option>
+                    <option value="Website">Website</option>
+                    <option value="Capsule Ads">Capsule Ads</option>
+                    <option value="Gel Ads">Gel Ads</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Affiliate No.</label>
+                  <Input 
+                    placeholder="e.g. AFF-001" 
+                    defaultValue={selectedLead.affiliateId}
+                    className="h-10 border-slate-200 font-bold"
+                    onBlur={(e) => dataService.updateLead(selectedLead.id, { affiliateId: e.target.value })}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned To</label>
                   {currentUser?.role === 'Admin' ? (

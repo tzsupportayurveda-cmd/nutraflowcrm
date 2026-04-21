@@ -7,6 +7,7 @@ import { OrderManager } from '@/src/components/OrderManager';
 import { TeamManager } from '@/src/components/TeamManager';
 import { ConfirmedLeads } from '@/src/components/ConfirmedLeads';
 import { Settings } from '@/src/components/Settings';
+import { AffiliateManager } from '@/src/components/AffiliateManager';
 import { LandingPage } from '@/src/components/LandingPage';
 import { AuthProvider, useAuth } from '@/src/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,7 @@ function CRMApp() {
       case 'inventory': return <InventoryManager />;
       case 'orders': return <OrderManager />;
       case 'team': return <TeamManager />;
+      case 'affiliate': return <AffiliateManager />;
       case 'settings': return <Settings />;
       default: return <Dashboard />;
     }

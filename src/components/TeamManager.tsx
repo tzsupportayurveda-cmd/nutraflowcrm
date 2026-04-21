@@ -159,7 +159,7 @@ export function TeamManager() {
                                 }
                               />
                               <DropdownMenuContent align="start" className="w-32 p-1">
-                                {(['Sales', 'Manager', 'Inventory', 'Admin'] as const).map(r => (
+                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Admin'] as const).map(r => (
                                   <DropdownMenuItem 
                                     key={r}
                                     onClick={() => dataService.updateUserRole(member.id, r).then(() => toast.success(`Role updated to ${r}`))}

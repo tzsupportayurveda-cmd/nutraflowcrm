@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, 
   Target, 
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { dataService } from '@/src/services/dataService';
 import { Lead, Order } from '@/src/types';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 interface AffiliateSource {
   id: string;
@@ -32,6 +33,7 @@ interface AffiliateSource {
 }
 
 export function AffiliateManager() {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState('');
@@ -44,6 +46,8 @@ export function AffiliateManager() {
       unsubOrders();
     };
   }, []);
+
+  const isMarketer = user?.role === 'Marketer';
 
   // Predefined or common sources
   const defaultSources = ['Capsule Ads', 'Gel Ads', 'Website', 'Direct', 'WhatsApp'];
@@ -85,6 +89,12 @@ export function AffiliateManager() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none px-2 py-0 h-5 font-black text-[9px] uppercase tracking-tighter">
+              {isMarketer ? 'Marketer Dashboard' : 'Performance Audit'}
+            </Badge>
+            {isMarketer && <span className="text-[10px] font-bold text-slate-400 italic">Welcome, {user?.name}</span>}
+          </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Marketing Attribution</h1>
           <p className="text-slate-500 font-medium">Track lead sources, affiliate performance, and campaign ROI.</p>
         </div>
@@ -92,6 +102,30 @@ export function AffiliateManager() {
           <Plus className="w-4 h-4 mr-2" /> Create Trackable Link
         </Button>
       </div>
+
+      {isMarketer && (
+        <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-4">
+              <h2 className="text-2xl font-black tracking-tight">Your Campaign Performance</h2>
+              <p className="text-slate-400 text-sm max-w-md leading-relaxed">
+                As our Digital Marketer, your goal is to optimize Ad conversion. Review the metrics below to see which campaigns are delivering the highest ROI.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <div className="bg-white/10 px-6 py-4 rounded-2xl border border-white/10 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Target</p>
+                <p className="text-2xl font-black">15% Conv.</p>
+              </div>
+              <div className="bg-white/10 px-6 py-4 rounded-2xl border border-white/10 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Status</p>
+                <p className="text-2xl font-black">On Track</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-none shadow-xl shadow-slate-200/50">
@@ -219,5 +253,3 @@ export function AffiliateManager() {
     </div>
   );
 }
-
-import { useMemo } from 'react';

@@ -50,7 +50,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory';
+  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer';
   avatar?: string;
   status: 'active' | 'pending' | 'blocked';
 }

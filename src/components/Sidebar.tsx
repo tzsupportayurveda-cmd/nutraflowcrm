@@ -27,20 +27,22 @@ import { ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'leads', label: 'All Leads', icon: Users },
-  { id: 'confirmed', label: 'Confirmed Orders', icon: CheckCircle2 },
-  { id: 'inventory', label: 'Inventory', icon: Package },
-  { id: 'orders', label: 'Dispatched', icon: ShoppingCart },
-  { id: 'affiliate', label: 'Affiliates', icon: TrendingUp, adminOnly: true },
-  { id: 'team', label: 'Admin & Team', icon: ShieldCheck, adminOnly: true },
-  { id: 'settings', label: 'System Settings', icon: Settings, adminOnly: true },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer'] },
+  { id: 'leads', label: 'All Leads', icon: Users, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'confirmed', label: 'Confirmed Orders', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'inventory', label: 'Inventory', icon: Package, roles: ['Admin', 'Manager', 'Inventory'] },
+  { id: 'orders', label: 'Dispatched', icon: ShoppingCart, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'affiliate', label: 'Affiliates', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
+  { id: 'team', label: 'Admin & Team', icon: ShieldCheck, roles: ['Admin'] },
+  { id: 'settings', label: 'System Settings', icon: Settings, roles: ['Admin'] },
 ];
 
 export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: SidebarProps) {
   const { signOut, user } = useAuth();
   
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || user?.role === 'Admin');
+  const filteredNavItems = navItems.filter(item => 
+    !item.roles || (user && item.roles.includes(user.role))
+  );
 
   return (
     <div className={cn(

@@ -65,6 +65,8 @@ export function LeadManager() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [editableLead, setEditableLead] = useState<Lead | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [team, setTeam] = useState<User[]>([]);
   const { user: currentUser } = useAuth();
@@ -106,6 +108,16 @@ export function LeadManager() {
     };
   }, [currentUser]);
 
+  useEffect(() => {
+    if (selectedLead && isDetailOpen) {
+      setEditableLead({ ...selectedLead });
+      setHasChanges(false);
+    } else {
+      setEditableLead(null);
+      setHasChanges(false);
+    }
+  }, [selectedLead, isDetailOpen]);
+
   const handleUpdateStatus = async (leadId: string, status: LeadStatus, extras: Partial<Lead> = {}) => {
     try {
       const currentLead = leads.find(l => l.id === leadId);
@@ -124,6 +136,10 @@ export function LeadManager() {
       }
       
       toast.success(`Status updated to ${status}`);
+      // Also update editable lead if it's the same lead
+      if (editableLead && editableLead.id === leadId) {
+        setEditableLead(prev => prev ? { ...prev, status, ...extras } : null);
+      }
     } catch (e) {
       toast.error('Failed to update status');
     }
@@ -149,8 +165,39 @@ export function LeadManager() {
       }
 
       toast.success(`Assigned to ${agent.name}`);
+      // Update editable lead
+      if (editableLead && editableLead.id === leadId) {
+        setEditableLead(prev => prev ? { ...prev, assignedTo: agent.name, assignedToId: agent.id } : null);
+      }
     } catch (e) {
       toast.error('Assignment failed');
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!editableLead || !selectedLead) return;
+    
+    try {
+      setLoading(true);
+      const { id, history, ...updates } = editableLead;
+      await dataService.updateLead(id, updates);
+      
+      // Log some major changes in history if needed
+      if (currentUser) {
+        await dataService.addLeadHistory(id, {
+          type: 'other',
+          updatedBy: currentUser.name,
+          updatedById: currentUser.id,
+          note: 'Manually updated lead details (Name/Contact/Product/Address)'
+        });
+      }
+      
+      setHasChanges(false);
+      toast.success('Lead details saved successfully');
+    } catch (e) {
+      toast.error('Failed to save changes');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -245,13 +292,11 @@ export function LeadManager() {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger
-            render={
-              <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-                <UserPlus className="w-4 h-4" /> Add New Lead
-              </Button>
-            }
-          />
+          <DialogTrigger asChild>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+              <UserPlus className="w-4 h-4" /> Add New Lead
+            </Button>
+          </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] rounded-2xl">
             <DialogHeader>
               <DialogTitle>Create New Lead</DialogTitle>
@@ -520,15 +565,30 @@ export function LeadManager() {
     </div>
 
     {/* Lead Details Modal */}
-    <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-      <DialogContent className="sm:max-w-[600px] rounded-2xl p-0 overflow-hidden">
-        {selectedLead && (
+    <Dialog open={isDetailOpen} onOpenChange={(open) => {
+      if (!open && hasChanges) {
+        if (confirm('You have unsaved changes. Are you sure you want to close?')) {
+          setIsDetailOpen(false);
+        }
+      } else {
+        setIsDetailOpen(open);
+      }
+    }}>
+      <DialogContent className="sm:max-w-[700px] rounded-2xl p-0 overflow-hidden">
+        {editableLead && (
           <div className="flex flex-col h-full max-h-[90vh]">
             <div className="p-6 bg-slate-50 border-b border-slate-200">
               <div className="flex items-center justify-between mb-4">
-                <Badge className={cn(statusColors[selectedLead.status] || 'bg-slate-100 text-slate-700', "border-transparent")}>
-                  {selectedLead.status}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge className={cn(statusColors[editableLead.status] || 'bg-slate-100 text-slate-700', "border-transparent text-xs px-3 py-1")}>
+                    {editableLead.status}
+                  </Badge>
+                  {hasChanges && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 rounded-full text-[10px] uppercase font-black">
+                      Unsaved Changes
+                    </Badge>
+                  )}
+                </div>
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -541,12 +601,12 @@ export function LeadManager() {
                     {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
                       <DropdownMenuItem 
                         key={status} 
-                        onClick={() => {
+                        onSelect={() => {
                           if (status === 'Call Back') {
                             const time = prompt('Enter callback time (e.g. 5:00 PM today)');
-                            if (time) handleUpdateStatus(selectedLead.id, status, { callbackTime: time });
+                            if (time) handleUpdateStatus(editableLead.id, status, { callbackTime: time });
                           } else {
-                            handleUpdateStatus(selectedLead.id, status);
+                            handleUpdateStatus(editableLead.id, status);
                           }
                         }}
                       >
@@ -560,22 +620,13 @@ export function LeadManager() {
               <div className="space-y-4">
                 <div className="relative group">
                   <Input 
-                    defaultValue={selectedLead.name}
+                    value={editableLead.name}
+                    onChange={(e) => {
+                      setEditableLead({ ...editableLead, name: e.target.value });
+                      setHasChanges(true);
+                    }}
                     className="text-2xl font-black bg-transparent border-none p-0 h-auto focus-visible:ring-0 shadow-none hover:bg-slate-200/30 transition-colors placeholder:text-slate-300"
                     placeholder="Customer Name"
-                    onBlur={async (e) => {
-                      if (e.target.value !== selectedLead.name) {
-                        await dataService.updateLead(selectedLead.id, { name: e.target.value });
-                        if (currentUser) {
-                          await dataService.addLeadHistory(selectedLead.id, {
-                            type: 'other',
-                            updatedBy: currentUser.name,
-                            updatedById: currentUser.id,
-                            note: `Name: ${selectedLead.name} → ${e.target.value}`
-                          });
-                        }
-                      }
-                    }}
                   />
                 </div>
 
@@ -583,41 +634,25 @@ export function LeadManager() {
                   <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
                     <Phone className="w-3.5 h-3.5 text-emerald-500" />
                     <Input 
-                      defaultValue={selectedLead.phone}
-                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      onBlur={async (e) => {
-                        if (e.target.value !== selectedLead.phone) {
-                          await dataService.updateLead(selectedLead.id, { phone: e.target.value });
-                          if (currentUser) {
-                            await dataService.addLeadHistory(selectedLead.id, {
-                              type: 'other',
-                              updatedBy: currentUser.name,
-                              updatedById: currentUser.id,
-                              note: `Phone: ${selectedLead.phone} → ${e.target.value}`
-                            });
-                          }
-                        }
+                      value={editableLead.phone}
+                      onChange={(e) => {
+                        setEditableLead({ ...editableLead, phone: e.target.value });
+                        setHasChanges(true);
                       }}
+                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                      placeholder="Phone Number"
                     />
                   </div>
                   <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
                     <Mail className="w-3.5 h-3.5 text-blue-500" />
                     <Input 
-                      defaultValue={selectedLead.email}
-                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      onBlur={async (e) => {
-                        if (e.target.value !== selectedLead.email) {
-                          await dataService.updateLead(selectedLead.id, { email: e.target.value });
-                          if (currentUser) {
-                            await dataService.addLeadHistory(selectedLead.id, {
-                              type: 'other',
-                              updatedBy: currentUser.name,
-                              updatedById: currentUser.id,
-                              note: `Email: ${selectedLead.email} → ${e.target.value}`
-                            });
-                          }
-                        }
+                      value={editableLead.email}
+                      onChange={(e) => {
+                        setEditableLead({ ...editableLead, email: e.target.value });
+                        setHasChanges(true);
                       }}
+                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                      placeholder="Email Address"
                     />
                   </div>
                 </div>
@@ -626,27 +661,36 @@ export function LeadManager() {
                   <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
                     <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                     <Input 
-                      defaultValue={selectedLead.address}
+                      value={editableLead.address || ''}
                       placeholder="Street Address"
                       className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      onBlur={(e) => dataService.updateLead(selectedLead.id, { address: e.target.value })}
+                      onChange={(e) => {
+                        setEditableLead({ ...editableLead, address: e.target.value });
+                        setHasChanges(true);
+                      }}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
                       <Input 
-                        defaultValue={selectedLead.city}
+                        value={editableLead.city || ''}
                         placeholder="City"
                         className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                        onBlur={(e) => dataService.updateLead(selectedLead.id, { city: e.target.value })}
+                        onChange={(e) => {
+                          setEditableLead({ ...editableLead, city: e.target.value });
+                          setHasChanges(true);
+                        }}
                       />
                     </div>
                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
                       <Input 
-                        defaultValue={selectedLead.pincode}
+                        value={editableLead.pincode || ''}
                         placeholder="Pincode"
                         className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                        onBlur={(e) => dataService.updateLead(selectedLead.id, { pincode: e.target.value })}
+                        onChange={(e) => {
+                          setEditableLead({ ...editableLead, pincode: e.target.value });
+                          setHasChanges(true);
+                        }}
                       />
                     </div>
                   </div>
@@ -662,18 +706,10 @@ export function LeadManager() {
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">Product Choice</span>
                     <select 
-                      value={selectedLead.product || ''}
-                      onChange={async (e) => {
-                        const val = e.target.value as any;
-                        await dataService.updateLead(selectedLead.id, { product: val });
-                        if (currentUser) {
-                          await dataService.addLeadHistory(selectedLead.id, {
-                            type: 'other',
-                            updatedBy: currentUser.name,
-                            updatedById: currentUser.id,
-                            note: `Product selected: ${val}`
-                          });
-                        }
+                      value={editableLead.product || ''}
+                      onChange={(e) => {
+                        setEditableLead({ ...editableLead, product: e.target.value as any });
+                        setHasChanges(true);
                       }}
                       className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
                     >
@@ -688,27 +724,26 @@ export function LeadManager() {
                       <Input 
                         type="number" 
                         min="1"
-                        value={selectedLead.quantity || 1}
-                        onChange={async (e) => {
+                        value={editableLead.quantity || 1}
+                        onChange={(e) => {
                           const qty = parseInt(e.target.value) || 1;
-                          // Auto calculate price
-                          // 1 bottle = 2999
-                          // 2 bottles = 3999
                           let newVal = 2999;
                           if (qty === 2) newVal = 3999;
-                          else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500); // Sample logic for 3+
+                          else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500);
 
-                          await dataService.updateLead(selectedLead.id, { 
+                          setEditableLead({ 
+                            ...editableLead, 
                             quantity: qty,
                             value: newVal,
-                            package: `${qty} Bottle${qty > 1 ? 's' : ''}`
+                            package: `${qty} Bottle${qty !== 1 ? 's' : ''}`
                           });
+                          setHasChanges(true);
                         }}
                         className="h-10 border-slate-200 font-bold rounded-xl"
                       />
                       <div className="flex flex-col grow">
                         <span className="text-[10px] font-bold text-slate-400 uppercase">Total Amount</span>
-                        <span className="text-lg font-black text-emerald-600">₹{selectedLead.value.toLocaleString()}</span>
+                        <span className="text-lg font-black text-emerald-600">₹{(editableLead.value || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -719,8 +754,11 @@ export function LeadManager() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Source Channel</label>
                   <select 
-                    defaultValue={selectedLead.source}
-                    onChange={(e) => dataService.updateLead(selectedLead.id, { source: e.target.value })}
+                    value={editableLead.source}
+                    onChange={(e) => {
+                      setEditableLead({ ...editableLead, source: e.target.value });
+                      setHasChanges(true);
+                    }}
                     className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
                   >
                     <option value="Direct">Direct/Organic</option>
@@ -733,8 +771,11 @@ export function LeadManager() {
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Mode</label>
                   <select 
-                    defaultValue={selectedLead.paymentMode}
-                    onChange={(e) => dataService.updateLead(selectedLead.id, { paymentMode: e.target.value as 'COD' | 'Prepaid' })}
+                    value={editableLead.paymentMode}
+                    onChange={(e) => {
+                      setEditableLead({ ...editableLead, paymentMode: e.target.value as any });
+                      setHasChanges(true);
+                    }}
                     className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
                   >
                     <option value="COD">💵 Cash on Delivery</option>
@@ -745,9 +786,12 @@ export function LeadManager() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Affiliate No.</label>
                   <Input 
                     placeholder="e.g. AFF-001" 
-                    defaultValue={selectedLead.affiliateId}
+                    value={editableLead.affiliateId || ''}
                     className="h-10 border-slate-200 font-bold"
-                    onBlur={(e) => dataService.updateLead(selectedLead.id, { affiliateId: e.target.value })}
+                    onChange={(e) => {
+                      setEditableLead({ ...editableLead, affiliateId: e.target.value });
+                      setHasChanges(true);
+                    }}
                   />
                 </div>
 
@@ -757,13 +801,13 @@ export function LeadManager() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
-                          {selectedLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
+                          {editableLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-56" align="start">
                         <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
                         {team.map(member => (
-                          <DropdownMenuItem key={member.id} onClick={(e) => { e.stopPropagation(); handleAssign(selectedLead.id, member); }}>
+                          <DropdownMenuItem key={member.id} onSelect={() => { handleAssign(editableLead.id, member); }}>
                             {member.name} ({member.role})
                           </DropdownMenuItem>
                         ))}
@@ -771,31 +815,21 @@ export function LeadManager() {
                     </DropdownMenu>
                   ) : (
                     <div className="p-2.5 border border-slate-200 rounded-lg bg-slate-50 text-sm font-medium">
-                      {selectedLead.assignedTo || "Unassigned"}
+                      {editableLead.assignedTo || "Unassigned"}
                     </div>
                   )}
                 </div>
               </div>
-
 
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Interaction Log</label>
                 <textarea 
                   className="w-full h-32 p-4 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none transition-all"
                   placeholder="Describe the conversation..."
-                  defaultValue={selectedLead.notes}
-                  onBlur={async (e) => {
-                    if (e.target.value !== selectedLead.notes) {
-                      await dataService.updateLead(selectedLead.id, { notes: e.target.value });
-                      if (currentUser) {
-                        await dataService.addLeadHistory(selectedLead.id, {
-                          type: 'note_added',
-                          updatedBy: currentUser.name,
-                          updatedById: currentUser.id,
-                          note: 'Updated lead interaction notes'
-                        });
-                      }
-                    }
+                  value={editableLead.notes || ''}
+                  onChange={(e) => {
+                    setEditableLead({ ...editableLead, notes: e.target.value });
+                    setHasChanges(true);
                   }}
                 />
               </div>
@@ -804,11 +838,11 @@ export function LeadManager() {
               <div className="space-y-4 pt-4 border-t border-slate-100">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity History</label>
                 <div className="space-y-4">
-                  {selectedLead.history && selectedLead.history.length > 0 ? (
-                    [...selectedLead.history].reverse().map((item, i) => (
+                  {editableLead.history && editableLead.history.length > 0 ? (
+                    [...editableLead.history].reverse().map((item, i) => (
                       <div key={item.id} className="relative flex gap-4 pl-2">
                         {/* Timeline line */}
-                        {i !== (selectedLead.history?.length || 0) - 1 && (
+                        {i !== (editableLead.history?.length || 0) - 1 && (
                           <div className="absolute left-[13px] top-6 bottom-0 w-0.5 bg-slate-100" />
                         )}
                         
@@ -852,11 +886,21 @@ export function LeadManager() {
               </div>
             </div>
 
-            <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 sticky bottom-0">
-              <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close Details</Button>
-              {selectedLead.status === 'Confirmed' && (
+            <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 z-20">
+              <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close</Button>
+              
+              {hasChanges && (
                 <Button 
-                  onClick={() => handleCreateOrder(selectedLead)}
+                  onClick={handleSaveChanges}
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-8 shadow-lg shadow-blue-500/20 font-bold"
+                >
+                  Save Changes
+                </Button>
+              )}
+
+              {editableLead.status === 'Confirmed' && !hasChanges && (
+                <Button 
+                  onClick={() => handleCreateOrder(editableLead)}
                   className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-10 shadow-lg shadow-emerald-500/20"
                 >
                   Create Dispatch Order

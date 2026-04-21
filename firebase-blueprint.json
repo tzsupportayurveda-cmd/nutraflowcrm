@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Potential customer lead",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "pincode": { "type": "string" },
+        "status": { "type": "string", "enum": ["New", "Interested", "No Answer", "Call Back", "Confirmed", "Wrong Number", "Rejected"] },
+        "value": { "type": "number" },
+        "source": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "assignedToId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "package": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["name", "status", "assignedToId"]
+    },
+    "InventoryItem": {
+      "title": "Inventory Item",
+      "description": "Product in stock",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "sku": { "type": "string" },
+        "stock": { "type": "number" },
+        "minStock": { "type": "number" },
+        "price": { "type": "number" }
+      },
+      "required": ["name", "sku", "stock", "price"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": { "type": "array" },
+        "status": { "type": "string", "enum": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"] },
+        "total": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "items", "status", "total"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Internal staff member profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "Sales", "Inventory"] },
+        "avatar": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Sales leads collection"
+    },
+    "/inventory/{itemId}": {
+      "schema": "InventoryItem",
+      "description": "Product inventory collection"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders collection"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Staff profiles collection"
+    }
+  }
+}

@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // common helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isSales() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+      );
+    }
+
+    function isInventory() {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Inventory' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && 
+        request.resource.data.keys().hasAll(['name', 'email', 'role']) && 
+        request.resource.data.role in ['Admin', 'Sales', 'Inventory'];
+      allow update: if isOwner(userId) && 
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+    }
+
+    // 2. Leads
+    match /leads/{leadId} {
+      allow read: if isSales() && (
+        resource.data.role == 'Admin' || // Admin check helper needs consistent use
+        isAdmin() || 
+        resource.data.assignedToId == request.auth.uid ||
+        resource.data.status == 'New'
+      );
+      allow create: if isSales() && 
+        request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'createdAt']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() < 200;
+      allow update: if isSales() && (
+        isAdmin() ||
+        (resource.data.assignedToId == request.auth.uid && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedToId', 'createdAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 3. Inventory
+    match /inventory/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if isInventory();
+    }
+
+    // 4. Orders
+    match /orders/{orderId} {
+      allow read: if isSales();
+      allow create: if isSales() && 
+        request.resource.data.keys().hasAll(['customerId', 'items', 'status', 'total']);
+      allow update: if isSales();
+      allow delete: if isAdmin();
+    }
+  }
+}

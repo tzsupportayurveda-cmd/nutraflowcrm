@@ -55,6 +55,17 @@ export function TeamManager() {
     }
   };
 
+  const handleDeleteUser = async (uid: string) => {
+    if (window.confirm("Are you sure you want to REJECT and PERMANENTLY DELETE this user? They will be logged out immediately.")) {
+      try {
+        await dataService.deleteUser(uid);
+        toast.success("User rejected and deleted successfully");
+      } catch (error) {
+        toast.error("Failed to delete user");
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
@@ -184,6 +195,17 @@ export function TeamManager() {
                       >
                         {member.status === 'active' ? 'Disable' : 'Authorize'}
                       </Button>
+
+                      {member.id !== adminUser?.id && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-9 w-9 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => handleDeleteUser(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

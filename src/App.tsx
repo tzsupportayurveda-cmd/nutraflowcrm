@@ -111,19 +111,21 @@ function CRMApp() {
             <div className="w-px h-6 bg-slate-200 mx-2"></div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="pl-1 pr-2 h-11 gap-3 hover:bg-slate-50 rounded-lg border-transparent">
-                  <Avatar className="h-8 w-8 border border-slate-200 shadow-sm ring-2 ring-emerald-500/10">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
-                  </Avatar>
-                  <div className="hidden md:flex flex-col items-start leading-none">
-                    <span className="text-sm font-bold text-slate-900">{user.name}</span>
-                    <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">{user.role}</span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" className="pl-1 pr-2 h-11 gap-3 hover:bg-slate-50 rounded-lg border-transparent">
+                    <Avatar className="h-8 w-8 border border-slate-200 shadow-sm ring-2 ring-emerald-500/10">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:flex flex-col items-start leading-none">
+                      <span className="text-sm font-bold text-slate-900">{user.name}</span>
+                      <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">{user.role}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  </Button>
+                }
+              />
               <DropdownMenuContent align="end" className="w-60 p-2 rounded-xl border-slate-200 shadow-xl">
                 <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-slate-100 mx-1" />

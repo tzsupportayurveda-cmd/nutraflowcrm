@@ -145,6 +145,14 @@ export const dataService = {
     }
   },
 
+  async deleteUser(uid: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch (e) {
+      handleFirestoreError(e, 'delete', `users/${uid}`);
+    }
+  },
+
   async getTeamMembers(): Promise<User[]> {
     try {
       const q = query(collection(db, 'users'), where('status', '==', 'active'));

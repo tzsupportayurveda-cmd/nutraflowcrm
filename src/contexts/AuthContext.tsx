@@ -39,40 +39,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setLoading(true);
       setFirebaseUser(fbUser);
       setError(null);
       
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       try {
         if (fbUser) {
           const isAdminUser = fbUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
           
-          // Get profile from Firestore
-          let profile = await dataService.getUserProfile(fbUser.uid);
+          // Setup real-time profile listener for self-logout support
+          const { doc, onSnapshot } = await import('firebase/firestore');
+          const { db } = await import('@/src/lib/firebase');
           
-          if (!profile) {
-            // Create default profile for first-time login
-            profile = {
-              id: fbUser.uid,
-              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
-              email: fbUser.email || '',
-              role: isAdminUser ? 'Admin' : 'Sales',
-              avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
-              status: isAdminUser ? 'active' : 'pending'
-            };
-            await dataService.createUserProfile(profile);
-          }
+          unsubscribeProfile = onSnapshot(doc(db, 'users', fbUser.uid), (snapshot) => {
+            if (snapshot.exists()) {
+              const profile = { id: snapshot.id, ...snapshot.data() } as User;
+              
+              // Force logout check
+              if (profile.status !== 'active' && !isAdminUser) {
+                setUser(null);
+                setAdminUser(null);
+                firebaseSignOut(auth);
+                setError('Aapka account restricted hai. Kripya admin se sampark karein.');
+              } else {
+                if (isAdminUser) setAdminUser(profile);
+                setUser(profile);
+              }
+            } else {
+              // Create default profile if missing during session
+              const defaultProfile: User = {
+                id: fbUser.uid,
+                name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
+                email: fbUser.email || '',
+                role: isAdminUser ? 'Admin' : 'Sales',
+                avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
+                status: isAdminUser ? 'active' : 'pending'
+              };
+              dataService.createUserProfile(defaultProfile);
+            }
+          });
 
-          // Check for permission (status must be active or user must be the Super Admin)
-          if (profile.status !== 'active' && !isAdminUser) {
-            setUser(null);
-            setAdminUser(null);
-            setError('Aapka account admin ki approval ka intezaar kar raha hai. Kripya admin se sampark karein.');
-          } else {
-            if (isAdminUser) setAdminUser(profile);
-            setUser(profile);
-          }
         } else {
           setUser(null);
           setAdminUser(null);
@@ -80,13 +94,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err: any) {
         console.error("Auth flow error:", err);
-        setError("Login failed due to database connection issue. Please try again or check Firebase Rules.");
+        setError("Login failed. Check connection.");
       } finally {
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const impersonate = (targetUser: User | null) => {

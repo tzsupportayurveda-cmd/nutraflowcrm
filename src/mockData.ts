@@ -2,8 +2,8 @@
 import { Lead, InventoryItem, Order, User } from './types';
 
 export const MOCK_USERS: User[] = [
-  { id: '1', name: 'Zaid Khan', email: 'zaid@nutraflow.com', role: 'Admin', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zaid' },
-  { id: '2', name: 'Sarah Smith', email: 'sarah@nutraflow.com', role: 'Sales', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah' },
+  { id: '1', name: 'Zaid Khan', email: 'zaid@nutraflow.com', role: 'Admin', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zaid', status: 'active' },
+  { id: '2', name: 'Sarah Smith', email: 'sarah@nutraflow.com', role: 'Sales', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah', status: 'active' },
 ];
 
 export const MOCK_LEADS: Lead[] = [

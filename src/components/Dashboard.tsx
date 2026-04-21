@@ -198,26 +198,24 @@ export function Dashboard() {
         <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
           {currentUser?.role === 'Admin' && (
             <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="ghost" className="h-10 px-4 gap-2 border-r border-slate-100 rounded-none first:rounded-xl last:rounded-r-xl">
-                    <UserIcon className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm font-bold truncate max-w-[120px]">
-                      {selectedAgentId === 'all' ? 'All Agents' : selectedAgent?.name}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  </Button>
-                }
-              />
+              <DropdownMenuTrigger>
+                <Button variant="ghost" className="h-10 px-4 gap-2 border-r border-slate-100 rounded-none first:rounded-xl last:rounded-r-xl">
+                  <UserIcon className="w-4 h-4 text-emerald-500" />
+                  <span className="text-sm font-bold truncate max-w-[120px]">
+                    {selectedAgentId === 'all' ? 'All Agents' : selectedAgent?.name}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-black px-2 py-1.5">View Agent Performance</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSelectedAgentId('all')} className="rounded-lg">All Company Data</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedAgentId('all')} className="rounded-lg">All Company Data</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {teamMembers.map(member => (
                   <DropdownMenuItem 
                     key={member.id} 
-                    onClick={() => setSelectedAgentId(member.id)}
+                    onSelect={() => setSelectedAgentId(member.id)}
                     className="rounded-lg gap-2"
                   >
                     <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">

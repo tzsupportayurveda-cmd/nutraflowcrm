@@ -16,9 +16,11 @@ import {
   HelpCircle,
   User as UserIcon,
   ChevronDown,
-  Loader2
+  Loader2,
+  LogOut
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -126,17 +128,33 @@ function CRMApp() {
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end" className="w-60 p-2 rounded-xl border-slate-200 shadow-xl">
-                <DropdownMenuLabel className="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-widest">My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-slate-100 mx-1" />
-                <DropdownMenuItem className="rounded-lg h-10 px-3 cursor-pointer">Profile Settings</DropdownMenuItem>
-                <DropdownMenuItem className="rounded-lg h-10 px-3 cursor-pointer">Company Config</DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-slate-100 mx-1" />
+              <DropdownMenuContent align="end" className="w-64 p-3 rounded-2xl border-slate-200 shadow-xl bg-white z-[100]">
+                <div className="px-3 py-3 mb-2 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
+                  <p className="text-sm font-black text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[10px] font-bold text-slate-500 truncate">{user.email}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent text-[9px] font-black uppercase tracking-tighter shadow-none">
+                      {user.role}
+                    </Badge>
+                    <span className="text-[10px] font-mono text-slate-400 py-0.5 px-1 bg-white border border-slate-100 rounded">
+                      ID: {user.id.substring(0, 8)}
+                    </span>
+                  </div>
+                </div>
+                
+                <DropdownMenuSeparator className="bg-slate-100 my-2" />
+                
+                <DropdownMenuItem className="rounded-xl h-10 px-3 cursor-pointer hover:bg-slate-50 gap-3 group transition-all">
+                  <UserIcon className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
+                  <span className="text-sm font-bold text-slate-700">Profile Settings</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem 
-                  className="rounded-lg h-10 px-3 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                  className="rounded-xl h-10 px-3 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-3 group"
                   onClick={signOut}
                 >
-                  Logout Session
+                  <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600" />
+                  <span className="text-sm font-bold">Logout Session</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

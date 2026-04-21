@@ -47,7 +47,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Sales' | 'Inventory';
+  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory';
   avatar?: string;
   status: 'active' | 'pending' | 'blocked';
 }

@@ -167,7 +167,10 @@ export function Dashboard() {
                     <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">
                       {member.name.charAt(0)}
                     </div>
-                    {member.name}
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">{member.name}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">ID: {member.id.substring(0, 8)}...</span>
+                    </div>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

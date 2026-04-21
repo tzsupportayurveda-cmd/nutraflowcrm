@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Toaster } from '@/components/ui/sonner';
+import { BrandLogo } from '@/src/components/BrandLogo';
 
 function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,9 +41,17 @@ function CRMApp() {
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-emerald-500 gap-4">
-        <Loader2 className="w-12 h-12 animate-spin" />
-        <p className="text-slate-400 font-medium animate-pulse">Initializing TOZ Flow...</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-950 gap-6">
+        <div className="relative">
+          <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-black/50 animate-pulse relative z-10">
+            <BrandLogo className="w-10 h-10" />
+          </div>
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl animate-pulse"></div>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+          <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">Initializing Workspace</p>
+        </div>
       </div>
     );
   }

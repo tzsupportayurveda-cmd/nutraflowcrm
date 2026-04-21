@@ -24,6 +24,7 @@ interface SidebarProps {
 
 import { useAuth } from '@/src/contexts/AuthContext';
 import { ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,16 +50,16 @@ export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: Si
       <div className="flex items-center justify-between p-6 h-20">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20">
-              <Stethoscope className="w-5 h-5 text-white" />
+            <div className="p-1.5 bg-slate-900 rounded-xl shadow-lg shadow-black/20 group">
+              <BrandLogo className="w-6 h-6 transition-transform group-hover:scale-110" />
             </div>
             <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">TOZ Flow</span>
           </div>
         )}
         {collapsed && (
           <div className="flex items-center justify-center w-full">
-            <div className="p-2 bg-emerald-500 rounded-xl">
-              <Stethoscope className="w-5 h-5 text-white" />
+            <div className="p-1.5 bg-slate-900 rounded-xl group">
+              <BrandLogo className="w-6 h-6 transition-transform group-hover:scale-110" />
             </div>
           </div>
         )}

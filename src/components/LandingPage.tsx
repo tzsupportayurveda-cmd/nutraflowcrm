@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Stethoscope, LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock } from 'lucide-react';
+import { LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from './BrandLogo';
 
 export function LandingPage() {
   const { signIn, login, signup, error, loading } = useAuth();
@@ -32,9 +33,9 @@ export function LandingPage() {
       </div>
 
       <nav className="container mx-auto px-6 py-8 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20">
-            <Stethoscope className="w-6 h-6 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 bg-slate-900 rounded-xl shadow-lg shadow-black/20">
+            <BrandLogo className="w-8 h-8" />
           </div>
           <span className="font-bold text-2xl tracking-tight text-white">TOZ Flow</span>
         </div>

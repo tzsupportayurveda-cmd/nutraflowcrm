@@ -107,7 +107,21 @@ export function LeadManager() {
 
   const handleUpdateStatus = async (leadId: string, status: LeadStatus, extras: Partial<Lead> = {}) => {
     try {
+      const currentLead = leads.find(l => l.id === leadId);
       await dataService.updateLead(leadId, { status, ...extras });
+      
+      // Log history
+      if (currentUser && currentLead && currentLead.status !== status) {
+        await dataService.addLeadHistory(leadId, {
+          type: 'status_change',
+          from: currentLead.status,
+          to: status,
+          updatedBy: currentUser.name,
+          updatedById: currentUser.id,
+          note: extras.callbackTime ? `Callback scheduled for: ${extras.callbackTime}` : undefined
+        });
+      }
+      
       toast.success(`Status updated to ${status}`);
     } catch (e) {
       toast.error('Failed to update status');
@@ -116,10 +130,23 @@ export function LeadManager() {
 
   const handleAssign = async (leadId: string, agent: User) => {
     try {
+      const currentLead = leads.find(l => l.id === leadId);
       await dataService.updateLead(leadId, { 
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
+
+      // Log history
+      if (currentUser && currentLead) {
+        await dataService.addLeadHistory(leadId, {
+          type: 'assignment',
+          from: currentLead.assignedTo || 'Unassigned',
+          to: agent.name,
+          updatedBy: currentUser.name,
+          updatedById: currentUser.id
+        });
+      }
+
       toast.success(`Assigned to ${agent.name}`);
     } catch (e) {
       toast.error('Assignment failed');
@@ -667,8 +694,71 @@ export function LeadManager() {
                   className="w-full h-32 p-4 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none resize-none transition-all"
                   placeholder="Describe the conversation..."
                   defaultValue={selectedLead.notes}
-                  onBlur={(e) => dataService.updateLead(selectedLead.id, { notes: e.target.value })}
+                  onBlur={async (e) => {
+                    if (e.target.value !== selectedLead.notes) {
+                      await dataService.updateLead(selectedLead.id, { notes: e.target.value });
+                      if (currentUser) {
+                        await dataService.addLeadHistory(selectedLead.id, {
+                          type: 'note_added',
+                          updatedBy: currentUser.name,
+                          updatedById: currentUser.id,
+                          note: 'Updated lead interaction notes'
+                        });
+                      }
+                    }
+                  }}
                 />
+              </div>
+
+              {/* Status History Timeline */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity History</label>
+                <div className="space-y-4">
+                  {selectedLead.history && selectedLead.history.length > 0 ? (
+                    [...selectedLead.history].reverse().map((item, i) => (
+                      <div key={item.id} className="relative flex gap-4 pl-2">
+                        {/* Timeline line */}
+                        {i !== (selectedLead.history?.length || 0) - 1 && (
+                          <div className="absolute left-[13px] top-6 bottom-0 w-0.5 bg-slate-100" />
+                        )}
+                        
+                        <div className={cn(
+                          "w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 z-10",
+                          item.type === 'status_change' ? "bg-emerald-500" : 
+                          item.type === 'assignment' ? "bg-amber-500" : "bg-blue-500"
+                        )} />
+                        
+                        <div className="flex flex-col gap-1 pb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-900">
+                              {item.type === 'status_change' ? `Status: ${item.from} → ${item.to}` : 
+                               item.type === 'assignment' ? `Assigned: ${item.from} → ${item.to}` : 
+                               'Note Updated'}
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400">
+                              {new Date(item.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-500">
+                              {item.updatedBy.charAt(0)}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500">
+                              Updated by <span className="text-slate-900">{item.updatedBy}</span>
+                            </span>
+                          </div>
+                          {item.note && (
+                            <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 mt-1">
+                              {item.note}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">No history records found for this lead.</p>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -12,10 +12,11 @@ import {
   orderBy, 
   onSnapshot,
   Timestamp,
-  serverTimestamp
+  serverTimestamp,
+  arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '@/src/lib/firebase';
-import { Lead, InventoryItem, Order, User } from '@/src/types';
+import { Lead, InventoryItem, Order, User, HistoryItem } from '@/src/types';
 
 // Generic error handler
 const handleFirestoreError = (error: any, operation: string, path: string | null = null) => {
@@ -103,6 +104,22 @@ export const dataService = {
       });
     } catch (e) {
       handleFirestoreError(e, 'update', `leads/${id}`);
+    }
+  },
+
+  async addLeadHistory(id: string, historyItem: Omit<HistoryItem, 'id' | 'timestamp'>): Promise<void> {
+    try {
+      const docRef = doc(db, 'leads', id);
+      const newItem: HistoryItem = {
+        ...historyItem,
+        id: Math.random().toString(36).substring(2, 9),
+        timestamp: new Date().toISOString()
+      };
+      await updateDoc(docRef, {
+        history: arrayUnion(newItem)
+      });
+    } catch (e) {
+      handleFirestoreError(e, 'update_history', `leads/${id}`);
     }
   },
 

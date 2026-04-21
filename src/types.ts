@@ -1,6 +1,17 @@
 
 export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Wrong Number' | 'Rejected';
 
+export interface HistoryItem {
+  id: string;
+  type: 'status_change' | 'assignment' | 'note_added' | 'other';
+  from?: string;
+  to?: string;
+  updatedBy: string;
+  updatedById: string;
+  timestamp: string;
+  note?: string;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -21,6 +32,7 @@ export interface Lead {
   notes?: string;
   package?: string;
   callbackTime?: string;
+  history?: HistoryItem[];
 }
 
 export interface InventoryItem {

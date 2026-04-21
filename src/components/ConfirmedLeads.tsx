@@ -48,11 +48,16 @@ export function ConfirmedLeads() {
         customerName: lead.name,
         status: 'Processing',
         total: lead.value,
+        agentId: lead.assignedToId || '',
+        agentName: lead.assignedTo || 'System',
         items: [{ productId: lead.package || 'Default Pack', quantity: 1, price: lead.value }]
       });
 
       // 2. Update lead status to indicate it has been converted/dispatched
-      await dataService.updateLead(lead.id, { notes: (lead.notes || '') + '\n[Dispatched to Orders]' });
+      await dataService.updateLead(lead.id, { 
+        status: 'Confirmed', // Keep as confirmed but note it
+        notes: (lead.notes || '') + '\n[Dispatched to Orders]' 
+      });
       
       toast.success(`Order created for ${lead.name}`);
     } catch (e) {
@@ -135,7 +140,7 @@ export function ConfirmedLeads() {
                       {lead.package || "Not Specified"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-bold text-emerald-600">${lead.value.toLocaleString()}</TableCell>
+                  <TableCell className="font-bold text-emerald-600">₹{lead.value.toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                        <User className="w-3.5 h-3.5 text-slate-400" />

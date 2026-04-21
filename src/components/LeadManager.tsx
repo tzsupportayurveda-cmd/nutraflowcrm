@@ -211,11 +211,11 @@ export function LeadManager() {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger render={
+          <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
               <UserPlus className="w-4 h-4" /> Add New Lead
             </Button>
-          } />
+          </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] rounded-2xl">
             <DialogHeader>
               <DialogTitle>Create New Lead</DialogTitle>
@@ -399,11 +399,11 @@ export function LeadManager() {
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={
+                    <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                    } />
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-white z-[100] shadow-xl border-slate-200">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsDetailOpen(true); }}>
@@ -453,11 +453,11 @@ export function LeadManager() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned To</label>
                   {currentUser?.role === 'Admin' ? (
                     <DropdownMenu>
-                      <DropdownMenuTrigger render={
+                      <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200">
                           {selectedLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
                         </Button>
-                      } />
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-56" align="start">
                         <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
                         {team.map(member => (

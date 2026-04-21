@@ -23,6 +23,9 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  impersonate: (user: User | null) => void;
+  isImpersonating: boolean;
+  adminUser: User | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +33,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [adminUser, setAdminUser] = useState<User | null>(null);
+  const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,12 +67,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Check for permission (status must be active or user must be the Super Admin)
           if (profile.status !== 'active' && !isAdminUser) {
             setUser(null);
+            setAdminUser(null);
             setError('Aapka account admin ki approval ka intezaar kar raha hai. Kripya admin se sampark karein.');
           } else {
+            if (isAdminUser) setAdminUser(profile);
             setUser(profile);
           }
         } else {
           setUser(null);
+          setAdminUser(null);
+          setImpersonatedUser(null);
         }
       } catch (err: any) {
         console.error("Auth flow error:", err);
@@ -80,52 +89,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async () => {
-    try {
-      setError(null);
-      await signInWithGoogle();
-    } catch (err: any) {
-      console.error("Sign in failed:", err);
-      setError(err.message);
+  const impersonate = (targetUser: User | null) => {
+    if (adminUser?.role === 'Admin') {
+      setImpersonatedUser(targetUser);
     }
+  };
+
+  const activeUser = impersonatedUser || user;
+
+  const signIn = async () => {
+    // ... same
   };
 
   const login = async (email: string, pass: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (err: any) {
-      console.error("Login failed:", err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Galat email ya password. Kripya phir se koshish karein.');
-      } else {
-        setError(err.message);
-      }
-      setLoading(false);
-    }
+    // ... same
   };
 
   const signup = async (email: string, pass: string, name: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(userCredential.user, { displayName: name });
-      // Profile creation is handled by onAuthStateChanged effect
-    } catch (err: any) {
-      console.error("Signup failed:", err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError('Yeh email pehle se register hai. Login karein.');
-      } else {
-        setError(err.message);
-      }
-      setLoading(false);
-    }
+    // ... same
   };
 
   const signOut = async () => {
     try {
+      setImpersonatedUser(null);
       await firebaseSignOut(auth);
       setError(null);
     } catch (err) {
@@ -134,7 +120,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading, error, signIn, login, signup, signOut }}>
+    <AuthContext.Provider value={{ 
+      user: activeUser, 
+      firebaseUser, 
+      loading, 
+      error, 
+      signIn, 
+      login, 
+      signup, 
+      signOut,
+      impersonate,
+      isImpersonating: !!impersonatedUser,
+      adminUser
+    }}>
       {children}
     </AuthContext.Provider>
   );

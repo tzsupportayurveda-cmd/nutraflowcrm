@@ -47,4 +47,5 @@ export interface User {
   email: string;
   role: 'Admin' | 'Sales' | 'Inventory';
   avatar?: string;
+  status: 'active' | 'pending' | 'blocked';
 }

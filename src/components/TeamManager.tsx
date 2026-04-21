@@ -1,5 +1,4 @@
 
-import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   ShieldCheck, 
@@ -8,7 +7,10 @@ import {
   Lock,
   MoreVertical,
   Loader2,
-  Trash2
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { 
   Table, 
@@ -24,6 +26,8 @@ import { dataService } from '@/src/services/dataService';
 import { User } from '@/src/types';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function TeamManager() {
   const [team, setTeam] = useState<User[]>([]);
@@ -39,16 +43,26 @@ export function TeamManager() {
     return () => unsub();
   }, []);
 
+  const handleToggleStatus = async (uid: string, currentStatus: string) => {
+    try {
+      await dataService.toggleUserStatus(uid, currentStatus);
+      toast.success(`User status updated to ${currentStatus === 'active' ? 'Pending' : 'Active'}`);
+    } catch (error) {
+      toast.error("Failed to update user status");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
-          <p className="text-slate-500">Control access roles and manage your laboratory staff.</p>
+          <p className="text-slate-500">Enable or disable agent access and manage roles.</p>
         </div>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 shadow-lg shadow-emerald-500/20">
-          <UserPlus className="w-4 h-4" /> Invite Member
-        </Button>
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl">
+          <Clock className="w-4 h-4 text-amber-600" />
+          <span className="text-xs font-bold text-amber-700 uppercase tracking-widest">Approval Required</span>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -57,11 +71,11 @@ export function TeamManager() {
           <p className="text-2xl font-bold text-slate-900">{team.length}</p>
         </div>
         <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Admins</p>
-          <p className="text-2xl font-bold text-emerald-600">{team.filter(u => u.role === 'Admin').length}</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Waitlist</p>
+          <p className="text-2xl font-bold text-amber-600">{team.filter(u => u.status !== 'active').length}</p>
         </div>
-        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm text-slate-400 italic flex items-center justify-center">
-          <Lock className="w-4 h-4 mr-2" /> Role Based Access Active
+        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm text-slate-400 italic flex items-center justify-center col-span-2">
+          <Lock className="w-4 h-4 mr-2" /> All new signups are 'Pending' until Admin approval.
         </div>
       </div>
 
@@ -76,10 +90,10 @@ export function TeamManager() {
             <TableHeader className="bg-slate-50/50">
               <TableRow>
                 <TableHead>Member</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead className="text-right">Access Control</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,28 +107,54 @@ export function TeamManager() {
                         className="w-10 h-10 rounded-full border border-slate-100 ring-2 ring-slate-50"
                         referrerPolicy="no-referrer"
                       />
-                      <span className="font-bold text-slate-900">{member.name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{member.name}</span>
+                        <span className="text-[10px] text-slate-400 uppercase font-mono">{member.id.substring(0,8)}</span>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-500">{member.email}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant="secondary" 
-                      className={member.role === 'Admin' 
-                        ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
-                        : "bg-blue-100 text-blue-700 border-blue-200"}
+                      className={cn(
+                        "rounded-lg px-2 py-0.5",
+                        member.status === 'active' 
+                          ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
+                          : "bg-amber-100 text-amber-700 border-amber-200"
+                      )}
                     >
-                      {member.role === 'Admin' && <ShieldCheck className="w-3 h-3 mr-1" />}
-                      {member.role}
+                      {member.status === 'active' ? 'Active' : 'Pending Approval'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-[10px] text-slate-400 uppercase">
-                    {member.id ? member.id.substring(0, 8) : 'TEMP-ID'}...
+                  <TableCell>
+                    <span className="text-sm font-medium text-slate-600">
+                      {member.role}
+                    </span>
                   </TableCell>
+                  <TableCell className="text-slate-500 text-sm">{member.email}</TableCell>
                   <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={cn(
+                        "h-8 gap-2 rounded-lg font-bold text-xs",
+                        member.status === 'active' 
+                          ? "hover:bg-amber-50 hover:text-amber-600 border-slate-200" 
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 border-transparent shadow-sm"
+                      )}
+                      onClick={() => handleToggleStatus(member.id, member.status)}
+                      disabled={member.email === 'tzsupportayurveda@gmail.com'}
+                    >
+                      {member.status === 'active' ? (
+                        <>Disable Access</>
+                      ) : (
+                        <><CheckCircle2 className="w-3.5 h-3.5" /> Approve & Grant Access</>
+                      )}
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500">
                       <Trash2 className="w-4 h-4" />
                     </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

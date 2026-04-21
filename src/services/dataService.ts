@@ -136,6 +136,15 @@ export const dataService = {
     }
   },
 
+  async toggleUserStatus(uid: string, currentStatus: string): Promise<void> {
+    try {
+      const newStatus = currentStatus === 'active' ? 'pending' : 'active';
+      await updateDoc(doc(db, 'users', uid), { status: newStatus });
+    } catch (e) {
+      handleFirestoreError(e, 'update', `users/${uid}`);
+    }
+  },
+
   // --- Orders ---
   subscribeOrders(callback: (orders: Order[]) => void) {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));

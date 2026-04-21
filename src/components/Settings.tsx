@@ -48,7 +48,7 @@ export function Settings() {
           <div className="grid sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700">Company Name</label>
-              <Input placeholder="NutraFlow Lab Inc." defaultValue="NutraFlow CRM" />
+              <Input placeholder="TOZ Flow Inc." defaultValue="TOZ Flow" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-slate-700">Support Email</label>

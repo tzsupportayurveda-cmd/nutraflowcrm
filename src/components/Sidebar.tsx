@@ -9,7 +9,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  FlaskConical
+  Stethoscope
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,15 +49,15 @@ export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: Si
         {!collapsed && (
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20">
-              <FlaskConical className="w-5 h-5 text-white" />
+              <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">NutraFlow</span>
+            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">TOZ Flow</span>
           </div>
         )}
         {collapsed && (
           <div className="flex items-center justify-center w-full">
             <div className="p-2 bg-emerald-500 rounded-xl">
-              <FlaskConical className="w-5 h-5 text-white" />
+              <Stethoscope className="w-5 h-5 text-white" />
             </div>
           </div>
         )}

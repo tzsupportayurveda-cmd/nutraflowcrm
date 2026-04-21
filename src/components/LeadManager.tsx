@@ -11,7 +11,8 @@ import {
   Calendar,
   UserPlus,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  MapPin
 } from 'lucide-react';
 import { 
   Table, 
@@ -530,25 +531,42 @@ export function LeadManager() {
                 <Badge className={cn(statusColors[selectedLead.status] || 'bg-slate-100 text-slate-700', "border-transparent")}>
                   {selectedLead.status}
                 </Badge>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Affiliate Tracking</span>
-                  {selectedLead.affiliateId ? (
-                    <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-black rounded uppercase tracking-tighter">
-                      ID: {selectedLead.affiliateId}
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-slate-200 text-slate-500 text-[10px] font-black rounded uppercase tracking-tighter">
-                      No Affiliate
-                    </span>
-                  )}
-                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
+                        Update Status <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                    {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
+                      <DropdownMenuItem 
+                        key={status} 
+                        onClick={() => {
+                          if (status === 'Call Back') {
+                            const time = prompt('Enter callback time (e.g. 5:00 PM today)');
+                            if (time) handleUpdateStatus(selectedLead.id, status, { callbackTime: time });
+                          } else {
+                            handleUpdateStatus(selectedLead.id, status);
+                          }
+                        }}
+                      >
+                        {status}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="relative group">
                   <Input 
                     defaultValue={selectedLead.name}
-                    className="text-xl font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0 shadow-none hover:bg-slate-200/50 transition-colors"
+                    className="text-2xl font-black bg-transparent border-none p-0 h-auto focus-visible:ring-0 shadow-none hover:bg-slate-200/30 transition-colors placeholder:text-slate-300"
+                    placeholder="Customer Name"
                     onBlur={async (e) => {
                       if (e.target.value !== selectedLead.name) {
                         await dataService.updateLead(selectedLead.id, { name: e.target.value });
@@ -557,23 +575,20 @@ export function LeadManager() {
                             type: 'other',
                             updatedBy: currentUser.name,
                             updatedById: currentUser.id,
-                            note: `Changed name: ${selectedLead.name} → ${e.target.value}`
+                            note: `Name: ${selectedLead.name} → ${e.target.value}`
                           });
                         }
                       }
                     }}
                   />
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <span className="text-[9px] font-bold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm">Click to edit name</span>
-                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm grow lg:grow-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
                     <Phone className="w-3.5 h-3.5 text-emerald-500" />
                     <Input 
                       defaultValue={selectedLead.phone}
-                      className="border-none h-auto p-0 focus-visible:ring-0 w-32 shadow-none text-xs font-bold"
+                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
                       onBlur={async (e) => {
                         if (e.target.value !== selectedLead.phone) {
                           await dataService.updateLead(selectedLead.id, { phone: e.target.value });
@@ -582,18 +597,18 @@ export function LeadManager() {
                               type: 'other',
                               updatedBy: currentUser.name,
                               updatedById: currentUser.id,
-                              note: `Changed phone: ${selectedLead.phone} → ${e.target.value}`
+                              note: `Phone: ${selectedLead.phone} → ${e.target.value}`
                             });
                           }
                         }
                       }}
                     />
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm grow lg:grow-0">
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
                     <Mail className="w-3.5 h-3.5 text-blue-500" />
                     <Input 
                       defaultValue={selectedLead.email}
-                      className="border-none h-auto p-0 focus-visible:ring-0 w-40 shadow-none text-xs font-bold"
+                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
                       onBlur={async (e) => {
                         if (e.target.value !== selectedLead.email) {
                           await dataService.updateLead(selectedLead.id, { email: e.target.value });
@@ -602,7 +617,7 @@ export function LeadManager() {
                               type: 'other',
                               updatedBy: currentUser.name,
                               updatedById: currentUser.id,
-                              note: `Changed email: ${selectedLead.email} → ${e.target.value}`
+                              note: `Email: ${selectedLead.email} → ${e.target.value}`
                             });
                           }
                         }
@@ -610,11 +625,101 @@ export function LeadManager() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                    <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <Input 
+                      defaultValue={selectedLead.address}
+                      placeholder="Street Address"
+                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                      onBlur={(e) => dataService.updateLead(selectedLead.id, { address: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                      <Input 
+                        defaultValue={selectedLead.city}
+                        placeholder="City"
+                        className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                        onBlur={(e) => dataService.updateLead(selectedLead.id, { city: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                      <Input 
+                        defaultValue={selectedLead.pincode}
+                        placeholder="Pincode"
+                        className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                        onBlur={(e) => dataService.updateLead(selectedLead.id, { pincode: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Product Section */}
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Product Selection</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Product Choice</span>
+                    <select 
+                      value={selectedLead.product || ''}
+                      onChange={async (e) => {
+                        const val = e.target.value as any;
+                        await dataService.updateLead(selectedLead.id, { product: val });
+                        if (currentUser) {
+                          await dataService.addLeadHistory(selectedLead.id, {
+                            type: 'other',
+                            updatedBy: currentUser.name,
+                            updatedById: currentUser.id,
+                            note: `Product selected: ${val}`
+                          });
+                        }
+                      }}
+                      className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
+                    >
+                      <option value="">Select Product...</option>
+                      <option value="Thunder of Zosh Gel">Thunder of Zosh Gel</option>
+                      <option value="Thunder of Zosh Capsule (30 pills)">Thunder of Zosh Capsule (30 pills)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Quantity (Bottles)</span>
+                    <div className="flex items-center gap-3">
+                      <Input 
+                        type="number" 
+                        min="1"
+                        value={selectedLead.quantity || 1}
+                        onChange={async (e) => {
+                          const qty = parseInt(e.target.value) || 1;
+                          // Auto calculate price
+                          // 1 bottle = 2999
+                          // 2 bottles = 3999
+                          let newVal = 2999;
+                          if (qty === 2) newVal = 3999;
+                          else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500); // Sample logic for 3+
+
+                          await dataService.updateLead(selectedLead.id, { 
+                            quantity: qty,
+                            value: newVal,
+                            package: `${qty} Bottle${qty > 1 ? 's' : ''}`
+                          });
+                        }}
+                        className="h-10 border-slate-200 font-bold rounded-xl"
+                      />
+                      <div className="flex flex-col grow">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Total Amount</span>
+                        <span className="text-lg font-black text-emerald-600">₹{selectedLead.value.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Source Channel</label>
                   <select 
@@ -656,7 +761,7 @@ export function LeadManager() {
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
-                          <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200">
+                          <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
                             {selectedLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
                           </Button>
                         }
@@ -676,80 +781,8 @@ export function LeadManager() {
                     </div>
                   )}
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Product Package</label>
-                  <Input 
-                    placeholder="e.g. Starter Pack" 
-                    defaultValue={selectedLead.package}
-                    className="h-10 border-slate-200"
-                    onBlur={(e) => dataService.updateLead(selectedLead.id, { package: e.target.value })}
-                  />
-                </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Delivery Address</label>
-                <div className="grid gap-3">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400">Street Address</span>
-                    <Input 
-                      placeholder="House No, Street..." 
-                      defaultValue={selectedLead.address}
-                      className="h-9 border-slate-200"
-                      onBlur={(e) => dataService.updateLead(selectedLead.id, { address: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400">City</span>
-                      <Input 
-                        placeholder="City" 
-                        defaultValue={selectedLead.city}
-                        className="h-9 border-slate-200"
-                        onBlur={(e) => dataService.updateLead(selectedLead.id, { city: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400">Pincode</span>
-                      <Input 
-                        placeholder="Pincode" 
-                        defaultValue={selectedLead.pincode}
-                        className="h-9 border-slate-200"
-                        onBlur={(e) => dataService.updateLead(selectedLead.id, { pincode: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Update Call Status</label>
-                <div className="flex flex-wrap gap-2">
-                  {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
-                    <Button 
-                      key={status}
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "px-4 h-9 rounded-full text-xs font-bold transition-all border-slate-200",
-                        selectedLead.status === status && "bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 hover:text-white"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (status === 'Call Back') {
-                          const time = prompt('Enter callback time (e.g. 5:00 PM today)');
-                          if (time) handleUpdateStatus(selectedLead.id, status, { callbackTime: time });
-                        } else {
-                          handleUpdateStatus(selectedLead.id, status);
-                        }
-                      }}
-                    >
-                      {status}
-                    </Button>
-                  ))}
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Interaction Log</label>

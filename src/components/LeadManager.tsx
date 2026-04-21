@@ -292,11 +292,13 @@ export function LeadManager() {
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-              <UserPlus className="w-4 h-4" /> Add New Lead
-            </Button>
-          </DialogTrigger>
+          <DialogTrigger
+            render={
+              <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+                <UserPlus className="w-4 h-4" /> Add New Lead
+              </Button>
+            }
+          />
           <DialogContent className="sm:max-w-[425px] rounded-2xl">
             <DialogHeader>
               <DialogTitle>Create New Lead</DialogTitle>
@@ -535,11 +537,13 @@ export function LeadManager() {
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
                     <DropdownMenuContent align="end" className="w-48 bg-white z-[100] shadow-xl border-slate-200">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsDetailOpen(true); }}>
@@ -591,17 +595,19 @@ export function LeadManager() {
                 </div>
                 
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
-                      Update Status <ChevronDown className="w-3 h-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
+                        Update Status <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    }
+                  />
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Change Status</DropdownMenuLabel>
                     {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
                       <DropdownMenuItem 
                         key={status} 
-                        onSelect={() => {
+                        onClick={() => {
                           if (status === 'Call Back') {
                             const time = prompt('Enter callback time (e.g. 5:00 PM today)');
                             if (time) handleUpdateStatus(editableLead.id, status, { callbackTime: time });
@@ -799,15 +805,17 @@ export function LeadManager() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned To</label>
                   {currentUser?.role === 'Admin' ? (
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
-                          {editableLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
-                        </Button>
-                      </DropdownMenuTrigger>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
+                            {editableLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
+                          </Button>
+                        }
+                      />
                       <DropdownMenuContent className="w-56" align="start">
                         <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
                         {team.map(member => (
-                          <DropdownMenuItem key={member.id} onSelect={() => { handleAssign(editableLead.id, member); }}>
+                          <DropdownMenuItem key={member.id} onClick={() => { handleAssign(editableLead.id, member); }}>
                             {member.name} ({member.role})
                           </DropdownMenuItem>
                         ))}

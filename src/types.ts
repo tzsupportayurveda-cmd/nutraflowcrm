@@ -38,6 +38,8 @@ export interface Order {
   items: { productId: string; quantity: number; price: number }[];
   status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
   total: number;
+  agentId?: string;
+  agentName?: string;
   createdAt: string;
 }
 

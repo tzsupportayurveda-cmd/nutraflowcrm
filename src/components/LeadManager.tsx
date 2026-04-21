@@ -153,6 +153,30 @@ export function LeadManager() {
     }
   };
 
+  const handleCreateOrder = async (lead: Lead) => {
+    try {
+      if (!currentUser) return;
+      
+      const orderId = await dataService.addOrder({
+        customerId: lead.id,
+        customerName: lead.name,
+        items: [], // Would typically select items in a real app
+        status: 'Pending',
+        total: lead.value || 0,
+        agentId: currentUser.id,
+        agentName: currentUser.name,
+      });
+
+      // Update lead status to reflect it's now an order
+      await dataService.updateLead(lead.id, { status: 'Confirmed' });
+      
+      toast.success(`Order created successfully! ID: ${orderId}`);
+      setIsDetailOpen(false);
+    } catch (e) {
+      toast.error('Failed to create order');
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this lead?')) {
       try {
@@ -164,11 +188,19 @@ export function LeadManager() {
     }
   };
   
-  const filteredLeads = leads.filter(lead => 
-    (lead.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (lead.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (lead.phone || "").includes(searchTerm)
-  );
+  const filteredLeads = leads.filter(lead => {
+    // 1. Role Filter
+    const isOwner = lead.assignedToId === currentUser?.id;
+    const isAdmin = currentUser?.role === 'Admin';
+    if (!isAdmin && !isOwner) return false;
+
+    // 2. Search Filter
+    return (
+      (lead.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (lead.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (lead.phone || "").includes(searchTerm)
+    );
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -530,7 +562,10 @@ export function LeadManager() {
             <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 sticky bottom-0">
               <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close Details</Button>
               {selectedLead.status === 'Confirmed' && (
-                <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-10 shadow-lg shadow-emerald-500/20">
+                <Button 
+                  onClick={() => handleCreateOrder(selectedLead)}
+                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl px-10 shadow-lg shadow-emerald-500/20"
+                >
                   Create Dispatch Order
                 </Button>
               )}

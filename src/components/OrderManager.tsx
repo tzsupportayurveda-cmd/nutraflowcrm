@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { Order } from '@/src/types';
 import { format } from 'date-fns';
 
@@ -43,6 +44,7 @@ const statusIcons = {
 };
 
 export function OrderManager() {
+  const { user: currentUser } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +55,11 @@ export function OrderManager() {
     });
     return () => unsub();
   }, []);
+
+  const filteredOrders = orders.filter(order => {
+    if (currentUser?.role === 'Admin') return true;
+    return order.agentId === currentUser?.id;
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -72,11 +79,11 @@ export function OrderManager() {
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
             <p className="text-slate-500 font-medium">Fetching orders...</p>
           </div>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-4 p-20 text-center text-slate-500">
             <ShoppingCart className="w-12 h-12 text-slate-200" />
             <p className="font-semibold text-slate-900">No orders recorded</p>
-            <p>Wait for new orders or sync your e-commerce store.</p>
+            <p>{currentUser?.role === 'Admin' ? 'Wait for new orders or sync your e-commerce store.' : 'You haven\'t processed any orders yet.'}</p>
           </div>
         ) : (
           <Table>
@@ -87,11 +94,12 @@ export function OrderManager() {
                 <TableHead>Date</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
+                {currentUser?.role === 'Admin' && <TableHead>Agent</TableHead>}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => {
+              {filteredOrders.map((order) => {
                 const Icon = statusIcons[order.status];
                 return (
                   <TableRow key={order.id} className="hover:bg-slate-50/50">
@@ -100,12 +108,17 @@ export function OrderManager() {
                     <TableCell className="text-slate-500 text-sm">
                       {format(new Date(order.createdAt), 'MMM dd, yyyy')}
                     </TableCell>
-                    <TableCell className="font-semibold text-slate-900">${order.total.toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold text-slate-900">₹{order.total.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={cn(orderStatusColors[order.status], "gap-1 border-transparent px-2.5 py-0.5 font-medium")}>
                         <Icon className="w-3.5 h-3.5" /> {order.status}
                       </Badge>
                     </TableCell>
+                    {currentUser?.role === 'Admin' && (
+                      <TableCell className="text-sm font-medium text-emerald-600">
+                        {order.agentName || 'System'}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right space-x-2">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-blue-600">
                         <Eye className="w-4 h-4" />

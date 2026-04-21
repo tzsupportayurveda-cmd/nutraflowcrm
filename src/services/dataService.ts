@@ -145,6 +145,16 @@ export const dataService = {
     }
   },
 
+  async getTeamMembers(): Promise<User[]> {
+    try {
+      const q = query(collection(db, 'users'), where('status', '==', 'active'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    } catch (e) {
+      return handleFirestoreError(e, 'list', 'users');
+    }
+  },
+
   // --- Orders ---
   subscribeOrders(callback: (orders: Order[]) => void) {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));

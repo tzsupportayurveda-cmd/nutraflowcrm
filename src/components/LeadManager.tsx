@@ -604,6 +604,7 @@ export function LeadManager() {
               
               <div className="space-y-4">
                 <div className="relative group">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Customer Name</label>
                   <Input 
                     value={editableLead.name}
                     onChange={(e) => {
@@ -616,67 +617,82 @@ export function LeadManager() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
-                    <Phone className="w-3.5 h-3.5 text-emerald-500" />
-                    <Input 
-                      value={editableLead.phone}
-                      onChange={(e) => {
-                        setEditableLead({ ...editableLead, phone: e.target.value });
-                        setHasChanges(true);
-                      }}
-                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      placeholder="Phone Number"
-                    />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Phone Number</label>
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
+                      <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                      <Input 
+                        value={editableLead.phone}
+                        onChange={(e) => {
+                          setEditableLead({ ...editableLead, phone: e.target.value });
+                          setHasChanges(true);
+                        }}
+                        className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                        placeholder="Phone Number"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group">
-                    <Mail className="w-3.5 h-3.5 text-blue-500" />
-                    <Input 
-                      value={editableLead.email}
-                      onChange={(e) => {
-                        setEditableLead({ ...editableLead, email: e.target.value });
-                        setHasChanges(true);
-                      }}
-                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      placeholder="Email Address"
-                    />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Email Address</label>
+                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm group text-sm">
+                      <Mail className="w-3.5 h-3.5 text-blue-500" />
+                      <Input 
+                        value={editableLead.email}
+                        onChange={(e) => {
+                          setEditableLead({ ...editableLead, email: e.target.value });
+                          setHasChanges(true);
+                        }}
+                        className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                        placeholder="Email Address"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
-                    <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                    <Input 
-                      value={editableLead.address || ''}
-                      placeholder="Street Address"
-                      className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                      onChange={(e) => {
-                        setEditableLead({ ...editableLead, address: e.target.value });
-                        setHasChanges(true);
-                      }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Full Address</label>
                     <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                      <MapPin className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                       <Input 
-                        value={editableLead.city || ''}
-                        placeholder="City"
+                        value={editableLead.address || ''}
+                        placeholder="Street Address"
                         className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
                         onChange={(e) => {
-                          setEditableLead({ ...editableLead, city: e.target.value });
+                          setEditableLead({ ...editableLead, address: e.target.value });
                           setHasChanges(true);
                         }}
                       />
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
-                      <Input 
-                        value={editableLead.pincode || ''}
-                        placeholder="Pincode"
-                        className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
-                        onChange={(e) => {
-                          setEditableLead({ ...editableLead, pincode: e.target.value });
-                          setHasChanges(true);
-                        }}
-                      />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">City</label>
+                      <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <Input 
+                          value={editableLead.city || ''}
+                          placeholder="City"
+                          className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                          onChange={(e) => {
+                            setEditableLead({ ...editableLead, city: e.target.value });
+                            setHasChanges(true);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block pl-1">Pincode</label>
+                      <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm">
+                        <Input 
+                          value={editableLead.pincode || ''}
+                          placeholder="Pincode"
+                          className="border-none h-auto p-0 focus-visible:ring-0 shadow-none text-xs font-bold"
+                          onChange={(e) => {
+                            setEditableLead({ ...editableLead, pincode: e.target.value });
+                            setHasChanges(true);
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

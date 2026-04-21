@@ -490,13 +490,11 @@ export function LeadManager() {
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48 bg-white z-[100] shadow-xl border-slate-200">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => { setSelectedLead(lead); setIsDetailOpen(true); }}>
@@ -533,13 +531,11 @@ export function LeadManager() {
                 </Badge>
                 
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
-                        Update Status <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    }
-                  />
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200 bg-white">
+                      Update Status <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuLabel>Change Status</DropdownMenuLabel>
                     {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected'] as LeadStatus[]).map(status => (
@@ -759,13 +755,11 @@ export function LeadManager() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned To</label>
                   {currentUser?.role === 'Admin' ? (
                     <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
-                            {selectedLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
-                          </Button>
-                        }
-                      />
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between font-medium h-10 border-slate-200 rounded-lg">
+                          {selectedLead.assignedTo || "Unassigned"} <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-56" align="start">
                         <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
                         {team.map(member => (

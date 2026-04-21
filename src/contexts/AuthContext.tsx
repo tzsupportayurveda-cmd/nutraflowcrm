@@ -35,38 +35,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      setLoading(true);
       setFirebaseUser(fbUser);
       setError(null);
       
-      if (fbUser) {
-        // Get profile from Firestore
-        let profile = await dataService.getUserProfile(fbUser.uid);
-        const isAdmin = fbUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-        
-        if (!profile) {
-          // Create default profile for first-time login
-          profile = {
-            id: fbUser.uid,
-            name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
-            email: fbUser.email || '',
-            role: isAdmin ? 'Admin' : 'Sales',
-            avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
-            status: isAdmin ? 'active' : 'pending'
-          };
-          await dataService.createUserProfile(profile);
-        }
+      try {
+        if (fbUser) {
+          const isAdminUser = fbUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+          
+          // Get profile from Firestore
+          let profile = await dataService.getUserProfile(fbUser.uid);
+          
+          if (!profile) {
+            // Create default profile for first-time login
+            profile = {
+              id: fbUser.uid,
+              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
+              email: fbUser.email || '',
+              role: isAdminUser ? 'Admin' : 'Sales',
+              avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
+              status: isAdminUser ? 'active' : 'pending'
+            };
+            await dataService.createUserProfile(profile);
+          }
 
-        // Check for permission (status must be active or user must be the Super Admin)
-        if (profile.status !== 'active' && !isAdmin) {
-          setUser(null);
-          setError('Aapka account admin ki approval ka intezaar kar raha hai. Kripya admin se sampark karein.');
+          // Check for permission (status must be active or user must be the Super Admin)
+          if (profile.status !== 'active' && !isAdminUser) {
+            setUser(null);
+            setError('Aapka account admin ki approval ka intezaar kar raha hai. Kripya admin se sampark karein.');
+          } else {
+            setUser(profile);
+          }
         } else {
-          setUser(profile);
+          setUser(null);
         }
-      } else {
-        setUser(null);
+      } catch (err: any) {
+        console.error("Auth flow error:", err);
+        setError("Login failed due to database connection issue. Please try again or check Firebase Rules.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

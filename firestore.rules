@@ -17,8 +17,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return isSignedIn() && (
+        request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+      );
     }
 
     function isSales() {
@@ -42,11 +44,8 @@ service cloud.firestore {
     // 1. User Profiles
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId) && 
-        request.resource.data.keys().hasAll(['name', 'email', 'role']) && 
-        request.resource.data.role in ['Admin', 'Sales', 'Inventory'];
-      allow update: if isOwner(userId) && 
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
     }
 
     // 2. Leads

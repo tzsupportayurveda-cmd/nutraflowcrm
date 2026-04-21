@@ -39,9 +39,9 @@ import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Lead, Order, InventoryItem, User } from '@/src/types';
 import { cn } from '@/lib/utils';
-import { startOfDay, startOfMonth, isAfter, parseISO, format, isSameDay } from 'date-fns';
+import { startOfDay, startOfMonth, isAfter, parseISO, format, isSameDay, isBefore, endOfDay } from 'date-fns';
 
-type DateFilter = 'today' | 'month' | 'all';
+type DateFilter = 'today' | 'month' | 'all' | 'custom';
 
 export function Dashboard() {
   const { user: currentUser } = useAuth();
@@ -51,6 +51,8 @@ export function Dashboard() {
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selectedAgentId, setSelectedAgentId] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   useEffect(() => {
     const unsubLeads = dataService.subscribeLeads(setLeads);
@@ -94,10 +96,23 @@ export function Dashboard() {
       const monthStart = startOfMonth(now);
       resultLeads = resultLeads.filter(l => isAfter(parseISO(l.createdAt), monthStart));
       resultOrders = resultOrders.filter(o => isAfter(parseISO(o.createdAt), monthStart));
+    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+      const start = startOfDay(parseISO(customStartDate));
+      const end = endOfDay(parseISO(customEndDate));
+      resultLeads = resultLeads.filter(l => {
+        const leadDate = parseISO(l.createdAt);
+        return (isAfter(leadDate, start) || isSameDay(leadDate, start)) && 
+               (isBefore(leadDate, end) || isSameDay(leadDate, end));
+      });
+      resultOrders = resultOrders.filter(o => {
+        const orderDate = parseISO(o.createdAt);
+        return (isAfter(orderDate, start) || isSameDay(orderDate, start)) && 
+               (isBefore(orderDate, end) || isSameDay(orderDate, end));
+      });
     }
 
     return { filteredLeads: resultLeads, filteredOrders: resultOrders };
-  }, [leads, orders, dateFilter, selectedAgentId, currentUser]);
+  }, [leads, orders, dateFilter, selectedAgentId, currentUser, customStartDate, customEndDate]);
 
   const { filteredLeads, filteredOrders } = filteredData;
 
@@ -178,8 +193,16 @@ export function Dashboard() {
                       {member.name.charAt(0)}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">{member.name}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">ID: {member.id.substring(0, 8)}...</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">{member.name}</span>
+                        <span className={cn(
+                          "text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter",
+                          member.role === 'Manager' ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"
+                        )}>
+                          {member.role}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono italic">ID: {member.id.substring(0, 8)}...</span>
                     </div>
                   </DropdownMenuItem>
                 ))}
@@ -188,7 +211,7 @@ export function Dashboard() {
           )}
 
           <div className="flex p-1 bg-slate-50 rounded-xl">
-            {(['today', 'month', 'all'] as const).map((filter) => (
+            {(['today', 'month', 'all', 'custom'] as const).map((filter) => (
               <button
                 key={filter}
                 onClick={() => setDateFilter(filter)}
@@ -203,6 +226,29 @@ export function Dashboard() {
               </button>
             ))}
           </div>
+
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">From</span>
+                <input 
+                  type="date" 
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">To</span>
+                <input 
+                  type="date" 
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="h-9 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -145,7 +145,10 @@ function CRMApp() {
                 
                 <DropdownMenuSeparator className="bg-slate-100 my-2" />
                 
-                <DropdownMenuItem className="rounded-xl h-10 px-3 cursor-pointer hover:bg-slate-50 gap-3 group transition-all">
+                <DropdownMenuItem 
+                  className="rounded-xl h-10 px-3 cursor-pointer hover:bg-slate-50 gap-3 group transition-all"
+                  onClick={() => setActiveTab('settings')}
+                >
                   <UserIcon className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
                   <span className="text-sm font-bold text-slate-700">Profile Settings</span>
                 </DropdownMenuItem>

@@ -136,6 +136,16 @@ export function Dashboard() {
           <h1 className="text-4xl font-black tracking-tight text-slate-900">
             {currentUser?.role === 'Admin' ? (selectedAgentId === 'all' ? 'Company Analytics' : `${selectedAgent?.name}'s Performance`) : 'My Sales Performance'}
           </h1>
+          {currentUser?.role === 'Admin' && selectedAgentId !== 'all' && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-black rounded uppercase tracking-tighter">
+                ACTIVE AGENT ID
+              </span>
+              <code className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                {selectedAgentId}
+              </code>
+            </div>
+          )}
           <p className="text-slate-500 font-medium">Monitoring business growth and agent productivity in real-time.</p>
         </div>
 

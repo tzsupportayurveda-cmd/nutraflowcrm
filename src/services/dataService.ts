@@ -161,6 +161,14 @@ export const dataService = {
     }
   },
 
+  async updateUserProfile(uid: string, updates: Partial<User>): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'users', uid), updates);
+    } catch (e) {
+      handleFirestoreError(e, 'update', `users/${uid}`);
+    }
+  },
+
   async getTeamMembers(): Promise<User[]> {
     try {
       const q = query(collection(db, 'users'), where('status', '==', 'active'));

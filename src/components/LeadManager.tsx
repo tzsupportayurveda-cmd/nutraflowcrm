@@ -80,6 +80,7 @@ export function LeadManager() {
     value: 0,
     source: 'Direct',
     affiliateId: '',
+    paymentMode: 'COD' as 'COD' | 'Prepaid',
     status: 'New' as LeadStatus
   });
 
@@ -132,10 +133,11 @@ export function LeadManager() {
     try {
       await dataService.addLead({
         ...newLead,
+        status: newLead.paymentMode === 'Prepaid' ? 'Confirmed' : newLead.status,
         assignedTo: currentUser.name,
         assignedToId: currentUser.id,
       });
-      toast.success('Lead added successfully!');
+      toast.success(newLead.paymentMode === 'Prepaid' ? 'Prepaid Order landed in Confirmed section!' : 'Lead added successfully!');
       setIsDialogOpen(false);
       setNewLead({ 
         name: '', 
@@ -148,6 +150,7 @@ export function LeadManager() {
         value: 0, 
         source: 'Direct',
         affiliateId: '',
+        paymentMode: 'COD',
         status: 'New' 
       });
     } catch (error) {
@@ -167,6 +170,7 @@ export function LeadManager() {
         total: lead.value || 0,
         agentId: currentUser.id,
         agentName: currentUser.name,
+        paymentMode: lead.paymentMode || 'COD',
       });
 
       // Update lead status to reflect it's now an order
@@ -327,14 +331,26 @@ export function LeadManager() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">Affiliate No. / Code</label>
-                  <Input 
-                    placeholder="AFF-001" 
-                    value={newLead.affiliateId}
-                    onChange={e => setNewLead({...newLead, affiliateId: e.target.value})}
-                    className="border-slate-200"
-                  />
+                  <label className="text-sm font-bold text-slate-600">Payment Mode</label>
+                  <select 
+                    value={newLead.paymentMode}
+                    onChange={e => setNewLead({...newLead, paymentMode: e.target.value as 'COD' | 'Prepaid'})}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-bold"
+                  >
+                    <option value="COD">💵 Cash on Delivery (COD)</option>
+                    <option value="Prepaid">💳 Prepaid (Online)</option>
+                  </select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-600">Affiliate No. / Code</label>
+                <Input 
+                  placeholder="AFF-001" 
+                  value={newLead.affiliateId}
+                  onChange={e => setNewLead({...newLead, affiliateId: e.target.value})}
+                  className="border-slate-200"
+                />
               </div>
 
               <DialogFooter className="pt-4 sticky bottom-0 bg-white">
@@ -414,9 +430,17 @@ export function LeadManager() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary" className={cn(statusColors[lead.status])}>
-                    {lead.status}
-                  </Badge>
+                  <div className="flex flex-col gap-1.5">
+                    <Badge variant="secondary" className={cn(statusColors[lead.status])}>
+                      {lead.status}
+                    </Badge>
+                    <Badge className={cn(
+                      "w-fit text-[9px] font-black uppercase tracking-tighter px-1.5 h-4 border-none",
+                      lead.paymentMode === 'Prepaid' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                    )}>
+                      {lead.paymentMode === 'Prepaid' ? '💳 Prepaid' : '💵 COD'}
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="font-semibold text-slate-700">
                   ${lead.value.toLocaleString()}
@@ -513,6 +537,17 @@ export function LeadManager() {
                     <option value="Capsule Ads">Capsule Ads</option>
                     <option value="Gel Ads">Gel Ads</option>
                     <option value="WhatsApp">WhatsApp</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Mode</label>
+                  <select 
+                    defaultValue={selectedLead.paymentMode}
+                    onChange={(e) => dataService.updateLead(selectedLead.id, { paymentMode: e.target.value as 'COD' | 'Prepaid' })}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
+                  >
+                    <option value="COD">💵 Cash on Delivery</option>
+                    <option value="Prepaid">💳 Prepaid (Online)</option>
                   </select>
                 </div>
                 <div className="space-y-2">

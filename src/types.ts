@@ -13,6 +13,7 @@ export interface Lead {
   value: number;
   source: string; // e.g., 'Capsule Ads', 'Gel Ads', 'Website'
   affiliateId?: string; // Tracking ID or number
+  paymentMode: 'COD' | 'Prepaid';
   assignedTo: string;
   assignedToId: string;
   createdAt: string;
@@ -43,6 +44,7 @@ export interface Order {
   agentName?: string;
   source?: string;
   affiliateId?: string;
+  paymentMode: 'COD' | 'Prepaid';
   createdAt: string;
 }
 

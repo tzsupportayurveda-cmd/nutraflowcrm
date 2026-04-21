@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { dataService } from '@/src/services/dataService';
 import { Lead } from '@/src/types';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export function ConfirmedLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -48,6 +49,7 @@ export function ConfirmedLeads() {
         customerName: lead.name,
         status: 'Processing',
         total: lead.value,
+        paymentMode: lead.paymentMode || 'COD',
         agentId: lead.assignedToId || '',
         agentName: lead.assignedTo || 'System',
         items: [{ productId: lead.package || 'Default Pack', quantity: 1, price: lead.value }]
@@ -118,6 +120,7 @@ export function ConfirmedLeads() {
               <TableRow>
                 <TableHead>Customer</TableHead>
                 <TableHead>Pack Details</TableHead>
+                <TableHead>Payment Mode</TableHead>
                 <TableHead>Value</TableHead>
                 <TableHead>Confirmed By</TableHead>
                 <TableHead className="text-right">Action</TableHead>
@@ -138,6 +141,14 @@ export function ConfirmedLeads() {
                   <TableCell>
                     <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-widest px-2.5 py-1">
                       {lead.package || "Not Specified"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={cn(
+                      "font-black text-[9px] uppercase tracking-tighter px-2 h-5 border-none",
+                      lead.paymentMode === 'Prepaid' ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700 shadow-none"
+                    )}>
+                      {lead.paymentMode === 'Prepaid' ? '💳 Prepaid/Paid' : '💵 COD'}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-bold text-emerald-600">₹{lead.value.toLocaleString()}</TableCell>

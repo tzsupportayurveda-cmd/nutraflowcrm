@@ -268,6 +268,8 @@ export function Settings() {
                     <span className="text-slate-700">"Capsule Ads" | "Gel Ads" | "Website"</span>
                     <span className="text-purple-600 font-bold">"affiliateId":</span>
                     <span className="text-slate-700">"AFF-123" // (Unique Tracking Number)</span>
+                    <span className="text-purple-600 font-bold">"paymentMode":</span>
+                    <span className="text-slate-700">"COD" | "Prepaid" // (Direct confirmation if Prepaid)</span>
                   </div>
                   <div className="pt-4 mt-4 border-t border-slate-200">
                     <p className="text-slate-400 mb-1">Example Payload:</p>
@@ -276,7 +278,8 @@ export function Settings() {
   "name": "John Doe",
   "phone": "9999999999",
   "source": "Capsule Ads",
-  "affiliateId": "AFF-001"
+  "affiliateId": "AFF-001",
+  "paymentMode": "Prepaid"
 }`}
                     </pre>
                   </div>

@@ -11,6 +11,7 @@ import {
 import { auth, signInWithGoogle } from '@/src/lib/firebase';
 import { dataService } from '@/src/services/dataService';
 import { User } from '@/src/types';
+import { toast } from 'sonner';
 
 const ADMIN_EMAIL = 'tzsupportayurveda@gmail.com';
 
@@ -44,7 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (fbUser) => {
       setLoading(true);
       setFirebaseUser(fbUser);
-      setError(null);
+      
+      // Only clear error if we are switching users or logging in a real user
+      // Avoid clearing error when sign-out is triggered by restriction logic
+      if (fbUser) {
+        setError(null);
+      }
       
       if (unsubscribeProfile) {
         unsubscribeProfile();
@@ -74,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(profile);
               }
             } else {
-              // Create default profile if missing during session
+              // ... same default profile logic
               const defaultProfile: User = {
                 id: fbUser.uid,
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
@@ -85,17 +91,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               };
               dataService.createUserProfile(defaultProfile);
             }
+            setLoading(false); // Set loading false ONLY after we have profile data
           });
-
         } else {
           setUser(null);
           setAdminUser(null);
           setImpersonatedUser(null);
+          setLoading(false); // Set loading false if not logged in
         }
       } catch (err: any) {
         console.error("Auth flow error:", err);
         setError("Login failed. Check connection.");
-      } finally {
         setLoading(false);
       }
     });
@@ -115,15 +121,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activeUser = impersonatedUser || user;
 
   const signIn = async () => {
-    // ... same
+    try {
+      setLoading(true);
+      setError(null);
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error("Google login failed:", err);
+      setError("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const login = async (email: string, pass: string) => {
-    // ... same
+    try {
+      setLoading(true);
+      setError(null);
+      await signInWithEmailAndPassword(auth, email, pass);
+      toast.success("Login request processed...");
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError("Aapka login fail ho gaya hai. Kripya email aur password check karein.");
+      toast.error("Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signup = async (email: string, pass: string, name: string) => {
-    // ... same
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(res.user, { displayName: name });
+      toast.success("Account request sent for approval!");
+    } catch (err: any) {
+      console.error("Signup failed:", err);
+      setError("Registration fail ho gaya. Shaayad ye email pehle se exist karta hai.");
+      toast.error("Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {

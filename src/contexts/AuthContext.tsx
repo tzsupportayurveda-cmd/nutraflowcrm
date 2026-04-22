@@ -167,11 +167,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      await sendPasswordResetEmail(auth, email);
-      toast.success("Password reset link aapke email par bhej diya gaya hai!");
+      
+      const actionCodeSettings = {
+        url: window.location.href, 
+        handleCodeInApp: true,
+      };
+
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      toast.success("Password reset link aapke email par bhej diya gaya hai! Kripya Spam folder bhi check karein.");
     } catch (err: any) {
       console.error("Password reset failed:", err);
-      setError("Password reset fail ho gaya. Kripya email check karein.");
+      let errorMessage = "Password reset fail ho gaya. Kripya details check karein.";
+      
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = "Ye email ID hamare system mein nahi mili.";
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = "Email ID galat hai.";
+      }
+      
+      setError(errorMessage);
       toast.error("Password reset failed");
     } finally {
       setLoading(false);

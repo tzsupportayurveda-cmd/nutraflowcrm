@@ -81,8 +81,10 @@ export function LeadManager() {
     address: '',
     city: '',
     pincode: '',
-    package: '',
-    value: 0,
+    package: '1 Bottle',
+    product: 'Advanced Gel Formula' as Lead['product'],
+    quantity: 1,
+    value: 2999,
     source: 'Direct',
     affiliateId: '',
     paymentMode: 'COD' as 'COD' | 'Prepaid',
@@ -223,8 +225,10 @@ export function LeadManager() {
         address: '', 
         city: '', 
         pincode: '', 
-        package: '', 
-        value: 0, 
+        package: '1 Bottle', 
+        product: 'Advanced Gel Formula',
+        quantity: 1,
+        value: 2999, 
         source: 'Direct',
         affiliateId: '',
         paymentMode: 'COD',
@@ -371,21 +375,41 @@ export function LeadManager() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">Package</label>
-                  <Input 
-                    placeholder="Starter Pack..." 
-                    value={newLead.package}
-                    onChange={e => setNewLead({...newLead, package: e.target.value})}
-                    className="border-slate-200"
-                  />
+                  <label className="text-sm font-bold text-slate-600">Product</label>
+                  <select 
+                    value={newLead.product}
+                    onChange={e => {
+                      const prod = e.target.value as any;
+                      setNewLead({...newLead, product: prod});
+                    }}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
+                  >
+                    <option value="Advanced Gel Formula">Advanced Gel Formula</option>
+                    <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps)</option>
+                    <option value="Booster 3X Pills">Booster 3X Pills</option>
+                    <option value="Booster Cream">Booster Cream</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">Lead Value ($)</label>
+                  <label className="text-sm font-bold text-slate-600">Quantity</label>
                   <Input 
                     type="number"
-                    value={newLead.value}
-                    onChange={e => setNewLead({...newLead, value: Number(e.target.value)})}
-                    className="border-slate-200"
+                    min="1"
+                    value={newLead.quantity}
+                    onChange={e => {
+                      const qty = Number(e.target.value) || 1;
+                      let newVal = 2999;
+                      if (qty === 2) newVal = 3999;
+                      else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500);
+
+                      setNewLead({
+                        ...newLead, 
+                        quantity: qty, 
+                        value: newVal,
+                        package: `${qty} Bottle${qty !== 1 ? 's' : ''}`
+                      });
+                    }}
+                    className="border-slate-200 font-bold"
                   />
                 </div>
               </div>
@@ -715,8 +739,10 @@ export function LeadManager() {
                       className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold"
                     >
                       <option value="">Select Product...</option>
-                      <option value="Thunder of Zosh Gel">Thunder of Zosh Gel</option>
-                      <option value="Thunder of Zosh Capsule (30 pills)">Thunder of Zosh Capsule (30 pills)</option>
+                      <option value="Advanced Gel Formula">Advanced Gel Formula</option>
+                      <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps)</option>
+                      <option value="Booster 3X Pills">Booster 3X Pills</option>
+                      <option value="Booster Cream">Booster Cream</option>
                     </select>
                   </div>
                   <div className="space-y-2">

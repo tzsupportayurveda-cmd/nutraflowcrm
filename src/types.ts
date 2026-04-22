@@ -31,7 +31,7 @@ export interface Lead {
   updatedAt?: string;
   notes?: string;
   package?: string;
-  product?: 'Thunder of Zosh Gel' | 'Thunder of Zosh Capsule (30 pills)';
+  product?: 'Advanced Gel Formula' | 'Zosh Tablets (30 Caps)' | 'Booster 3X Pills' | 'Booster Cream';
   quantity?: number;
   callbackTime?: string;
   history?: HistoryItem[];

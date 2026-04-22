@@ -37,7 +37,7 @@ async function startServer() {
         address = '', 
         city = '', 
         pincode = '', 
-        product = 'Thunder of Zosh Gel',
+        product = 'Advanced Gel Formula',
         quantity = 1,
         affiliateId = ''
       } = req.body;

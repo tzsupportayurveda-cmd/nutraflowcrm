@@ -1,5 +1,5 @@
 
-export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Wrong Number' | 'Rejected' | 'Not Interested';
+export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Dispatched' | 'Wrong Number' | 'Rejected' | 'Not Interested';
 
 export interface HistoryItem {
   id: string;
@@ -14,6 +14,7 @@ export interface HistoryItem {
 
 export interface Lead {
   id: string;
+  serialId?: string; // Numeric ID starting from 01
   name: string;
   email: string;
   phone: string;
@@ -23,7 +24,7 @@ export interface Lead {
   status: LeadStatus;
   value: number;
   source: string; // e.g., 'Capsule Ads', 'Gel Ads', 'Website'
-  affiliateId?: string; // Tracking ID or number
+  affiliateId?: string; // Sequential numeric ID starting from 101
   paymentMode: 'COD' | 'Prepaid';
   assignedTo: string;
   assignedToId: string;

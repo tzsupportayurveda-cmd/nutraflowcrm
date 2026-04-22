@@ -68,6 +68,35 @@ export const dataService = {
     }
   },
 
+  // --- Utility for Sequential IDs ---
+  async getNextId(counterPath: string, startFrom: number): Promise<string> {
+    try {
+      const { runTransaction } = await import('firebase/firestore');
+      const counterRef = doc(db, 'metadata', 'counters');
+      const nextId = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        let count = startFrom;
+        
+        if (!counterDoc.exists()) {
+          transaction.set(counterRef, { [counterPath]: startFrom + 1 });
+        } else {
+          const data = counterDoc.data();
+          count = data && data[counterPath] ? data[counterPath] : startFrom;
+          transaction.update(counterRef, { [counterPath]: count + 1 });
+        }
+        return count;
+      });
+      
+      if (counterPath === 'leads') {
+        return nextId < 10 ? `0${nextId}` : `${nextId}`;
+      }
+      return `${nextId}`;
+    } catch (e) {
+      console.error("Failed to generate sequential ID:", e);
+      return Math.floor(Math.random() * 1000).toString();
+    }
+  },
+
   // --- Leads ---
   subscribeLeads(callback: (leads: Lead[]) => void) {
     const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
@@ -85,8 +114,16 @@ export const dataService = {
 
   async addLead(lead: Omit<Lead, 'id' | 'createdAt'>): Promise<string> {
     try {
+      const serialId = await this.getNextId('leads', 1);
+      let finalAffiliateId = lead.affiliateId;
+      if (!finalAffiliateId) {
+        finalAffiliateId = await this.getNextId('affiliates', 101);
+      }
+
       const docRef = await addDoc(collection(db, 'leads'), {
         ...lead,
+        serialId,
+        affiliateId: finalAffiliateId,
         createdAt: new Date().toISOString()
       });
       return docRef.id;
@@ -213,8 +250,10 @@ export const dataService = {
 
   async addOrder(order: Omit<Order, 'id' | 'createdAt'>): Promise<string> {
     try {
+      const orderId = await this.getNextId('order_serial', 1);
       const docRef = await addDoc(collection(db, 'orders'), {
         ...order,
+        orderSerial: orderId, // Adding a unique sequential serial for orders
         createdAt: new Date().toISOString()
       });
       return docRef.id;

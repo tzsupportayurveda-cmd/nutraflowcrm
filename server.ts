@@ -25,6 +25,29 @@ if (!getApps().length) {
 
 const db = getFirestore(firebaseConfig.firestoreDatabaseId);
 
+async function getNextId(counterPath: string, startFrom: number) {
+  try {
+    const counterRef = db.collection('metadata').doc('counters');
+    const result = await db.runTransaction(async (t) => {
+      const doc = await t.get(counterRef);
+      let count = startFrom;
+      
+      if (!doc.exists) {
+        t.set(counterRef, { [counterPath]: startFrom + 1 });
+      } else {
+        const data = doc.data();
+        count = data && data[counterPath] ? data[counterPath] : startFrom;
+        t.update(counterRef, { [counterPath]: count + 1 });
+      }
+      return count;
+    });
+    return result;
+  } catch (error) {
+    console.error(`Error generating ID for ${counterPath}:`, error);
+    return Math.floor(Math.random() * 1000); // Fallback
+  }
+}
+
 async function startServer() {
   // API Routes
   app.post('/api/webhook/lead', async (req, res) => {
@@ -39,11 +62,21 @@ async function startServer() {
         pincode = '', 
         product = 'Advanced Gel Formula',
         quantity = 1,
-        affiliateId = ''
+        affiliateId: providedAffiliateId = ''
       } = req.body;
       
       if (!name || !phone) {
         return res.status(400).json({ error: 'Name and Phone are required' });
+      }
+
+      // Generate Sequential IDs
+      const nextSerial = await getNextId('leads', 1);
+      const serialId = nextSerial < 10 ? `0${nextSerial}` : `${nextSerial}`;
+      
+      let finalAffiliateId = providedAffiliateId;
+      if (!finalAffiliateId) {
+        const nextAffId = await getNextId('affiliates', 101);
+        finalAffiliateId = `${nextAffId}`;
       }
 
       // Standard Pricing Logic: 1 bottle = 2999, 2 bottles = 3999
@@ -52,6 +85,7 @@ async function startServer() {
       else if (Number(quantity) > 2) value = 3999 + ((Number(quantity) - 2) * 1500);
 
       const leadData = {
+        serialId,
         name,
         email: email || '',
         phone,
@@ -62,7 +96,7 @@ async function startServer() {
         pincode,
         product,
         quantity: Number(quantity),
-        affiliateId,
+        affiliateId: finalAffiliateId,
         status: 'New',
         paymentMode: 'COD',
         assignedTo: 'Unassigned',

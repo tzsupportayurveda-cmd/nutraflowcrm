@@ -103,7 +103,9 @@ export function OrderManager() {
                 const Icon = statusIcons[order.status];
                 return (
                   <TableRow key={order.id} className="hover:bg-slate-50/50">
-                    <TableCell className="font-mono text-sm">{order.id}</TableCell>
+                    <TableCell className="font-mono text-sm font-bold text-blue-600">
+                      {order.orderSerial || order.id.substring(0, 5)}
+                    </TableCell>
                     <TableCell className="font-medium">{order.customerName}</TableCell>
                     <TableCell className="text-slate-500 text-sm">
                       {format(new Date(order.createdAt), 'MMM dd, yyyy')}

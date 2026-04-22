@@ -31,7 +31,7 @@ const navItems = [
   { id: 'leads', label: 'All Leads', icon: Users, roles: ['Admin', 'Manager', 'Sales'] },
   { id: 'confirmed', label: 'Confirmed Orders', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales'] },
   { id: 'inventory', label: 'Inventory', icon: Package, roles: ['Admin', 'Manager', 'Inventory'] },
-  { id: 'orders', label: 'Dispatched', icon: ShoppingCart, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'orders', label: 'Dispatched', icon: ShoppingCart, roles: ['Admin', 'Manager'] },
   { id: 'affiliate', label: 'Affiliates', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
   { id: 'team', label: 'Admin & Team', icon: ShieldCheck, roles: ['Admin'] },
   { id: 'settings', label: 'System Settings', icon: Settings, roles: ['Admin'] },

@@ -9,20 +9,68 @@ import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
 
 export function LandingPage() {
-  const { signIn, login, signup, error, loading } = useAuth();
+  const { signIn, login, signup, resetPassword, error, loading, user, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [view, setView] = useState<'login' | 'signup'>('login');
+  const [view, setView] = useState<'login' | 'signup' | 'forgot'>('login');
 
   const handleAction = (e: React.FormEvent) => {
     e.preventDefault();
     if (view === 'login') {
       login(email, password);
-    } else {
+    } else if (view === 'signup') {
       signup(email, password, name);
+    } else {
+      resetPassword(email);
     }
   };
+
+  if (user && user.status !== 'active') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 selection:bg-emerald-500/30 overflow-hidden relative">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-amber-500 rounded-full blur-[120px]"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[120px]"></div>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg bg-white/5 border border-white/10 rounded-[40px] p-10 backdrop-blur-xl shadow-2xl relative z-10 text-center space-y-8"
+        >
+          <div className="w-24 h-24 bg-amber-500/20 rounded-3xl flex items-center justify-center mx-auto ring-1 ring-amber-500/50">
+            <ShieldCheck className="w-12 h-12 text-amber-500 animate-pulse" />
+          </div>
+          
+          <div className="space-y-4">
+            <h2 className="text-3xl font-black tracking-tight">Abhi Ye Account <span className="text-amber-500">Waitlist</span> Mein Hai</h2>
+            <p className="text-slate-400 font-medium leading-relaxed">
+              Hello <span className="text-white font-bold">{user.name}</span>, aapka request admin ke paas approval ke liye bhej di gayi hai. <br/>
+              Jab admin aapko approve kar denge, tab aap CRM use kar payenge.
+            </p>
+          </div>
+
+          <div className="pt-4 flex flex-col gap-3">
+            <Button 
+              variant="outline" 
+              className="w-full h-14 bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-2xl font-bold uppercase tracking-widest text-xs"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Status
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full text-slate-500 hover:text-white"
+              onClick={signOut}
+            >
+              Log Out
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-emerald-500/30 overflow-hidden">
@@ -105,12 +153,16 @@ export function LandingPage() {
                 </button>
               </div>
 
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">{view === 'login' ? 'Secure Login' : 'Request Access'}</h2>
-                <p className="text-slate-500 text-sm font-medium italic">
-                  {view === 'login' ? 'Authorized personnel access only.' : 'Provide your details for admin approval.'}
-                </p>
-              </div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    {view === 'login' ? 'Secure Login' : view === 'signup' ? 'Request Access' : 'Reset Secret Key'}
+                  </h2>
+                  <p className="text-slate-500 text-sm font-medium italic">
+                    {view === 'login' ? 'Authorized personnel access only.' : 
+                     view === 'signup' ? 'Provide your details for admin approval.' : 
+                     'Enter your email to receive a reset link.'}
+                  </p>
+                </div>
 
               {error && (
                 <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-200">
@@ -143,17 +195,30 @@ export function LandingPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Create Secret Key</label>
-                  <Input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                {view !== 'forgot' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between ml-1">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Secret Key</label>
+                      {view === 'login' && (
+                        <button 
+                          type="button" 
+                          onClick={() => setView('forgot')}
+                          className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
+                        >
+                          Forgot?
+                        </button>
+                      )}
+                    </div>
+                    <Input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <Button 
@@ -161,9 +226,22 @@ export function LandingPage() {
                     type="submit"
                     disabled={loading}
                   >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : <ShieldCheck className="w-5 h-5 mr-2" />)}
-                    {view === 'login' ? 'Enter Workspace' : 'Send Request'}
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
+                      view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
+                      view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
+                      <Zap className="w-5 h-5 mr-2" />
+                    )}
+                    {view === 'login' ? 'Enter Workspace' : view === 'signup' ? 'Send Request' : 'Send Reset Link'}
                   </Button>
+                  {view === 'forgot' && (
+                    <button 
+                      type="button" 
+                      onClick={() => setView('login')}
+                      className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest"
+                    >
+                      Back to Login
+                    </button>
+                  )}
                 </div>
               </form>
 

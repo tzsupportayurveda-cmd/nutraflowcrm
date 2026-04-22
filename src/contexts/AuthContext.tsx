@@ -6,7 +6,8 @@ import {
   signOut as firebaseSignOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth, signInWithGoogle } from '@/src/lib/firebase';
 import { dataService } from '@/src/services/dataService';
@@ -23,6 +24,7 @@ interface AuthContextType {
   signIn: () => Promise<void>;
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string, name: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   impersonate: (user: User | null) => void;
   isImpersonating: boolean;
@@ -69,15 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (snapshot.exists()) {
               const profile = { id: snapshot.id, ...snapshot.data() } as User;
               
-              // Force logout check
+              if (isAdminUser) setAdminUser(profile);
+              setUser(profile);
+              
+              // No longer forcing logout here to allow "Pending Approval" UI
               if (profile.status !== 'active' && !isAdminUser) {
-                setUser(null);
-                setAdminUser(null);
-                firebaseSignOut(auth);
-                setError('Aapka account restricted hai. Kripya admin se sampark karein.');
-              } else {
-                if (isAdminUser) setAdminUser(profile);
-                setUser(profile);
+                setError('Account approval pending. Kripya admin se sampark karein.');
               }
             } else {
               // ... same default profile logic
@@ -164,6 +163,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await sendPasswordResetEmail(auth, email);
+      toast.success("Password reset link aapke email par bhej diya gaya hai!");
+    } catch (err: any) {
+      console.error("Password reset failed:", err);
+      setError("Password reset fail ho gaya. Kripya email check karein.");
+      toast.error("Password reset failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       setImpersonatedUser(null);
@@ -183,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn, 
       login, 
       signup, 
+      resetPassword,
       signOut,
       impersonate,
       isImpersonating: !!impersonatedUser,

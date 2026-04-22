@@ -56,7 +56,7 @@ function CRMApp() {
     );
   }
 
-  if (!user) {
+  if (!user || (user.status !== 'active' && user.role !== 'Admin')) {
     return <LandingPage />;
   }
 

@@ -190,6 +190,23 @@ export const dataService = {
     }
   },
 
+  async addInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, 'inventory'), item);
+      return docRef.id;
+    } catch (e) {
+      return handleFirestoreError(e, 'create', 'inventory');
+    }
+  },
+
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { status });
+    } catch (e) {
+      handleFirestoreError(e, 'update', `orders/${orderId}`);
+    }
+  },
+
   async toggleUserStatus(uid: string, currentStatus: string): Promise<void> {
     try {
       const newStatus = currentStatus === 'active' ? 'pending' : 'active';

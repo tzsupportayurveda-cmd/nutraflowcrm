@@ -50,16 +50,19 @@ export interface InventoryItem {
 
 export interface Order {
   id: string;
+  orderSerial?: string;
   customerId: string;
   customerName: string;
   items: { productId: string; quantity: number; price: number }[];
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Dispatched' | 'Delivered' | 'Cancelled';
   total: number;
   agentId?: string;
   agentName?: string;
   source?: string;
   affiliateId?: string;
   paymentMode: 'COD' | 'Prepaid';
+  shippingAddress?: string;
+  phone?: string;
   createdAt: string;
 }
 

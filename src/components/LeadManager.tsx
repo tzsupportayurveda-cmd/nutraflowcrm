@@ -56,6 +56,7 @@ const statusColors: Record<LeadStatus, string> = {
   'No Answer': 'bg-amber-100 text-amber-700 hover:bg-amber-100',
   'Call Back': 'bg-purple-100 text-purple-700 hover:bg-purple-100',
   'Confirmed': 'bg-indigo-600 text-white hover:bg-indigo-700',
+  'Dispatched': 'bg-teal-600 text-white hover:bg-teal-700',
   'Wrong Number': 'bg-slate-200 text-slate-700 hover:bg-slate-200',
   'Rejected': 'bg-red-100 text-red-700 hover:bg-red-100',
   'Not Interested': 'bg-slate-100 text-slate-500 hover:bg-slate-100',

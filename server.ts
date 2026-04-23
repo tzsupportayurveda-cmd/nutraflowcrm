@@ -8,8 +8,21 @@ import { getFirestore } from 'firebase-admin/firestore';
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Add a simple request logger
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Explicitly handle preflight
+app.options('*', cors());
 
 // Initialize Firebase Admin
 import fs from 'fs';
@@ -124,8 +137,12 @@ async function startServer() {
         value: value
       });
     } catch (error) {
-      console.error('Webhook Error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown Server Error';
+      console.error('Webhook Error:', errorMessage);
+      res.status(500).json({ 
+        error: 'Internal Server Error', 
+        details: errorMessage 
+      });
     }
   });
 

@@ -141,9 +141,16 @@ export function OrderManager() {
                     </TableCell>
                     <TableCell className="font-black text-slate-900">₹{order.total.toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={cn(orderStatusColors[order.status], "gap-1 border-transparent px-2.5 py-0.5 font-bold shadow-sm")}>
-                        <Icon className="w-3 h-3" /> {order.status}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="secondary" className={cn(orderStatusColors[order.status], "gap-1 border-transparent px-2.5 py-0.5 font-bold shadow-sm w-fit")}>
+                          <Icon className="w-3 h-3" /> {order.status}
+                        </Badge>
+                        {order.trackingId && (
+                          <div className="flex items-center gap-1 text-[10px] font-black text-blue-600 uppercase tracking-tighter">
+                            <Truck className="w-2.5 h-2.5" /> {order.courier || 'Tracking'}: {order.trackingId}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
                       <TableCell className="text-sm font-bold text-emerald-600">
@@ -241,6 +248,30 @@ export function OrderManager() {
                     ))}
                   </div>
                 </div>
+
+                {selectedOrder.trackingId && (
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-2 mt-4">
+                    <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                       <Truck className="w-3.5 h-3.5" /> Live Tracking Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Courier</span>
+                        <p className="font-black text-emerald-900">{selectedOrder.courier}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Tracking ID</span>
+                        <p className="font-black text-emerald-900">{selectedOrder.trackingId}</p>
+                      </div>
+                    </div>
+                    {selectedOrder.deliveryNotes && (
+                      <div className="pt-2 border-t border-emerald-100 mt-1">
+                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Delivery Note</span>
+                        <p className="text-xs font-bold text-emerald-800 italic">"{selectedOrder.deliveryNotes}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

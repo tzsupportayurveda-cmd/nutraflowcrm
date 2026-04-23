@@ -60,6 +60,7 @@ const statusColors: Record<LeadStatus, string> = {
   'Wrong Number': 'bg-slate-200 text-slate-700 hover:bg-slate-200',
   'Rejected': 'bg-red-100 text-red-700 hover:bg-red-100',
   'Not Interested': 'bg-slate-100 text-slate-500 hover:bg-slate-100',
+  'Cancelled': 'bg-red-50 text-red-500 hover:bg-red-100',
 };
 
 export function LeadManager() {
@@ -866,7 +867,7 @@ export function LeadManager() {
                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block">Update Status</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected', 'Not Interested'] as LeadStatus[]).map(status => (
+                    {(['No Answer', 'Call Back', 'Interested', 'Confirmed', 'Wrong Number', 'Rejected', 'Not Interested', 'Cancelled'] as LeadStatus[]).map(status => (
                       <Button
                         key={status}
                         variant={editableLead.status === status ? 'default' : 'outline'}
@@ -965,16 +966,30 @@ export function LeadManager() {
               </div>
             </div>
 
-            <div className="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 z-20">
-              <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close Modal</Button>
-              {hasChanges && (
-                <Button 
-                  onClick={handleSaveChanges}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-10 shadow-lg shadow-blue-500/20 font-bold"
-                >
-                  Save Everything
-                </Button>
-              )}
+            <div className="p-4 bg-white border-t border-slate-100 flex justify-between items-center sticky bottom-0 z-20">
+              <Button 
+                variant="ghost" 
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                onClick={() => {
+                  if (confirm('Are you sure you want to delete this lead?')) {
+                    handleDelete(editableLead.id);
+                    setIsDetailOpen(false);
+                  }
+                }}
+              >
+                Delete Lead
+              </Button>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={() => setIsDetailOpen(false)} className="rounded-xl">Close Modal</Button>
+                {hasChanges && (
+                  <Button 
+                    onClick={handleSaveChanges}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-10 shadow-lg shadow-blue-500/20 font-bold"
+                  >
+                    Save Everything
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}

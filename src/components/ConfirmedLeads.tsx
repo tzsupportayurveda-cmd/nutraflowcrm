@@ -57,11 +57,11 @@ export function ConfirmedLeads() {
 
       // 2. Update lead status to indicate it has been converted/dispatched
       await dataService.updateLead(lead.id, { 
-        status: 'Confirmed', // Keep as confirmed but note it
+        status: 'Dispatched', 
         notes: (lead.notes || '') + '\n[Dispatched to Orders]' 
       });
       
-      toast.success(`Order created for ${lead.name}`);
+      toast.success(`Order created for ${lead.name} and moved to Dispatched section.`);
     } catch (e) {
       toast.error('Failed to create order');
     }

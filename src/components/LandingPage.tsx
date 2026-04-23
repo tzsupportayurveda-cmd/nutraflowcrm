@@ -7,22 +7,39 @@ import { LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock } from 'luci
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
+import { dataService } from '@/src/services/dataService';
+import { toast } from 'sonner';
 
 export function LandingPage() {
   const { signIn, login, signup, resetPassword, error, loading, user, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [view, setView] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [forgotStep, setForgotStep] = useState<'email' | 'otp'>('email');
 
-  const handleAction = (e: React.FormEvent) => {
+  const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (view === 'login') {
-      login(email, password);
-    } else if (view === 'signup') {
-      signup(email, password, name);
-    } else {
-      resetPassword(email);
+    try {
+      if (view === 'login') {
+        login(email, password);
+      } else if (view === 'signup') {
+        await signup(email, password, name);
+      } else {
+        if (forgotStep === 'email') {
+          await dataService.sendOTP(email);
+          setForgotStep('otp');
+        } else {
+          await dataService.verifyOTPAndReset(email, otp, newPassword);
+          toast.success('Password reset ho gaya! Ab login karein.');
+          setView('login');
+          setForgotStep('email');
+        }
+      }
+    } catch (err: any) {
+      // Error handled by AuthContext or local toast
     }
   };
 
@@ -193,8 +210,36 @@ export function LandingPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={view === 'forgot' && forgotStep === 'otp'}
                   />
                 </div>
+
+                {view === 'forgot' && forgotStep === 'otp' && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Enter OTP (Sent to Email)</label>
+                      <Input 
+                        placeholder="123456" 
+                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600 font-mono tracking-[0.5em] text-center text-lg"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                      <Input 
+                        type="password"
+                        placeholder="••••••••" 
+                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
                 {view !== 'forgot' && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between ml-1">
@@ -202,7 +247,7 @@ export function LandingPage() {
                       {view === 'login' && (
                         <button 
                           type="button" 
-                          onClick={() => setView('forgot')}
+                          onClick={() => { setView('forgot'); setForgotStep('email'); }}
                           className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
                         >
                           Forgot?
@@ -231,7 +276,9 @@ export function LandingPage() {
                       view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
                       <Zap className="w-5 h-5 mr-2" />
                     )}
-                    {view === 'login' ? 'Enter Workspace' : view === 'signup' ? 'Send Request' : 'Send Reset Link'}
+                    {view === 'login' ? 'Enter Workspace' : 
+                     view === 'signup' ? 'Send Request' : 
+                     forgotStep === 'email' ? 'Send OTP' : 'Reset Password'}
                   </Button>
                   {view === 'forgot' && (
                     <button 

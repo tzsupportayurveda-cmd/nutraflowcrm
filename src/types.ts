@@ -1,5 +1,5 @@
 
-export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Dispatched' | 'Wrong Number' | 'Rejected' | 'Not Interested';
+export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Dispatched' | 'Wrong Number' | 'Rejected' | 'Not Interested' | 'Cancelled';
 
 export interface HistoryItem {
   id: string;
@@ -54,7 +54,7 @@ export interface Order {
   customerId: string;
   customerName: string;
   items: { productId: string; quantity: number; price: number }[];
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Dispatched' | 'Delivered' | 'Cancelled';
+  status: 'Pending' | 'Processing' | 'Shipped' | 'Dispatched' | 'Out for Delivery' | 'Delivered' | 'Returned' | 'RTO' | 'Cancelled';
   total: number;
   agentId?: string;
   agentName?: string;
@@ -63,14 +63,24 @@ export interface Order {
   paymentMode: 'COD' | 'Prepaid';
   shippingAddress?: string;
   phone?: string;
+  trackingId?: string;
+  courier?: string;
+  deliveryNotes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer';
+  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery';
   avatar?: string;
   status: 'active' | 'pending' | 'blocked';
+}
+
+export interface OTPRecord {
+  email: string;
+  otp: string;
+  expiresAt: number;
 }

@@ -9,8 +9,6 @@ import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
 import { dataService } from '@/src/services/dataService';
 import { toast } from 'sonner';
-import { dataService } from '@/src/services/dataService';
-import { toast } from 'sonner';
 
 export function LandingPage() {
   const { signIn, login, signup, resetPassword, error, loading, user, signOut } = useAuth();
@@ -41,7 +39,8 @@ export function LandingPage() {
         }
       }
     } catch (err: any) {
-      // Error handled by AuthContext or local toast
+      console.error('Action Failed:', err);
+      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.');
     }
   };
 

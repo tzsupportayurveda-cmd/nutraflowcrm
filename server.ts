@@ -24,14 +24,16 @@ async function sendEmail(to: string, subject: string, text: string) {
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     console.error('[EMAIL ERROR] Missing SMTP configuration. Email not sent.');
-    console.log(`[FALLBACK LOG] To: ${to}, Subject: ${subject}, Body: ${text}`);
-    return;
+    throw new Error('SMTP configuration missing. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS in environment variables.');
   }
 
+  const isGmail = SMTP_HOST.toLowerCase().includes('gmail.com');
+  
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: parseInt(SMTP_PORT || '587'),
     secure: SMTP_PORT === '465',
+    service: isGmail ? 'gmail' : undefined,
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
@@ -39,15 +41,22 @@ async function sendEmail(to: string, subject: string, text: string) {
   });
 
   try {
+    console.log(`[EMAIL ATTEMPT] Sending to: ${to}...`);
     const info = await transporter.sendMail({
       from: SMTP_FROM || '"TOZ Flow" <no-reply@tozflow.com>',
       to,
       subject,
       text,
     });
-    console.log(`[EMAIL SENT] Message ID: ${info.messageId}`);
-  } catch (error) {
-    console.error('[EMAIL SENDING FAILED]', error);
+    console.log(`[EMAIL SUCCESS] Message ID: ${info.messageId}`);
+    return info;
+  } catch (error: any) {
+    console.error('[EMAIL ERROR] Full details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response
+    });
     throw error;
   }
 }
@@ -204,8 +213,11 @@ async function startServer() {
         `Aapka OTP reset ke liye hai: ${otp}. Ye 10 minute tak valid hai.`
       );
       res.json({ success: true, message: 'OTP sent to your email' });
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to send OTP email. Please check server configuration.' });
+    } catch (err: any) {
+      console.error('OTP Send Error:', err);
+      res.status(500).json({ 
+        error: `Email failed: ${err.message || 'Unknown error'}. Make sure you use an App Password.` 
+      });
     }
   });
 

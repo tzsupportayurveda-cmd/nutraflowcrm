@@ -236,52 +236,6 @@ export const dataService = {
     }
   },
 
-  async addInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<string> {
-    try {
-      const docRef = await addDoc(collection(db, 'inventory'), item);
-      return docRef.id;
-    } catch (e) {
-      return handleFirestoreError(e, 'create', 'inventory');
-    }
-  },
-
-  async updateOrderStatus(orderId: string, status: Order['status'], extras: Partial<Order> = {}): Promise<void> {
-    try {
-      await updateDoc(doc(db, 'orders', orderId), { 
-        status, 
-        ...extras,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (e) {
-      handleFirestoreError(e, 'update', `orders/${orderId}`);
-    }
-  },
-
-  // --- Auth Extensions ---
-  async sendOTP(email: string): Promise<void> {
-    const response = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to send OTP');
-    }
-  },
-
-  async verifyOTPAndReset(email: string, otp: string, newPass: string): Promise<void> {
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, newPassword: newPass })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Verification failed');
-    }
-  },
-
   async toggleUserStatus(uid: string, currentStatus: string): Promise<void> {
     try {
       const newStatus = currentStatus === 'active' ? 'pending' : 'active';

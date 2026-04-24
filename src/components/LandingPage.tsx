@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
 import { dataService } from '@/src/services/dataService';
 import { toast } from 'sonner';
+import { dataService } from '@/src/services/dataService';
+import { toast } from 'sonner';
 
 export function LandingPage() {
   const { signIn, login, signup, resetPassword, error, loading, user, signOut } = useAuth();

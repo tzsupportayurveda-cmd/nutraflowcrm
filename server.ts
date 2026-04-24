@@ -4,6 +4,7 @@ import path from 'path';
 import cors from 'cors';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import nodemailer from 'nodemailer';
 
 const app = express();
 const PORT = 3000;
@@ -19,9 +20,36 @@ app.use(express.json());
 const otpStore = new Map<string, { otp: string, expires: number }>();
 
 async function sendEmail(to: string, subject: string, text: string) {
-  // Since we don't have SMTP credentials, we log it. 
-  // In real production, use nodemailer with process.env.SMTP_HOST etc.
-  console.log(`[EMAIL SENDING] To: ${to}, Subject: ${subject}, Body: ${text}`);
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error('[EMAIL ERROR] Missing SMTP configuration. Email not sent.');
+    console.log(`[FALLBACK LOG] To: ${to}, Subject: ${subject}, Body: ${text}`);
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: parseInt(SMTP_PORT || '587'),
+    secure: SMTP_PORT === '465',
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM || '"TOZ Flow" <no-reply@tozflow.com>',
+      to,
+      subject,
+      text,
+    });
+    console.log(`[EMAIL SENT] Message ID: ${info.messageId}`);
+  } catch (error) {
+    console.error('[EMAIL SENDING FAILED]', error);
+    throw error;
+  }
 }
 
 // Add a simple request logger
@@ -169,13 +197,16 @@ async function startServer() {
 
     otpStore.set(email.toLowerCase(), { otp, expires });
 
-    await sendEmail(
-      email, 
-      'Password Reset OTP - TOZ Flow', 
-      `Aapka OTP reset ke liye hai: ${otp}. Ye 10 minute tak valid hai.`
-    );
-
-    res.json({ success: true, message: 'OTP sent to your email' });
+    try {
+      await sendEmail(
+        email, 
+        'Password Reset OTP - TOZ Flow', 
+        `Aapka OTP reset ke liye hai: ${otp}. Ye 10 minute tak valid hai.`
+      );
+      res.json({ success: true, message: 'OTP sent to your email' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to send OTP email. Please check server configuration.' });
+    }
   });
 
   app.post('/api/auth/verify-otp', async (req, res) => {

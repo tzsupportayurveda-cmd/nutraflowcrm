@@ -120,15 +120,123 @@ export const dataService = {
         finalAffiliateId = await this.getNextId('affiliates', 101);
       }
 
+      // Automatically assign if no assignment provided
+      let finalAssignedTo = lead.assignedTo;
+      let finalAssignedToId = lead.assignedToId;
+
+      if (!finalAssignedToId) {
+        const assignment = await this.assignLeadRoundRobin();
+        if (assignment) {
+          finalAssignedTo = assignment.name;
+          finalAssignedToId = assignment.id;
+        }
+      }
+
       const docRef = await addDoc(collection(db, 'leads'), {
         ...lead,
+        assignedTo: finalAssignedTo || 'Unassigned',
+        assignedToId: finalAssignedToId || '',
         serialId,
         affiliateId: finalAffiliateId,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        history: lead.history || []
       });
       return docRef.id;
     } catch (e) {
       return handleFirestoreError(e, 'create', 'leads');
+    }
+  },
+
+  async assignLeadRoundRobin(): Promise<{ id: string; name: string } | null> {
+    try {
+      const salesQuery = query(collection(db, 'users'), where('role', '==', 'Sales'), where('status', '==', 'active'));
+      const snapshot = await getDocs(salesQuery);
+      const salesMembers = snapshot.docs.map(d => ({ id: d.id, name: (d.data() as User).name }));
+      
+      if (salesMembers.length === 0) return null;
+
+      const counterRef = doc(db, 'metadata', 'round_robin');
+      const { runTransaction } = await import('firebase/firestore');
+      
+      const assignedMember = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        let currentIndex = 0;
+        
+        if (counterDoc.exists()) {
+          const data = counterDoc.data();
+          currentIndex = data?.lastIndex ?? 0;
+        }
+
+        const nextIndex = (currentIndex + 1) % salesMembers.length;
+        transaction.set(counterRef, { lastIndex: nextIndex }, { merge: true });
+        
+        return salesMembers[currentIndex];
+      });
+
+      return assignedMember;
+    } catch (e) {
+      console.error("Round Robin Assignment failed:", e);
+      return null;
+    }
+  },
+
+  async bulkUpdateLeads(leadIds: string[], updates: Partial<Lead>): Promise<void> {
+    try {
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      const timestamp = new Date().toISOString();
+      const currentUser = auth.currentUser;
+      
+      leadIds.forEach(id => {
+        const ref = doc(db, 'leads', id);
+        batch.update(ref, { 
+          ...updates, 
+          updatedAt: timestamp 
+        });
+
+        // Optionally add history for each
+        if (updates.status || updates.assignedToId) {
+          const historyItem: HistoryItem = {
+            id: Math.random().toString(36).substring(2, 9),
+            type: updates.status ? 'status_change' : 'assignment',
+            updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+            updatedById: currentUser?.uid || 'system',
+            timestamp,
+            note: `Bulk action: ${updates.status ? `Status to ${updates.status}` : `Assigned to ${updates.assignedTo}`}`
+          };
+          batch.update(ref, { history: arrayUnion(historyItem) });
+        }
+      });
+      
+      await batch.commit();
+    } catch (e) {
+      handleFirestoreError(e, 'bulk_update', 'leads');
+    }
+  },
+
+  async getCustomerHistory(phone?: string, email?: string): Promise<{ leads: Lead[], orders: Order[] }> {
+    try {
+      let leads: Lead[] = [];
+      let orders: Order[] = [];
+
+      if (phone) {
+        const leadQ = query(collection(db, 'leads'), where('phone', '==', phone));
+        const orderQ = query(collection(db, 'orders'), where('phone', '==', phone));
+        const [leadSnap, orderSnap] = await Promise.all([getDocs(leadQ), getDocs(orderQ)]);
+        leads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() } as Lead));
+        orders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      } else if (email) {
+        const leadQ = query(collection(db, 'leads'), where('email', '==', email));
+        const orderQ = query(collection(db, 'orders'), where('customerId', '==', email)); // Assuming customerId might be email
+        const [leadSnap, orderSnap] = await Promise.all([getDocs(leadQ), getDocs(orderQ)]);
+        leads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() } as Lead));
+        orders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      }
+
+      return { leads, orders };
+    } catch (e) {
+      console.error("History fetch failed:", e);
+      return { leads: [], orders: [] };
     }
   },
 

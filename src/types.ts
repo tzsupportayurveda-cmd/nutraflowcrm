@@ -1,15 +1,26 @@
 
-export type LeadStatus = 'New' | 'Interested' | 'No Answer' | 'Call Back' | 'Confirmed' | 'Dispatched' | 'Wrong Number' | 'Rejected' | 'Not Interested' | 'Cancelled';
+export type LeadStatus = 
+  | 'New Lead' 
+  | 'Attempt 1' 
+  | 'Attempt 2' 
+  | 'Attempt 3' 
+  | 'Interested' 
+  | 'Order Confirmed' 
+  | 'Dispatched'
+  | 'RTO/Cancelled'
+  | 'Call Back'
+  | 'Not Interested';
 
 export interface HistoryItem {
   id: string;
-  type: 'status_change' | 'assignment' | 'note_added' | 'other';
+  type: 'status_change' | 'assignment' | 'note_added' | 'call_log' | 'order_placed' | 'other';
   from?: string;
   to?: string;
   updatedBy: string;
   updatedById: string;
   timestamp: string;
   note?: string;
+  callDuration?: number; // in seconds
 }
 
 export interface Lead {

@@ -7,10 +7,10 @@ export const MOCK_USERS: User[] = [
 ];
 
 export const MOCK_LEADS: Lead[] = [
-  { id: 'L1', name: 'Raj Kumar', email: 'raj@example.com', phone: '+91 9876543210', status: 'New', value: 5000, source: 'Website', assignedTo: 'Zaid Khan', assignedToId: '1', createdAt: '2024-03-20T10:00:00Z', address: '123 Main St', city: 'Mumbai', pincode: '400001', paymentMode: 'COD' },
+  { id: 'L1', name: 'Raj Kumar', email: 'raj@example.com', phone: '+91 9876543210', status: 'New Lead', value: 5000, source: 'Website', assignedTo: 'Zaid Khan', assignedToId: '1', createdAt: '2024-03-20T10:00:00Z', address: '123 Main St', city: 'Mumbai', pincode: '400001', paymentMode: 'COD' },
   { id: 'L2', name: 'Anita Desai', email: 'anita@example.com', phone: '+91 9876543211', status: 'Call Back', value: 12000, source: 'Referral', assignedTo: 'Sarah Smith', assignedToId: '2', createdAt: '2024-03-19T14:30:00Z', address: '456 West St', city: 'Delhi', pincode: '110001', paymentMode: 'COD' },
   { id: 'L3', name: 'Vikram Singh', email: 'vikram@example.com', phone: '+91 9876543212', status: 'Interested', value: 25000, source: 'LinkedIn', assignedTo: 'Zaid Khan', assignedToId: '1', createdAt: '2024-03-18T09:15:00Z', address: '789 North St', city: 'Bangalore', pincode: '560001', paymentMode: 'COD' },
-  { id: 'L4', name: 'Priya Sharma', email: 'priya@example.com', phone: '+91 9876543213', status: 'Confirmed', value: 8500, source: 'Google Ads', assignedTo: 'Sarah Smith', assignedToId: '2', createdAt: '2024-03-17T11:45:00Z', address: '321 South St', city: 'Chennai', pincode: '600001', paymentMode: 'COD' },
+  { id: 'L4', name: 'Priya Sharma', email: 'priya@example.com', phone: '+91 9876543213', status: 'Order Confirmed', value: 8500, source: 'Google Ads', assignedTo: 'Sarah Smith', assignedToId: '2', createdAt: '2024-03-17T11:45:00Z', address: '321 South St', city: 'Chennai', pincode: '600001', paymentMode: 'COD' },
 ];
 
 export const MOCK_INVENTORY: InventoryItem[] = [

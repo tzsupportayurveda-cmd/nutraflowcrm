@@ -35,7 +35,7 @@ export function ConfirmedLeads() {
   useEffect(() => {
     const unsub = dataService.subscribeLeads((data) => {
       // Only show confirmed leads
-      setLeads(data.filter(l => l.status === 'Confirmed'));
+      setLeads(data.filter(l => l.status === 'Order Confirmed'));
       setLoading(false);
     });
     return () => unsub();

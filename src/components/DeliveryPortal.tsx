@@ -59,7 +59,7 @@ export function DeliveryPortal() {
 
   useEffect(() => {
     // Only fetch orders that are ready for delivery or handled by delivery
-    const unsub = dataService.subscribeOrders((data) => {
+    const unsub = dataService.subscribeOrders(currentUser, (data) => {
       const relevant = data.filter(o => 
         ['Shipped', 'Dispatched', 'Out for Delivery', 'Delivered', 'Returned', 'RTO'].includes(o.status)
       );
@@ -67,7 +67,7 @@ export function DeliveryPortal() {
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   const handleStatusUpdate = async () => {
     if (!selectedOrder) return;

@@ -67,16 +67,16 @@ export function OrderManager() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
-    const unsub = dataService.subscribeOrders((data) => {
+    const unsub = dataService.subscribeOrders(currentUser, (data) => {
       setOrders(data);
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   const filteredOrders = orders.filter(order => {
-    if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') return true;
-    return order.agentId === currentUser?.id;
+    if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'Inventory' || currentUser?.role === 'Delivery') return true;
+    return order.assignedToId === currentUser?.id;
   });
 
   const [shipData, setShipData] = useState({

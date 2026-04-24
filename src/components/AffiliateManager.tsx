@@ -39,13 +39,13 @@ export function AffiliateManager() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const unsubLeads = dataService.subscribeLeads(setLeads);
-    const unsubOrders = dataService.subscribeOrders(setOrders);
+    const unsubLeads = dataService.subscribeLeads(user, setLeads);
+    const unsubOrders = dataService.subscribeOrders(user, setOrders);
     return () => {
       unsubLeads();
       unsubOrders();
     };
-  }, []);
+  }, [user]);
 
   const isMarketer = user?.role === 'Marketer';
 

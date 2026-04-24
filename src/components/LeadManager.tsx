@@ -92,7 +92,7 @@ export function LeadManager() {
   });
 
   useEffect(() => {
-    const unsub = dataService.subscribeLeads((data) => {
+    const unsub = dataService.subscribeLeads(currentUser, (data) => {
       setLeads(data);
       setLoading(false);
     });
@@ -426,11 +426,11 @@ export function LeadManager() {
             <>
               <div className="h-6 w-px bg-white/20 mx-2" />
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger render={
                   <Button variant="ghost" className="h-8 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase">
                     Assign To
                   </Button>
-                </DropdownMenuTrigger>
+                } />
                 <DropdownMenuContent className="w-48 bg-white z-[100]">
                   {team.filter(t => t.role === 'Sales').map(agent => (
                     <DropdownMenuItem key={agent.id} onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}>

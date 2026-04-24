@@ -62,8 +62,8 @@ export function Dashboard() {
   const [loadingTasks, setLoadingTasks] = useState(true);
 
   useEffect(() => {
-    const unsubLeads = dataService.subscribeLeads(setLeads);
-    const unsubOrders = dataService.subscribeOrders(setOrders);
+    const unsubLeads = dataService.subscribeLeads(currentUser, setLeads);
+    const unsubOrders = dataService.subscribeOrders(currentUser, setOrders);
     const unsubInv = dataService.subscribeInventory(setInventory);
 
     let unsubTasks = () => {};

@@ -27,19 +27,22 @@ import { Lead } from '@/src/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+import { useAuth } from '@/src/contexts/AuthContext';
+
 export function ConfirmedLeads() {
+  const { user: currentUser } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const unsub = dataService.subscribeLeads((data) => {
+    const unsub = dataService.subscribeLeads(currentUser, (data) => {
       // Only show confirmed leads
       setLeads(data.filter(l => l.status === 'Order Confirmed'));
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [currentUser]);
 
   const handleDispatch = async (lead: Lead) => {
     try {

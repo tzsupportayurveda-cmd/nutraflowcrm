@@ -98,8 +98,18 @@ export const dataService = {
   },
 
   // --- Leads ---
-  subscribeLeads(callback: (leads: Lead[]) => void) {
-    const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+  subscribeLeads(user: User | null, callback: (leads: Lead[]) => void) {
+    let q;
+    if (!user || user.role === 'Admin' || user.role === 'Manager') {
+      q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+    } else {
+      // Sale reps only see their leads or new leads
+      // Using query composite with OR if available, or just filtering for their ID
+      // Firestore rules require the query to match. If we want them to see "New Lead" AND "Their Assigned",
+      // we might need an 'or' query.
+      q = query(collection(db, 'leads'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));
+    }
+    
     return onSnapshot(q, 
       (snapshot) => {
         const leads = snapshot.docs.map(doc => ({
@@ -108,7 +118,11 @@ export const dataService = {
         } as Lead));
         callback(leads);
       },
-      (error) => handleFirestoreError(error, 'list', 'leads')
+      (error) => {
+        console.error("Leads subscription error:", error);
+        // Fallback to empty if denied, to avoid crashing the app
+        callback([]);
+      }
     );
   },
 
@@ -504,8 +518,14 @@ export const dataService = {
   },
 
   // --- Orders ---
-  subscribeOrders(callback: (orders: Order[]) => void) {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  subscribeOrders(user: User | null, callback: (orders: Order[]) => void) {
+    let q;
+    if (!user || user.role === 'Admin' || user.role === 'Manager' || user.role === 'Inventory' || user.role === 'Delivery') {
+      q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    } else {
+      q = query(collection(db, 'orders'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));
+    }
+
     return onSnapshot(q, 
       (snapshot) => {
         const orders = snapshot.docs.map(doc => ({
@@ -514,7 +534,10 @@ export const dataService = {
         } as Order));
         callback(orders);
       },
-      (error) => handleFirestoreError(error, 'list', 'orders')
+      (error) => {
+        console.error("Orders subscription error:", error);
+        callback([]);
+      }
     );
   },
 

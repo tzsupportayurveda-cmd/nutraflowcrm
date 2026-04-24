@@ -19,19 +19,20 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
       );
     }
 
     function isSales() {
-      return isSignedIn() && (
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
       );
     }
 
     function isInventory() {
-      return isSignedIn() && (
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Inventory' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
       );
@@ -50,23 +51,29 @@ service cloud.firestore {
 
     // 2. Leads
     match /leads/{leadId} {
-      allow read: if isSales() && (
-        resource.data.role == 'Admin' || // Admin check helper needs consistent use
-        isAdmin() || 
-        resource.data.assignedToId == request.auth.uid ||
-        resource.data.status == 'New'
-      );
+      function canReadLead() {
+        return isAdmin() || 
+               resource.data.assignedToId == request.auth.uid ||
+               resource.data.status == 'New Lead';
+      }
+
+      allow read: if isSales() && canReadLead();
+      
       allow create: if isSales() && 
-        request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'createdAt']) &&
-        request.resource.data.name is string &&
-        request.resource.data.name.size() < 200;
+        request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'phone', 'createdAt']) &&
+        request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
+
       allow update: if isSales() && (
         isAdmin() ||
         (resource.data.assignedToId == request.auth.uid && 
-         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['assignedToId', 'createdAt']))
+         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 'quantity', 'address', 'city', 'pincode', 'name', 'phone', 'email']))
       );
       allow delete: if isAdmin();
     }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
 
     // 3. Inventory
     match /inventory/{itemId} {

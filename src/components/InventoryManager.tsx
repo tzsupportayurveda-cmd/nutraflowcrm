@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
-import { InventoryItem } from '@/src/types';
+import { InventoryItem, Lead } from '@/src/types';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 
 export function InventoryManager() {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -54,12 +55,25 @@ export function InventoryManager() {
   });
 
   useEffect(() => {
-    const unsub = dataService.subscribeInventory((data) => {
+    const unsubInv = dataService.subscribeInventory((data) => {
       setItems(data);
+    });
+
+    // Subscribe to leads to see "Pending" demand
+    const unsubLeads = dataService.subscribeLeads({ id: 'system', role: 'Admin' } as any, (data) => {
+      setLeads(data);
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      unsubInv();
+      unsubLeads();
+    };
   }, []);
+
+  const getPendingDemand = (productName: string) => {
+    return leads.filter(l => l.product === productName && !['Order Confirmed', 'RTO/Cancelled'].includes(l.status)).length;
+  };
 
   const handleAddProduct = async () => {
     if (!newItem.name || !newItem.sku) {
@@ -184,6 +198,7 @@ export function InventoryManager() {
                 <TableHead>Category</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Stock Level</TableHead>
+                <TableHead>Pending Leads</TableHead>
                 <TableHead>Unit Price</TableHead>
                 <TableHead>Total Value</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -215,6 +230,14 @@ export function InventoryManager() {
                         ></div>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className={cn(
+                      "font-black text-[10px] uppercase tracking-widest",
+                      getPendingDemand(item.name) > 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                    )}>
+                      {getPendingDemand(item.name)} pending
+                    </Badge>
                   </TableCell>
                   <TableCell className="font-medium text-slate-600">₹{item.price.toFixed(2)}</TableCell>
                   <TableCell className="font-bold text-slate-900">₹{(item.stock * item.price).toLocaleString()}</TableCell>

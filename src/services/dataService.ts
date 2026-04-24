@@ -252,6 +252,15 @@ export const dataService = {
     }
   },
 
+  async getInventoryList(): Promise<InventoryItem[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'inventory'));
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+    } catch (e) {
+      return handleFirestoreError(e, 'list', 'inventory');
+    }
+  },
+
   // --- Audit Logs ---
   async addAuditLog(action: string, entityId: string, entityType: string, details: string) {
     try {

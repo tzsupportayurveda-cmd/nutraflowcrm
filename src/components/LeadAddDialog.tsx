@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -9,8 +9,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LeadStatus } from '../types';
+import { LeadStatus, InventoryItem } from '../types';
 import { toast } from 'sonner';
+import { dataService } from '../services/dataService';
 
 interface LeadAddDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface LeadAddDialogProps {
 
 export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -27,13 +29,28 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
     city: '',
     address: '',
     pincode: '',
-    product: 'Advanced Gel Formula' as any,
+    product: '',
     quantity: 1,
-    value: 2999,
+    value: 0,
     source: 'Direct',
     paymentMode: 'COD' as 'COD' | 'Prepaid',
     status: 'New Lead' as LeadStatus
   });
+
+  useEffect(() => {
+    if (open) {
+      dataService.getInventoryList().then(items => {
+        setInventory(items);
+        if (items.length > 0 && !formData.product) {
+          setFormData(prev => ({ 
+            ...prev, 
+            product: items[0].name,
+            value: items[0].price 
+          }));
+        }
+      });
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +70,9 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
         city: '',
         address: '',
         pincode: '',
-        product: 'Advanced Gel Formula',
+        product: inventory[0]?.name || '',
         quantity: 1,
-        value: 2999,
+        value: inventory[0]?.price || 0,
         source: 'Direct',
         paymentMode: 'COD',
         status: 'New Lead'
@@ -68,12 +85,23 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
     }
   };
 
+  const handleProductChange = (productName: string) => {
+    const item = inventory.find(i => i.name === productName);
+    if (item) {
+      const qty = formData.quantity;
+      setFormData({ 
+        ...formData, 
+        product: productName, 
+        value: item.price * qty 
+      });
+    }
+  };
+
   const handleQtyChange = (val: string) => {
     const qty = parseInt(val) || 1;
-    let newVal = 2999;
-    if (qty === 2) newVal = 3999;
-    else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500);
-    setFormData({ ...formData, quantity: qty, value: newVal });
+    const item = inventory.find(i => i.name === formData.product);
+    const price = item ? item.price : 2999;
+    setFormData({ ...formData, quantity: qty, value: price * qty });
   };
 
   return (
@@ -105,26 +133,55 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
           </div>
 
           <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">City / Location</Label>
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address (Optional)</Label>
             <Input 
-              placeholder="e.g. Mumbai, Maharashtra" 
-              value={formData.city}
-              onChange={e => setFormData({...formData, city: e.target.value})}
+              type="email"
+              placeholder="customer@example.com" 
+              value={formData.email}
+              onChange={e => setFormData({...formData, email: e.target.value})}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Full Shipping Address</Label>
+            <textarea 
+              placeholder="House No, Street, Landmark..." 
+              value={formData.address}
+              onChange={e => setFormData({...formData, address: e.target.value})}
+              className="w-full min-h-[80px] p-3 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Product</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">City / Location</Label>
+              <Input 
+                placeholder="e.g. Mumbai" 
+                value={formData.city}
+                onChange={e => setFormData({...formData, city: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pincode</Label>
+              <Input 
+                placeholder="400001" 
+                value={formData.pincode}
+                onChange={e => setFormData({...formData, pincode: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package / Product</Label>
               <select 
                 value={formData.product}
-                onChange={e => setFormData({...formData, product: e.target.value as any})}
+                onChange={e => handleProductChange(e.target.value)}
                 className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
               >
-                <option value="Advanced Gel Formula">Advanced Gel Formula</option>
-                <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps)</option>
-                <option value="Booster 3X Pills">Booster 3X Pills</option>
-                <option value="Booster Cream">Booster Cream</option>
+                {inventory.map(item => (
+                  <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                ))}
               </select>
             </div>
             <div className="space-y-2">

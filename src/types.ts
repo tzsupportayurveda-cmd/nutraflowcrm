@@ -1,8 +1,5 @@
 export type LeadStatus = 
   | 'New Lead' 
-  | 'Attempt 1' 
-  | 'Attempt 2' 
-  | 'Attempt 3' 
   | 'Interested' 
   | 'Order Confirmed' 
   | 'Dispatched'
@@ -10,7 +7,11 @@ export type LeadStatus =
   | 'Delivered'
   | 'RTO/Cancelled'
   | 'Call Back'
-  | 'Not Interested';
+  | 'No Answer'
+  | 'Not Interested'
+  | 'Fake/Spam'
+  | 'Unavailable'
+  | 'Language Issue';
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'RTO';
 

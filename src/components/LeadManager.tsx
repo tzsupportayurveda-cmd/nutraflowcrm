@@ -27,7 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Lead, LeadStatus, User, Order } from '@/src/types';
+import { Lead, LeadStatus, User, Order, InventoryItem } from '@/src/types';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import { 
@@ -55,9 +55,6 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const statusColors: Record<LeadStatus, string> = {
   'New Lead': 'bg-blue-50 text-blue-700 border-blue-200',
-  'Attempt 1': 'bg-orange-50 text-orange-700 border-orange-200',
-  'Attempt 2': 'bg-amber-50 text-amber-700 border-amber-200',
-  'Attempt 3': 'bg-rose-50 text-rose-700 border-rose-200',
   'Interested': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'Order Confirmed': 'bg-emerald-600 text-white border-emerald-600',
   'Dispatched': 'bg-blue-600 text-white border-blue-600',
@@ -65,7 +62,11 @@ const statusColors: Record<LeadStatus, string> = {
   'Delivered': 'bg-emerald-500 text-white border-emerald-500',
   'RTO/Cancelled': 'bg-red-50 text-red-700 border-red-200',
   'Call Back': 'bg-purple-50 text-purple-700 border-purple-200',
+  'No Answer': 'bg-orange-50 text-orange-700 border-orange-200',
   'Not Interested': 'bg-slate-100 text-slate-500 border-slate-200',
+  'Fake/Spam': 'bg-gray-100 text-gray-500 border-gray-200',
+  'Unavailable': 'bg-amber-50 text-amber-700 border-amber-200',
+  'Language Issue': 'bg-indigo-50 text-indigo-700 border-indigo-200',
 };
 
 export function LeadManager() {
@@ -81,6 +82,10 @@ export function LeadManager() {
   const { user: currentUser } = useAuth();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [callbackDialogOpen, setCallbackDialogOpen] = useState(false);
+  const [tempCallbackTime, setTempCallbackTime] = useState('');
+  const [targetLeadId, setTargetLeadId] = useState<string | null>(null);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -96,6 +101,8 @@ export function LeadManager() {
       setLeads(data);
       setLoading(false);
     });
+
+    dataService.getInventoryList().then(setInventory);
 
     // Also fetch team for assignment (Admin only)
     let teamUnsub = () => {};
@@ -128,6 +135,13 @@ export function LeadManager() {
   }, [selectedLead, isDetailOpen]);
 
   const handleUpdateStatus = async (leadId: string, status: LeadStatus, extras: Partial<Lead> = {}) => {
+    if (status === 'Call Back' && !extras.callbackTime) {
+      setTargetLeadId(leadId);
+      setTempCallbackTime('');
+      setCallbackDialogOpen(true);
+      return;
+    }
+
     try {
       const currentLead = leads.find(l => l.id === leadId);
       await dataService.updateLead(leadId, { status, ...extras });
@@ -140,8 +154,21 @@ export function LeadManager() {
           to: status,
           updatedBy: currentUser.name,
           updatedById: currentUser.id,
-          note: extras.callbackTime ? `Callback scheduled for: ${extras.callbackTime}` : undefined
+          note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
         });
+
+        // Create a task if callback is set
+        if (status === 'Call Back' && extras.callbackTime) {
+          await dataService.addTask({
+            title: `Callback requested for ${currentLead.name}`,
+            description: `Auto-generated callback task for lead ${currentLead.serialId || leadId}`,
+            dueDate: extras.callbackTime,
+            userId: currentUser.id,
+            leadId: leadId,
+            status: 'pending',
+            type: 'callback'
+          });
+        }
       }
       
       toast.success(`Status updated to ${status}`);
@@ -152,6 +179,13 @@ export function LeadManager() {
     } catch (e) {
       toast.error('Failed to update status');
     }
+  };
+
+  const submitCallback = () => {
+    if (!tempCallbackTime || !targetLeadId) return;
+    handleUpdateStatus(targetLeadId, 'Call Back', { callbackTime: tempCallbackTime });
+    setCallbackDialogOpen(false);
+    setTargetLeadId(null);
   };
 
   const handleAssign = async (leadId: string, agent: User) => {
@@ -357,12 +391,26 @@ export function LeadManager() {
           >
             <option value="All">All Status</option>
             <option value="New Lead">New Lead</option>
-            <option value="Attempt 1">Attempt 1</option>
-            <option value="Attempt 2">Attempt 2</option>
-            <option value="Attempt 3">Attempt 3</option>
+            <option value="Call Back">Call Back</option>
+            <option value="No Answer">No Answer</option>
             <option value="Interested">Interested</option>
+            <option value="Not Interested">Not Interested</option>
             <option value="Order Confirmed">Order Confirmed</option>
+            <option value="Fake/Spam">Fake/Spam</option>
+            <option value="Unavailable">Unavailable</option>
+            <option value="Language Issue">Language Issue</option>
             <option value="RTO/Cancelled">RTO/Cancelled</option>
+          </select>
+
+          <select 
+            value={filters.product}
+            onChange={e => setFilters({...filters, product: e.target.value})}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+          >
+            <option value="All">All Products</option>
+            {inventory.map(item => (
+              <option key={item.id} value={item.name}>{item.name}</option>
+            ))}
           </select>
 
           <select 
@@ -411,7 +459,7 @@ export function LeadManager() {
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase opacity-80">Change Status:</span>
             <div className="flex gap-1 overflow-x-auto no-scrollbar">
-              {['Attempt 1', 'Attempt 2', 'Attempt 3', 'Interested', 'RTO/Cancelled'].map(s => (
+              {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
                 <button 
                   key={s}
                   onClick={() => handleBulkUpdate(s as LeadStatus)}
@@ -513,10 +561,16 @@ export function LeadManager() {
                   <TableCell className="px-2">
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{lead.name}</span>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium tracking-tight">
-                        <Phone className="w-2.5 h-2.5" /> {lead.phone}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-medium tracking-tight">
+                        <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {lead.phone}</span>
+                        {lead.email && (
+                          <>
+                            <span className="opacity-30">•</span>
+                            <span className="flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {lead.email}</span>
+                          </>
+                        )}
                         <span className="opacity-30">•</span>
-                        <span>{lead.city || 'Unknown'}</span>
+                        <span>{lead.city || 'No City'}</span>
                       </div>
                     </div>
                   </TableCell>
@@ -625,32 +679,114 @@ export function LeadManager() {
                       </div>
                     </div>
                     <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Email</label>
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+                        <Mail className="w-3.5 h-3.5 text-blue-500" />
+                        <Input 
+                          value={editableLead.email || ''} 
+                          onChange={e => { setEditableLead({...editableLead, email: e.target.value}); setHasChanges(true); }} 
+                          className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full"
+                          placeholder="No email provided"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Full Address</label>
+                    <div className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 mt-1" />
+                      <textarea 
+                        value={editableLead.address || ''} 
+                        onChange={e => { setEditableLead({...editableLead, address: e.target.value}); setHasChanges(true); }} 
+                        className="w-full bg-transparent border-none shadow-none focus:ring-0 text-sm font-bold min-h-[60px] resize-none outline-none"
+                        placeholder="No address provided"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">City</label>
                       <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
                         <MapPin className="w-3.5 h-3.5 text-orange-500" />
                         <Input value={editableLead.city || ''} onChange={e => { setEditableLead({...editableLead, city: e.target.value}); setHasChanges(true); }} className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full" />
                       </div>
                     </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pincode</label>
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+                        <MapPin className="w-3.5 h-3.5 text-purple-500" />
+                        <Input value={editableLead.pincode || ''} onChange={e => { setEditableLead({...editableLead, pincode: e.target.value}); setHasChanges(true); }} className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full" placeholder="Ex: 400001" />
+                      </div>
+                    </div>
                   </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Package / Product</label>
+                      <select 
+                        value={editableLead.product || ''}
+                        onChange={e => {
+                          const prodName = e.target.value;
+                          const item = inventory.find(i => i.name === prodName);
+                          setEditableLead({
+                            ...editableLead, 
+                            product: prodName,
+                            value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
+                      >
+                        {inventory.map(item => (
+                          <option key={item.id} value={item.name}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
                 </div>
 
-                {/* Status Update Quick Bar */}
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Pipeline Progress</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Attempt 1', 'Attempt 2', 'Attempt 3', 'Interested', 'Order Confirmed', 'RTO/Cancelled', 'Not Interested'].map(s => (
-                      <Button 
-                        key={s}
-                        variant={editableLead.status === s ? 'default' : 'outline'}
-                        onClick={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
-                        className={cn(
-                          "h-8 text-[10px] font-black uppercase tracking-widest px-3 rounded-lg",
-                          editableLead.status === s ? "bg-slate-900 text-white" : "border-slate-200 text-slate-500 hover:text-slate-900"
-                        )}
-                      >
-                        {s}
-                      </Button>
-                    ))}
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Pipeline Status</label>
+                  <div className="flex items-center gap-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg">
+                          <CheckCircle className="w-4 h-4" /> Change Status
+                          <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[300px] p-2 bg-white z-[100] rounded-xl shadow-2xl border-slate-200">
+                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest p-2">Select New Status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {[
+                          'Call Back', 
+                          'No Answer', 
+                          'Interested', 
+                          'Not Interested', 
+                          'Fake/Spam', 
+                          'Unavailable', 
+                          'Language Issue',
+                          'Order Confirmed',
+                          'RTO/Cancelled'
+                        ].map(s => (
+                          <DropdownMenuItem 
+                            key={s} 
+                            onSelect={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
+                            className="h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
+                          >
+                            <Badge variant="outline" className={cn("mr-3 h-2 w-2 rounded-full p-0 border-none", statusColors[s as LeadStatus]?.split(' ')[0])} />
+                            {s}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {editableLead.status === 'Call Back' && editableLead.callbackTime && (
+                      <div className="flex flex-col items-center p-2 bg-purple-50 border border-purple-100 rounded-xl">
+                        <span className="text-[9px] font-black text-purple-400 uppercase tracking-tighter leading-none mb-1">Scheduled Callback</span>
+                        <span className="text-xs font-black text-purple-700">{new Date(editableLead.callbackTime).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -663,20 +799,24 @@ export function LeadManager() {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-emerald-700/60 uppercase">Product</label>
+                      <label className="text-[10px] font-bold text-emerald-700/60 uppercase">Package</label>
                       <select 
                         value={editableLead.product || ''}
                         onChange={e => {
-                          const prod = e.target.value as any;
-                          setEditableLead({...editableLead, product: prod});
+                          const prodName = e.target.value;
+                          const item = inventory.find(i => i.name === prodName);
+                          setEditableLead({
+                            ...editableLead, 
+                            product: prodName,
+                            value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
+                          });
                           setHasChanges(true);
                         }}
                         className="w-full h-10 bg-white border border-emerald-100 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20"
                       >
-                        <option value="Advanced Gel Formula">Advanced Gel Formula</option>
-                        <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps)</option>
-                        <option value="Booster 3X Pills">Booster 3X Pills</option>
-                        <option value="Booster Cream">Booster Cream</option>
+                        {inventory.map(item => (
+                          <option key={item.id} value={item.name}>{item.name}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1">
@@ -687,10 +827,9 @@ export function LeadManager() {
                         value={editableLead.quantity || 1} 
                         onChange={e => {
                           const qty = parseInt(e.target.value) || 1;
-                          let newVal = 2999;
-                          if (qty === 2) newVal = 3999;
-                          else if (qty > 2) newVal = 3999 + ((qty - 2) * 1500);
-                          setEditableLead({...editableLead, quantity: qty, value: newVal});
+                          const item = inventory.find(i => i.name === editableLead.product);
+                          const price = item ? item.price : (editableLead.value / (editableLead.quantity || 1));
+                          setEditableLead({...editableLead, quantity: qty, value: price * qty});
                           setHasChanges(true);
                         }}
                         className="h-10 bg-white border-emerald-100 rounded-xl font-bold" 
@@ -791,6 +930,41 @@ export function LeadManager() {
             </div>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Callback Scheduler Dialog */}
+    <Dialog open={callbackDialogOpen} onOpenChange={setCallbackDialogOpen}>
+      <DialogContent className="sm:max-w-[400px] rounded-2xl bg-white border-none shadow-2xl p-6 z-[120]">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black uppercase tracking-tight text-slate-800 flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-purple-600" /> Schedule Call Back
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Date & Time</label>
+            <Input 
+              type="datetime-local" 
+              className="h-12 rounded-xl border-slate-200 font-bold focus:ring-purple-500/20"
+              value={tempCallbackTime}
+              onChange={(e) => setTempCallbackTime(e.target.value)}
+            />
+          </div>
+          <p className="text-[10px] text-slate-400 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+            A task will be automatically created and you'll be reminded to call this customer at the scheduled time.
+          </p>
+        </div>
+        <DialogFooter className="gap-2 sm:justify-end">
+          <Button variant="ghost" className="h-10 text-xs font-bold uppercase tracking-widest text-slate-400" onClick={() => setCallbackDialogOpen(false)}>Cancel</Button>
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700 h-10 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-purple-500/20 px-8" 
+            onClick={submitCallback}
+            disabled={!tempCallbackTime}
+          >
+            Schedule Callback
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>

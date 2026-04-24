@@ -426,11 +426,9 @@ export function LeadManager() {
             <>
               <div className="h-6 w-px bg-white/20 mx-2" />
               <DropdownMenu>
-                <DropdownMenuTrigger render={
-                  <Button variant="ghost" className="h-8 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase">
-                    Assign To
-                  </Button>
-                } />
+                <DropdownMenuTrigger className="h-8 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase inline-flex items-center transition-colors outline-none">
+                  Assign To
+                </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 bg-white z-[100]">
                   {team.filter(t => t.role === 'Sales').map(agent => (
                     <DropdownMenuItem key={agent.id} onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}>

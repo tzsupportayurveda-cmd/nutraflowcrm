@@ -100,11 +100,9 @@ export function InventoryManager() {
           </Button>
           
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger render={
-              <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-                <Box className="w-4 h-4" /> New Product
-              </Button>
-            } />
+            <DialogTrigger className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-bold h-10 px-4 rounded-lg inline-flex items-center transition-colors">
+              <Box className="w-4 h-4" /> New Product
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Product</DialogTitle>

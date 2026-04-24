@@ -99,14 +99,13 @@ export const dataService = {
 
   // --- Leads ---
   subscribeLeads(user: User | null, callback: (leads: Lead[]) => void) {
+    if (!user) return () => {};
+    
     let q;
-    if (!user || user.role === 'Admin' || user.role === 'Manager') {
+    if (['Admin', 'Manager', 'Marketer'].includes(user.role)) {
       q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
     } else {
-      // Sale reps only see their leads or new leads
-      // Using query composite with OR if available, or just filtering for their ID
-      // Firestore rules require the query to match. If we want them to see "New Lead" AND "Their Assigned",
-      // we might need an 'or' query.
+      // Sales reps only see their leads
       q = query(collection(db, 'leads'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));
     }
     
@@ -120,7 +119,6 @@ export const dataService = {
       },
       (error) => {
         console.error("Leads subscription error:", error);
-        // Fallback to empty if denied, to avoid crashing the app
         callback([]);
       }
     );
@@ -519,8 +517,10 @@ export const dataService = {
 
   // --- Orders ---
   subscribeOrders(user: User | null, callback: (orders: Order[]) => void) {
+    if (!user) return () => {};
+    
     let q;
-    if (!user || user.role === 'Admin' || user.role === 'Manager' || user.role === 'Inventory' || user.role === 'Delivery') {
+    if (['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer'].includes(user.role)) {
       q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     } else {
       q = query(collection(db, 'orders'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));

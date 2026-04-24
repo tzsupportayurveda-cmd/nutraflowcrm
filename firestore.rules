@@ -25,21 +25,20 @@ service cloud.firestore {
     }
 
     function isSales() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Sales', 'Marketer', 'Manager'])
       );
     }
 
-    function isInventory() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Inventory' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin'
-      );
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    function hasRole(role) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
 
     // 1. User Profiles
@@ -52,19 +51,21 @@ service cloud.firestore {
     // 2. Leads
     match /leads/{leadId} {
       function canReadLead() {
+        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
         return isAdmin() || 
+               userRole in ['Marketer', 'Manager', 'Inventory', 'Delivery'] ||
                resource.data.assignedToId == request.auth.uid ||
                resource.data.status == 'New Lead';
       }
 
-      allow read: if isSales() && canReadLead();
+      allow read: if isStaff() && canReadLead();
       
-      allow create: if isSales() && 
+      allow create: if isStaff() && 
         request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'phone', 'createdAt']) &&
         request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
         request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
 
-      allow update: if isSales() && (
+      allow update: if isStaff() && (
         isAdmin() ||
         (resource.data.assignedToId == request.auth.uid && 
          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 'quantity', 'address', 'city', 'pincode', 'name', 'phone', 'email']))
@@ -78,16 +79,37 @@ service cloud.firestore {
     // 3. Inventory
     match /inventory/{itemId} {
       allow read: if isSignedIn();
-      allow write: if isInventory();
+      allow write: if hasRole('Inventory') || isAdmin();
     }
 
     // 4. Orders
     match /orders/{orderId} {
-      allow read: if isSales();
-      allow create: if isSales() && 
-        request.resource.data.keys().hasAll(['customerId', 'items', 'status', 'total']);
-      allow update: if isSales();
+      function canReadOrder() {
+        return isAdmin() || 
+               hasRole('Manager') || 
+               hasRole('Inventory') || 
+               hasRole('Delivery') || 
+               hasRole('Marketer') ||
+               resource.data.assignedToId == request.auth.uid;
+      }
+      allow read: if isStaff() && canReadOrder();
+      allow create: if isStaff();
+      allow update: if isStaff();
       allow delete: if isAdmin();
+    }
+
+    // 5. Tasks
+    match /tasks/{taskId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSales();
+      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // 6. Logs
+    match /logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
     }
   }
 }

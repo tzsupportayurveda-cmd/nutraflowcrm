@@ -755,6 +755,21 @@ export function LeadManager() {
                     </div>
                 </div>
 
+                {hasChanges && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-emerald-900 uppercase">Unsaved Changes</span>
+                      <span className="text-[10px] text-emerald-600 font-bold">You have modified lead data</span>
+                    </div>
+                    <Button 
+                      onClick={handleSaveChanges} 
+                      className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl"
+                    >
+                      Save Profile
+                    </Button>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Pipeline Status</label>
                   <div className="flex items-center gap-3">
@@ -765,7 +780,7 @@ export function LeadManager() {
                           <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[300px] p-2 bg-white z-[100] rounded-xl shadow-2xl border-slate-200">
+                      <DropdownMenuContent className="w-[300px] p-2 bg-white z-[1100] rounded-xl shadow-2xl border-slate-200">
                         <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest p-2">Select New Status</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {[
@@ -781,7 +796,7 @@ export function LeadManager() {
                         ].map(s => (
                           <DropdownMenuItem 
                             key={s} 
-                            onClick={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
+                            onSelect={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
                             className="h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
                           >
                             <Badge variant="outline" className={cn("mr-3 h-2 w-2 rounded-full p-0 border-none", statusColors[s as LeadStatus]?.split(' ')[0])} />

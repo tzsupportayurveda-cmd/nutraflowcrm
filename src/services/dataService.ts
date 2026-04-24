@@ -16,7 +16,7 @@ import {
   arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '@/src/lib/firebase';
-import { Lead, InventoryItem, Order, User, HistoryItem } from '@/src/types';
+import { Lead, InventoryItem, Order, User, HistoryItem, Task, AuditLog } from '@/src/types';
 
 // Generic error handler
 const handleFirestoreError = (error: any, operation: string, path: string | null = null) => {
@@ -240,13 +240,154 @@ export const dataService = {
     }
   },
 
+  // --- Audit Logs ---
+  async addAuditLog(action: string, entityId: string, entityType: string, details: string) {
+    try {
+      const user = auth.currentUser;
+      const userData = user ? await this.getUserProfile(user.uid) : null;
+      
+      await addDoc(collection(db, 'logs'), {
+        userId: user?.uid || 'system',
+        userName: userData?.name || user?.email || 'System',
+        action,
+        entityId,
+        entityType,
+        details,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error("Audit log failed:", e);
+    }
+  },
+
+  // --- Tasks & Refills ---
+  async addTask(task: Omit<Task, 'id'>) {
+    try {
+      await addDoc(collection(db, 'tasks'), task);
+    } catch (e) {
+      handleFirestoreError(e, 'create', 'tasks');
+    }
+  },
+
+  subscribeTasks(userId: string, callback: (tasks: Task[]) => void) {
+    const q = query(
+      collection(db, 'tasks'), 
+      where('userId', '==', userId),
+      where('status', '==', 'pending'),
+      orderBy('dueDate', 'asc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+      callback(tasks);
+    });
+  },
+
+  // --- Lead Status Change with Stock & Tasks ---
+  async handleOrderConfirmation(lead: Lead) {
+    try {
+      const { runTransaction } = await import('firebase/firestore');
+      
+      await runTransaction(db, async (transaction) => {
+        // 1. Find the product in inventory
+        const invQuery = query(collection(db, 'inventory'), where('name', '==', lead.product));
+        const invSnapshot = await getDocs(invQuery);
+        
+        if (!invSnapshot.empty) {
+          const invDoc = invSnapshot.docs[0];
+          const invData = invDoc.data() as InventoryItem;
+          const newStock = invData.stock - (lead.quantity || 1);
+          
+          // 2. Deduct Stock
+          transaction.update(invDoc.ref, { stock: Math.max(0, newStock) });
+          
+          if (newStock <= invData.minStock) {
+            console.warn(`LOW STOCK ALERT: ${invData.name} is down to ${newStock}`);
+          }
+        }
+
+        // 3. Create Order
+        const commission = (lead.value * 0.05); // 5% Commission
+        const orderId = `ORD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        
+        const orderRef = doc(collection(db, 'orders'));
+        transaction.set(orderRef, {
+          leadId: lead.id,
+          customerId: lead.email || lead.phone,
+          customerName: lead.name,
+          phone: lead.phone,
+          address: lead.address || '',
+          city: lead.city || '',
+          pincode: lead.pincode || '',
+          product: lead.product || 'Advanced Gel Formula',
+          quantity: lead.quantity || 1,
+          total: lead.value,
+          status: 'Pending',
+          paymentMode: lead.paymentMode,
+          commission,
+          assignedToId: lead.assignedToId,
+          assignedTo: lead.assignedTo,
+          createdAt: new Date().toISOString()
+        });
+
+        // 4. Update Sales Rep Earnings
+        const userRef = doc(db, 'users', lead.assignedToId);
+        const userDoc = await transaction.get(userRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as User;
+          const earnings = userData.earnings || { daily: 0, monthly: 0, total: 0 };
+          transaction.update(userRef, {
+            earnings: {
+              daily: earnings.daily + commission,
+              monthly: earnings.monthly + commission,
+              total: earnings.total + commission
+            }
+          });
+        }
+
+        // 5. Create Refill Task (25 days later)
+        const refillDate = new Date();
+        refillDate.setDate(refillDate.getDate() + 25);
+        
+        const taskRef = doc(collection(db, 'tasks'));
+        transaction.set(taskRef, {
+          title: `Refill Reminder: ${lead.name}`,
+          description: `Customer purchased ${lead.product} 25 days ago. Call for refill.`,
+          dueDate: refillDate.toISOString(),
+          userId: lead.assignedToId,
+          leadId: lead.id,
+          status: 'pending',
+          type: 'refill'
+        });
+
+        // 6. Update Lead status and LTV
+        const leadRef = doc(db, 'leads', lead.id);
+        transaction.update(leadRef, {
+          status: 'Order Confirmed',
+          ltv: (lead.ltv || 0) + lead.value,
+          updatedAt: new Date().toISOString()
+        });
+      });
+      
+      await this.addAuditLog('Order Confirmed', lead.id, 'Lead', `Order created and stock deducted for ${lead.name}`);
+    } catch (e) {
+      handleFirestoreError(e, 'confirm_order', `leads/${lead.id}`);
+    }
+  },
+
   async updateLead(id: string, updates: Partial<Lead>): Promise<void> {
     try {
       const docRef = doc(db, 'leads', id);
+      const oldSnap = await getDoc(docRef);
+      const oldData = oldSnap.data() as Lead;
+      
       await updateDoc(docRef, {
         ...updates,
         updatedAt: new Date().toISOString()
       });
+
+      if (updates.status && updates.status !== oldData.status) {
+        await this.addAuditLog('Status Change', id, 'Lead', `Status changed from ${oldData.status} to ${updates.status}`);
+      }
     } catch (e) {
       handleFirestoreError(e, 'update', `leads/${id}`);
     }

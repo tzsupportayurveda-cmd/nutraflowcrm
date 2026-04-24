@@ -1,4 +1,3 @@
-
 export type LeadStatus = 
   | 'New Lead' 
   | 'Attempt 1' 
@@ -7,78 +6,100 @@ export type LeadStatus =
   | 'Interested' 
   | 'Order Confirmed' 
   | 'Dispatched'
+  | 'Shipped'
+  | 'Delivered'
   | 'RTO/Cancelled'
   | 'Call Back'
   | 'Not Interested';
 
+export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'RTO';
+
 export interface HistoryItem {
   id: string;
-  type: 'status_change' | 'assignment' | 'note_added' | 'call_log' | 'order_placed' | 'other';
+  type: 'status_change' | 'assignment' | 'note_added' | 'call_log' | 'order_placed' | 'export' | 'other';
   from?: string;
   to?: string;
   updatedBy: string;
   updatedById: string;
   timestamp: string;
   note?: string;
-  callDuration?: number; // in seconds
+  callDuration?: number;
+}
+
+export interface InventoryItem {
+  id: string;
+  sku: string;
+  name: string;
+  description?: string;
+  stock: number;
+  minStock: number;
+  price: number;
+  category: string;
 }
 
 export interface Lead {
   id: string;
-  serialId?: string; // Numeric ID starting from 01
+  serialId?: string;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   address?: string;
   city?: string;
   pincode?: string;
+  state?: string;
   status: LeadStatus;
-  value: number;
-  source: string; // e.g., 'Capsule Ads', 'Gel Ads', 'Website'
-  affiliateId?: string; // Sequential numeric ID starting from 101
-  paymentMode: 'COD' | 'Prepaid';
+  source: string;
   assignedTo: string;
   assignedToId: string;
   createdAt: string;
   updatedAt?: string;
   notes?: string;
-  package?: string;
-  product?: 'Advanced Gel Formula' | 'Zosh Tablets (30 Caps)' | 'Booster 3X Pills' | 'Booster Cream';
-  quantity?: number;
-  callbackTime?: string;
   history?: HistoryItem[];
-}
-
-export interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  sku: string;
-  stock: number;
-  minStock: number;
-  price: number;
+  value: number;
+  product?: string;
+  quantity?: number;
+  paymentMode: 'COD' | 'Prepaid';
+  affiliateId?: string;
+  lastCallDate?: string;
+  ltv?: number; // Lifetime Value
+  callbackTime?: string;
 }
 
 export interface Order {
   id: string;
   orderSerial?: string;
+  leadId: string;
   customerId: string;
   customerName: string;
-  items: { productId: string; quantity: number; price: number }[];
-  status: 'Pending' | 'Processing' | 'Shipped' | 'Dispatched' | 'Out for Delivery' | 'Delivered' | 'Returned' | 'RTO' | 'Cancelled';
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+  product: string;
+  quantity: number;
   total: number;
-  agentId?: string;
-  agentName?: string;
-  source?: string;
-  affiliateId?: string;
   paymentMode: 'COD' | 'Prepaid';
-  shippingAddress?: string;
-  phone?: string;
+  status: OrderStatus;
+  createdAt: string;
+  assignedToId: string;
+  assignedTo: string;
+  commission: number; // Commission earned by rep
   trackingId?: string;
   courier?: string;
+  deliveredAt?: string;
+  rtoReason?: string;
   deliveryNotes?: string;
-  createdAt: string;
-  updatedAt?: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  userId: string;
+  leadId?: string;
+  status: 'pending' | 'completed';
+  type: 'refill' | 'callback' | 'other';
 }
 
 export interface User {
@@ -86,8 +107,26 @@ export interface User {
   name: string;
   email: string;
   role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery';
-  avatar?: string;
   status: 'active' | 'pending' | 'blocked';
+  avatar?: string;
+  createdAt: string;
+  lastLogin?: string;
+  earnings?: {
+    daily: number;
+    monthly: number;
+    total: number;
+  };
+}
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  entityId: string;
+  entityType: string;
+  details: string;
+  timestamp: string;
 }
 
 export interface OTPRecord {

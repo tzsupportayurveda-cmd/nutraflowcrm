@@ -181,7 +181,7 @@ export function DeliveryPortal() {
                         <div className="flex flex-col leading-tight">
                           <span className="font-bold text-slate-900">{order.customerName}</span>
                           <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-red-400" /> {order.shippingAddress?.substring(0, 30)}...
+                            <MapPin className="w-3 h-3 text-red-400" /> {order.address?.substring(0, 30)}...
                           </span>
                         </div>
                       </TableCell>

@@ -13,7 +13,8 @@ import {
   Loader2,
   ChevronDown,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  TrendingUp
 } from 'lucide-react';
 import { 
   Table, 
@@ -60,6 +61,8 @@ const statusColors: Record<LeadStatus, string> = {
   'Interested': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   'Order Confirmed': 'bg-emerald-600 text-white border-emerald-600',
   'Dispatched': 'bg-blue-600 text-white border-blue-600',
+  'Shipped': 'bg-cyan-600 text-white border-cyan-600',
+  'Delivered': 'bg-emerald-500 text-white border-emerald-500',
   'RTO/Cancelled': 'bg-red-50 text-red-700 border-red-200',
   'Call Back': 'bg-purple-50 text-purple-700 border-purple-200',
   'Not Interested': 'bg-slate-100 text-slate-500 border-slate-200',
@@ -226,25 +229,16 @@ export function LeadManager() {
   const handleCreateOrder = async (lead: Lead) => {
     try {
       if (!currentUser) return;
+      setLoading(true);
       
-      const orderId = await dataService.addOrder({
-        customerId: lead.id,
-        customerName: lead.name,
-        items: [], // Would typically select items in a real app
-        status: 'Pending',
-        total: lead.value || 0,
-        agentId: currentUser.id,
-        agentName: currentUser.name,
-        paymentMode: lead.paymentMode || 'COD',
-      });
-
-      // Update lead status to reflect it's now an order
-      await dataService.updateLead(lead.id, { status: 'Order Confirmed' });
+      await dataService.handleOrderConfirmation(lead);
       
-      toast.success(`Order created successfully! ID: ${orderId}`);
+      toast.success(`Order created and stock adjusted successfully!`);
       setIsDetailOpen(false);
     } catch (e) {
       toast.error('Failed to create order');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -614,7 +608,22 @@ export function LeadManager() {
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Phone</label>
                       <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
                         <Phone className="w-3.5 h-3.5 text-emerald-500" />
-                        <Input value={editableLead.phone} onChange={e => { setEditableLead({...editableLead, phone: e.target.value}); setHasChanges(true); }} className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full" />
+                        <Input 
+                          value={editableLead.phone} 
+                          onChange={e => { setEditableLead({...editableLead, phone: e.target.value}); setHasChanges(true); }} 
+                          className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full"
+                          onCopy={(e) => {
+                            if (currentUser?.role === 'Sales') {
+                              e.preventDefault();
+                              toast.warning('Copy feature disabled for Sales team');
+                            }
+                          }}
+                          onContextMenu={(e) => {
+                            if (currentUser?.role === 'Sales') {
+                              e.preventDefault();
+                            }
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -720,9 +729,19 @@ export function LeadManager() {
 
             {/* Sidebar: Customer History */}
             <div className="w-80 flex flex-col bg-slate-50/50">
-              <div className="p-4 border-b border-slate-100">
+              <div className="p-4 border-b border-slate-100 bg-emerald-900 text-white rounded-tr-2xl">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60">Customer Lifetime Value</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-black">₹{(editableLead.ltv || 0).toLocaleString()}</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-600" /> Customer History
+                  <Users className="w-4 h-4 text-emerald-600" /> Interaction History
                 </h3>
               </div>
               

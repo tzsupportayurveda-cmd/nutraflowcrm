@@ -25,6 +25,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
@@ -78,13 +79,33 @@ export function OrderManager() {
     return order.agentId === currentUser?.id;
   });
 
+  const [shipData, setShipData] = useState({
+    trackingId: '',
+    courier: 'Delhivery',
+    notes: ''
+  });
+
   const handleDispatch = async (orderId: string) => {
     try {
-      await dataService.updateOrderStatus(orderId, 'Dispatched');
-      toast.success('Order marked as Dispatched');
+      await dataService.updateOrderStatus(orderId, 'Shipped', {
+        trackingId: shipData.trackingId,
+        courier: shipData.courier,
+        deliveryNotes: shipData.notes
+      });
+      toast.success('Order marked as Shipped with tracking info');
       setIsDetailsOpen(false);
+      setShipData({ trackingId: '', courier: 'Delhivery', notes: '' });
     } catch (error) {
-      toast.error('Failed to dispatch order');
+      toast.error('Failed to update shipping info');
+    }
+  };
+
+  const handleStatusUpdate = async (orderId: string, status: any) => {
+    try {
+      await dataService.updateOrderStatus(orderId, status);
+      toast.success(`Order status updated to ${status}`);
+    } catch (e) {
+      toast.error('Status update failed');
     }
   };
 
@@ -249,28 +270,57 @@ export function OrderManager() {
                   </div>
                 </div>
 
-                {selectedOrder.trackingId && (
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-2 mt-4">
-                    <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
-                       <Truck className="w-3.5 h-3.5" /> Live Tracking Information
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Courier</span>
-                        <p className="font-black text-emerald-900">{selectedOrder.courier}</p>
+                {selectedOrder.status === 'Pending' && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                  <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-4">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Dispatch Logistics</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Tracking ID</label>
+                        <Input 
+                          placeholder="e.g. 123456789" 
+                          value={shipData.trackingId}
+                          onChange={e => setShipData({...shipData, trackingId: e.target.value})}
+                          className="bg-white/10 border-white/10 text-white h-8 text-xs"
+                        />
                       </div>
-                      <div>
-                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Tracking ID</span>
-                        <p className="font-black text-emerald-900">{selectedOrder.trackingId}</p>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Courier</label>
+                        <select 
+                          value={shipData.courier}
+                          onChange={e => setShipData({...shipData, courier: e.target.value})}
+                          className="w-full h-8 bg-white/10 border border-white/10 rounded-md px-2 text-xs font-bold outline-none"
+                        >
+                          <option value="Delhivery" className="bg-slate-900">Delhivery</option>
+                          <option value="Shiprocket" className="bg-slate-900">Shiprocket</option>
+                          <option value="BlueDart" className="bg-slate-900">BlueDart</option>
+                        </select>
                       </div>
                     </div>
-                    {selectedOrder.deliveryNotes && (
-                      <div className="pt-2 border-t border-emerald-100 mt-1">
-                        <span className="text-[10px] text-emerald-600/70 font-bold uppercase">Delivery Note</span>
-                        <p className="text-xs font-bold text-emerald-800 italic">"{selectedOrder.deliveryNotes}"</p>
-                      </div>
-                    )}
+                    <Button 
+                      className="w-full bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[10px] h-9"
+                      onClick={() => handleDispatch(selectedOrder.id)}
+                    >
+                      Process Shipment
+                    </Button>
                   </div>
+                )}
+
+                {selectedOrder.status === 'Shipped' && (currentUser?.role === 'Admin' || currentUser?.role === 'Delivery') && (
+                   <div className="flex gap-2">
+                     <Button 
+                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 font-bold text-xs h-9"
+                       onClick={() => handleStatusUpdate(selectedOrder.id, 'Delivered')}
+                     >
+                       Mark Delivered
+                     </Button>
+                     <Button 
+                       variant="outline"
+                       className="flex-1 border-red-200 text-red-600 font-bold text-xs h-9"
+                       onClick={() => handleStatusUpdate(selectedOrder.id, 'RTO')}
+                     >
+                       Mark RTO
+                     </Button>
+                   </div>
                 )}
               </div>
             </div>

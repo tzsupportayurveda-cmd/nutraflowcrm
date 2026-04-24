@@ -45,14 +45,21 @@ export function ConfirmedLeads() {
     try {
       // 1. Create a real Order from this confirmed lead
       await dataService.addOrder({
+        leadId: lead.id,
         customerId: lead.id,
         customerName: lead.name,
+        phone: lead.phone,
+        address: lead.address || '',
+        city: lead.city || '',
+        pincode: lead.pincode || '',
+        product: lead.product || 'Advanced Gel Formula',
+        quantity: lead.quantity || 1,
         status: 'Processing',
         total: lead.value,
         paymentMode: lead.paymentMode || 'COD',
-        agentId: lead.assignedToId || '',
-        agentName: lead.assignedTo || 'System',
-        items: [{ productId: lead.package || 'Default Pack', quantity: 1, price: lead.value }]
+        assignedToId: lead.assignedToId || '',
+        assignedTo: lead.assignedTo || 'System',
+        commission: (lead.value * 0.05)
       });
 
       // 2. Update lead status to indicate it has been converted/dispatched
@@ -140,7 +147,7 @@ export function ConfirmedLeads() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-widest px-2.5 py-1">
-                      {lead.package || "Not Specified"}
+                      {lead.product || "Not Specified"}
                     </Badge>
                   </TableCell>
                   <TableCell>

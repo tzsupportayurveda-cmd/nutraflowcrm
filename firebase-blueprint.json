@@ -11,16 +11,16 @@
         "address": { "type": "string" },
         "city": { "type": "string" },
         "pincode": { "type": "string" },
-        "status": { "type": "string", "enum": ["New", "Interested", "No Answer", "Call Back", "Confirmed", "Wrong Number", "Rejected"] },
+        "status": { "type": "string" },
         "value": { "type": "number" },
         "source": { "type": "string" },
         "assignedTo": { "type": "string" },
         "assignedToId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "package": { "type": "string" },
-        "notes": { "type": "string" }
+        "notes": { "type": "string" },
+        "ltv": { "type": "number" }
       },
-      "required": ["name", "status", "assignedToId"]
+      "required": ["name", "status", "assignedToId", "phone"]
     },
     "InventoryItem": {
       "title": "Inventory Item",
@@ -28,11 +28,11 @@
       "type": "object",
       "properties": {
         "name": { "type": "string" },
-        "category": { "type": "string" },
         "sku": { "type": "string" },
         "stock": { "type": "number" },
-        "minStock": { "type": "number" },
-        "price": { "type": "number" }
+        "lowStockThreshold": { "type": "number" },
+        "price": { "type": "number" },
+        "category": { "type": "string" }
       },
       "required": ["name", "sku", "stock", "price"]
     },
@@ -41,26 +41,51 @@
       "description": "Customer purchase order",
       "type": "object",
       "properties": {
+        "leadId": { "type": "string" },
         "customerId": { "type": "string" },
         "customerName": { "type": "string" },
-        "items": { "type": "array" },
-        "status": { "type": "string", "enum": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"] },
+        "phone": { "type": "string" },
+        "product": { "type": "string" },
+        "quantity": { "type": "number" },
         "total": { "type": "number" },
+        "status": { "type": "string" },
+        "commission": { "type": "number" },
+        "assignedToId": { "type": "string" },
+        "trackingId": { "type": "string" },
+        "courierPartner": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["customerId", "items", "status", "total"]
+      "required": ["customerId", "product", "quantity", "status", "total"]
     },
-    "UserProfile": {
-      "title": "User Profile",
-      "description": "Internal staff member profile",
+    "Task": {
+      "title": "Task",
+      "description": "Sales tasks and refills",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["Admin", "Sales", "Inventory"] },
-        "avatar": { "type": "string" }
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "leadId": { "type": "string" },
+        "status": { "type": "string" },
+        "type": { "type": "string" }
       },
-      "required": ["name", "email", "role"]
+      "required": ["title", "userId", "dueDate"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "System activity logs",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "entityId": { "type": "string" },
+        "entityType": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "action", "timestamp"]
     }
   },
   "firestore": {
@@ -76,9 +101,17 @@
       "schema": "Order",
       "description": "Customer orders collection"
     },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks for refills and callbacks"
+    },
+    "/logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Security audit logs"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "Staff profiles collection"
+      "description": "Staff account data"
     }
   }
 }

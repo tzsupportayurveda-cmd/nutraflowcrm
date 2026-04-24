@@ -86,7 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 email: fbUser.email || '',
                 role: isAdminUser ? 'Admin' : 'Sales',
                 avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
-                status: isAdminUser ? 'active' : 'pending'
+                status: isAdminUser ? 'active' : 'pending',
+                createdAt: new Date().toISOString()
               };
               dataService.createUserProfile(defaultProfile);
             }

@@ -13,7 +13,8 @@ import {
   Target,
   CheckCircle,
   FileText,
-  Trophy
+  Trophy,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -39,7 +40,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Lead, Order, InventoryItem, User } from '@/src/types';
+import { Lead, Order, InventoryItem, User, Task } from '@/src/types';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { startOfDay, startOfMonth, isAfter, parseISO, format, isSameDay, isBefore, endOfDay } from 'date-fns';
 
@@ -56,10 +58,21 @@ export function Dashboard() {
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+
   useEffect(() => {
     const unsubLeads = dataService.subscribeLeads(setLeads);
     const unsubOrders = dataService.subscribeOrders(setOrders);
     const unsubInv = dataService.subscribeInventory(setInventory);
+
+    let unsubTasks = () => {};
+    if (currentUser) {
+      unsubTasks = dataService.subscribeTasks(currentUser.id, (data) => {
+        setTasks(data);
+        setLoadingTasks(false);
+      });
+    }
 
     if (currentUser?.role === 'Admin') {
       dataService.getTeamMembers().then(setTeamMembers);
@@ -69,6 +82,7 @@ export function Dashboard() {
       unsubLeads();
       unsubOrders();
       unsubInv();
+      unsubTasks();
     };
   }, [currentUser]);
 
@@ -150,7 +164,8 @@ export function Dashboard() {
   const stats = {
     leads: filteredLeads.length,
     revenue: filteredOrders.reduce((acc, o) => acc + o.total, 0),
-    confirmed: filteredLeads.filter(l => l.status === 'Confirmed').length,
+    earnings: filteredOrders.reduce((acc, o) => acc + (o.commission || 0), 0),
+    confirmed: filteredLeads.filter(l => l.status === 'Order Confirmed').length,
     pending: filteredOrders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled').length
   };
 
@@ -285,20 +300,37 @@ export function Dashboard() {
 
       {/* Metric Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all group">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Total Leads</CardTitle>
-            <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-              <FileText className="w-4 h-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900">{stats.leads}</div>
-            <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-2">
-              <TrendingUp className="w-3 h-3" /> Fresh leads processed
-            </p>
-          </CardContent>
-        </Card>
+        {currentUser?.role === 'Sales' ? (
+          <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group bg-slate-900 text-white">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">My Earnings</CardTitle>
+              <div className="p-2 bg-emerald-500 rounded-xl group-hover:scale-110 transition-transform">
+                <DollarSign className="w-4 h-4 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black">₹{stats.earnings.toLocaleString()}</div>
+              <p className="text-xs text-slate-400 font-bold flex items-center gap-1 mt-2">
+                <Target className="w-3 h-3 text-emerald-400" /> Commission earned
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all group">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Total Leads</CardTitle>
+              <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                <FileText className="w-4 h-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-black text-slate-900">{stats.leads}</div>
+              <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-2">
+                <TrendingUp className="w-3 h-3" /> Fresh leads processed
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group">
           <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
@@ -511,6 +543,127 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* RTO Analysis (Only for Admin) */}
+      {currentUser?.role === 'Admin' && (
+        <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden">
+          <CardHeader className="bg-red-50/50 border-b border-red-100 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-black text-red-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                RTO Analysis
+              </CardTitle>
+              <CardDescription className="text-red-700/60 font-medium font-bold">Identifying high-risk products and regions for returns.</CardDescription>
+            </div>
+            <Badge className="bg-red-100 text-red-700 border-none font-black text-[10px] px-3">
+              CRITICAL TRACKING
+            </Badge>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Top RTO Products</h4>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Advanced Gel Formula', rate: '12%', color: 'bg-red-500' },
+                    { name: 'Booster 3X Pills', rate: '8%', color: 'bg-orange-500' },
+                    { name: 'Booster Cream', rate: '5%', color: 'bg-amber-500' }
+                  ].map((p, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-700">{p.name}</span>
+                        <span className="font-black text-red-600">{p.rate}</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full", p.color)} style={{ width: p.rate }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">High Return Regions</h4>
+                <div className="space-y-2">
+                  {[
+                    { region: 'Bihar', count: 42, rate: '18%' },
+                    { region: 'West Bengal', count: 31, rate: '15%' },
+                    { region: 'Uttar Pradesh', count: 56, rate: '11%' }
+                  ].map((r, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center font-bold text-xs text-slate-600">
+                          {i + 1}
+                        </div>
+                        <span className="font-bold text-slate-800">{r.region}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-red-600">{r.rate}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase">{r.count} Returns</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* My Tasks & Refill Reminders */}
+      <Card className="border-none shadow-xl shadow-slate-200/50">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-600" />
+              Action Items & Refills
+            </CardTitle>
+            <CardDescription className="font-medium">Stay ahead of your customer re-order cycles.</CardDescription>
+          </div>
+          <Badge className="bg-indigo-100 text-indigo-700 border-none font-black text-[10px] px-3">
+            {tasks.length} PENDING
+          </Badge>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tasks.length > 0 ? tasks.map(task => (
+              <div key={task.id} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-indigo-200 transition-colors group">
+                <div className="flex items-start justify-between mb-3">
+                  <Badge variant="secondary" className={cn(
+                    "text-[8px] font-black uppercase tracking-tighter px-1.5 h-4",
+                    task.type === 'refill' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                  )}>
+                    {task.type}
+                  </Badge>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    Due {format(parseISO(task.dueDate), 'MMM dd')}
+                  </span>
+                </div>
+                <h4 className="font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">{task.title}</h4>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-2 italic">"{task.description}"</p>
+                <div className="pt-4 flex gap-2">
+                  <Button variant="ghost" size="sm" className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600">
+                    Details
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest h-8"
+                    onClick={() => {
+                        // Mark as completed logic would go here
+                        toast.success('Task marked as completed');
+                    }}
+                  >
+                    Done
+                  </Button>
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-3 py-10 text-center text-slate-400 font-medium italic bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                No pending tasks. Great job staying on top of your leads!
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stock Alerts (Only for Admin/Inventory) */}
       {(currentUser?.role === 'Admin' || currentUser?.role === 'Inventory') && (

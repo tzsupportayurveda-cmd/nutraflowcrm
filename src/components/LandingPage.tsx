@@ -19,28 +19,36 @@ export function LandingPage() {
   const [newPassword, setNewPassword] = useState('');
   const [view, setView] = useState<'login' | 'signup' | 'forgot'>('login');
   const [forgotStep, setForgotStep] = useState<'email' | 'otp'>('email');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
     try {
       if (view === 'login') {
-        login(email, password);
+        await login(email, password);
       } else if (view === 'signup') {
         await signup(email, password, name);
       } else {
         if (forgotStep === 'email') {
+          toast.loading('Sending OTP...', { id: 'otp-loading' });
           await dataService.sendOTP(email);
+          toast.success('OTP aapke email par bhej diya gaya hai!', { id: 'otp-loading' });
           setForgotStep('otp');
         } else {
+          toast.loading('Verifying & Resetting...', { id: 'verify-loading' });
           await dataService.verifyOTPAndReset(email, otp, newPassword);
-          toast.success('Password reset ho gaya! Ab login karein.');
+          toast.success('Password successfully reset! Ab login karein.', { id: 'verify-loading' });
           setView('login');
           setForgotStep('email');
         }
       }
     } catch (err: any) {
       console.error('Action Failed:', err);
-      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.');
+      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.', { id: 'otp-loading' });
+      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.', { id: 'verify-loading' });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -270,9 +278,9 @@ export function LandingPage() {
                   <Button 
                     className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]" 
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || isProcessing}
                   >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
+                    {(loading || isProcessing) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
                       view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
                       view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
                       <Zap className="w-5 h-5 mr-2" />

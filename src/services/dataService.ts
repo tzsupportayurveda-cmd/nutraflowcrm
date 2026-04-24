@@ -245,6 +245,31 @@ export const dataService = {
     }
   },
 
+  // --- Auth Extensions ---
+  async sendOTP(email: string): Promise<void> {
+    const response = await fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to send OTP');
+    }
+  },
+
+  async verifyOTPAndReset(email: string, otp: string, newPass: string): Promise<void> {
+    const response = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword: newPass })
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Verification failed');
+    }
+  },
+
   async deleteUser(uid: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'users', uid));

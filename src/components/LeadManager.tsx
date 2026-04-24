@@ -83,6 +83,7 @@ export function LeadManager() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [statusOpen, setStatusOpen] = useState(false);
   const [callbackDialogOpen, setCallbackDialogOpen] = useState(false);
   const [tempCallbackTime, setTempCallbackTime] = useState('');
   const [targetLeadId, setTargetLeadId] = useState<string | null>(null);
@@ -156,6 +157,12 @@ export function LeadManager() {
           updatedById: currentUser.id,
           note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
         });
+
+        // Update local editable state
+        if (editableLead?.id === leadId) {
+          setEditableLead(prev => prev ? ({ ...prev, status, ...extras }) : null);
+          setHasChanges(false);
+        }
 
         // Create a task if callback is set
         if (status === 'Call Back' && extras.callbackTime) {
@@ -773,38 +780,49 @@ export function LeadManager() {
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Pipeline Status</label>
                   <div className="flex items-center gap-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg">
-                          <CheckCircle className="w-4 h-4" /> Change Status
-                          <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[300px] p-2 bg-white z-[1100] rounded-xl shadow-2xl border-slate-200">
-                        <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest p-2">Select New Status</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {[
-                          'Call Back', 
-                          'No Answer', 
-                          'Interested', 
-                          'Not Interested', 
-                          'Fake/Spam', 
-                          'Unavailable', 
-                          'Language Issue',
-                          'Order Confirmed',
-                          'RTO/Cancelled'
-                        ].map(s => (
-                          <DropdownMenuItem 
-                            key={s} 
-                            onSelect={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
-                            className="h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
-                          >
-                            <Badge variant="outline" className={cn("mr-3 h-2 w-2 rounded-full p-0 border-none", statusColors[s as LeadStatus]?.split(' ')[0])} />
-                            {s}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="relative">
+                      <Button 
+                        onClick={() => setStatusOpen(!statusOpen)}
+                        className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Change Status
+                        <ChevronDown className={cn("w-4 h-4 ml-auto opacity-50 transition-transform", statusOpen && "rotate-180")} />
+                      </Button>
+                      
+                      {statusOpen && (
+                        <>
+                          <div className="fixed inset-0 z-[1100]" onClick={() => setStatusOpen(false)} />
+                          <div className="absolute bottom-full left-0 mb-2 w-[300px] p-2 bg-white z-[1200] rounded-xl shadow-2xl border border-slate-200 animate-in fade-in slide-in-from-bottom-2">
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest p-2 border-bottom border-slate-50">Select New Status</div>
+                            <div className="py-1">
+                              {[
+                                'Call Back', 
+                                'No Answer', 
+                                'Interested', 
+                                'Not Interested', 
+                                'Fake/Spam', 
+                                'Unavailable', 
+                                'Language Issue',
+                                'Order Confirmed',
+                                'RTO/Cancelled'
+                              ].map(s => (
+                                <button 
+                                  key={s} 
+                                  onClick={() => {
+                                    handleUpdateStatus(editableLead.id, s as LeadStatus);
+                                    setStatusOpen(false);
+                                  }}
+                                  className="w-full flex items-center h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700 transition-colors"
+                                >
+                                  <div className={cn("mr-3 h-2 w-2 rounded-full", statusColors[s as LeadStatus]?.split(' ')[0])} />
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
                     {editableLead.status === 'Call Back' && editableLead.callbackTime && (
                       <div className="flex flex-col items-center p-2 bg-purple-50 border border-purple-100 rounded-xl">

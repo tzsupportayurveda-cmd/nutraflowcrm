@@ -36,11 +36,6 @@ export function Settings() {
     e.preventDefault();
     if (!user) return;
     
-    if (user.role !== 'Admin') {
-      toast.error('Only administrators can update profile details directly.');
-      return;
-    }
-
     setLoading(true);
     try {
       await dataService.updateUserProfile(user.id, { name, avatar });
@@ -112,11 +107,9 @@ export function Settings() {
                   <div className="w-24 h-24 rounded-3xl overflow-hidden ring-4 ring-emerald-500/10 shadow-xl">
                     <img src={user?.avatar} alt={user?.name} className="w-full h-full object-cover" />
                   </div>
-                  {isAdmin && (
-                    <div className="absolute -bottom-2 -right-2 p-1.5 bg-white rounded-lg shadow-md border border-slate-100">
-                      <Save className="w-3 h-3 text-emerald-500" />
-                    </div>
-                  )}
+                  <div className="absolute -bottom-2 -right-2 p-1.5 bg-white rounded-lg shadow-md border border-slate-100">
+                    <Save className="w-3 h-3 text-emerald-500" />
+                  </div>
                 </div>
                 
                 <div className="flex-1 space-y-4 text-center md:text-left">
@@ -157,7 +150,6 @@ export function Settings() {
                     <Input 
                       value={name} 
                       onChange={(e) => setName(e.target.value)} 
-                      disabled={!isAdmin}
                       className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold focus:ring-emerald-500"
                     />
                   </div>
@@ -177,25 +169,22 @@ export function Settings() {
                     <Input 
                       value={avatar} 
                       onChange={(e) => setAvatar(e.target.value)} 
-                      disabled={!isAdmin}
                       placeholder="https://..."
                       className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold focus:ring-emerald-500"
                     />
                   </div>
                 </div>
 
-                {isAdmin && (
-                  <div className="flex justify-end pt-2">
-                    <Button 
-                      className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl gap-2 shadow-lg"
-                      type="submit"
-                      disabled={loading}
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      Update Profile
-                    </Button>
-                  </div>
-                )}
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl gap-2 shadow-lg"
+                    type="submit"
+                    disabled={loading}
+                  >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Update Profile
+                  </Button>
+                </div>
               </section>
             </form>
           </div>

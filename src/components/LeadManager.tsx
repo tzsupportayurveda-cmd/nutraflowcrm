@@ -633,14 +633,24 @@ export function LeadManager() {
                   <div className="h-4 w-px bg-slate-200" />
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {editableLead.serialId}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)} className="h-8 text-xs font-bold text-slate-500">Close</Button>
-                  {hasChanges && (
-                    <Button onClick={handleSaveChanges} size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 shadow-sm">
-                      Save All Changes
-                    </Button>
-                  )}
-                </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setIsDetailOpen(false)} className="h-8 text-xs font-bold text-slate-500">Close</Button>
+                    {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDelete(editableLead.id)} 
+                        className="h-8 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Delete Lead
+                      </Button>
+                    )}
+                    {hasChanges && (
+                      <Button onClick={handleSaveChanges} size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 shadow-sm">
+                        Save All Changes
+                      </Button>
+                    )}
+                  </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
@@ -771,7 +781,7 @@ export function LeadManager() {
                         ].map(s => (
                           <DropdownMenuItem 
                             key={s} 
-                            onSelect={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
+                            onClick={() => handleUpdateStatus(editableLead.id, s as LeadStatus)}
                             className="h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
                           >
                             <Badge variant="outline" className={cn("mr-3 h-2 w-2 rounded-full p-0 border-none", statusColors[s as LeadStatus]?.split(' ')[0])} />

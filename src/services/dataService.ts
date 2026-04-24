@@ -211,62 +211,12 @@ export const dataService = {
     }
   },
 
-  // --- Auth Extensions ---
-  async sendOTP(email: string): Promise<void> {
-    const response = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to send OTP');
-    }
-  },
-
-  async verifyOTPAndReset(email: string, otp: string, newPass: string): Promise<void> {
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, newPassword: newPass })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Verification failed');
-    }
-  },
-
   async toggleUserStatus(uid: string, currentStatus: string): Promise<void> {
     try {
       const newStatus = currentStatus === 'active' ? 'pending' : 'active';
       await updateDoc(doc(db, 'users', uid), { status: newStatus });
     } catch (e) {
       handleFirestoreError(e, 'update', `users/${uid}`);
-    }
-  },
-
-  // --- Auth Extensions ---
-  async sendOTP(email: string): Promise<void> {
-    const response = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to send OTP');
-    }
-  },
-
-  async verifyOTPAndReset(email: string, otp: string, newPass: string): Promise<void> {
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp, newPassword: newPass })
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Verification failed');
     }
   },
 

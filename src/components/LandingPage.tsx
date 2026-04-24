@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock } from 'lucide-react';
+import { LogIn, ShieldCheck, Zap, Globe, Loader2, AlertCircle, Lock, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { BrandLogo } from './BrandLogo';
@@ -30,23 +30,15 @@ export function LandingPage() {
       } else if (view === 'signup') {
         await signup(email, password, name);
       } else {
-        if (forgotStep === 'email') {
-          toast.loading('Sending OTP...', { id: 'otp-loading' });
-          await dataService.sendOTP(email);
-          toast.success('OTP aapke email par bhej diya gaya hai!', { id: 'otp-loading' });
-          setForgotStep('otp');
-        } else {
-          toast.loading('Verifying & Resetting...', { id: 'verify-loading' });
-          await dataService.verifyOTPAndReset(email, otp, newPassword);
-          toast.success('Password successfully reset! Ab login karein.', { id: 'verify-loading' });
-          setView('login');
-          setForgotStep('email');
-        }
+        // Forgot Password Flow
+        toast.loading('Sending Reset Link...', { id: 'reset-loading' });
+        await resetPassword(email);
+        toast.success('Reset link bhej diya gaya hai! Check your email.', { id: 'reset-loading' });
+        setForgotStep('otp'); // Repurposing to show the success view
       }
     } catch (err: any) {
       console.error('Action Failed:', err);
-      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.', { id: 'otp-loading' });
-      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.', { id: 'verify-loading' });
+      toast.error(err.message || 'Kuchh galat ho gaya. Please try again.', { id: 'reset-loading' });
     } finally {
       setIsProcessing(false);
     }
@@ -164,142 +156,140 @@ export function LandingPage() {
                 <Lock className="w-6 h-6 text-white" />
               </div>
 
-              <div className="flex p-1 bg-white/5 rounded-2xl mb-8">
-                <button 
-                  className={cn("flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all", view === 'login' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-white")}
-                  onClick={() => setView('login')}
-                >
-                  Login
-                </button>
-                <button 
-                  className={cn("flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all", view === 'signup' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-white")}
-                  onClick={() => setView('signup')}
-                >
-                  Join Team
-                </button>
-              </div>
-
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    {view === 'login' ? 'Secure Login' : view === 'signup' ? 'Request Access' : 'Reset Secret Key'}
-                  </h2>
-                  <p className="text-slate-500 text-sm font-medium italic">
-                    {view === 'login' ? 'Authorized personnel access only.' : 
-                     view === 'signup' ? 'Provide your details for admin approval.' : 
-                     'Enter your email to receive a reset link.'}
+              {view === 'forgot' && forgotStep === 'otp' ? (
+                <div className="text-center py-6">
+                  <motion.div 
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6"
+                  >
+                    <Mail className="w-10 h-10 text-emerald-500" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Check Your Email</h2>
+                  <p className="text-slate-400 mb-8 leading-relaxed text-sm">
+                    Password reset link <b>{email}</b> par bhej diya gaya hai. 
+                    Kripya apna inbox check karein aur link par click karke password change karein.
                   </p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-white/10 text-white font-bold hover:bg-white/5 h-12 rounded-xl uppercase tracking-widest text-xs"
+                    onClick={() => { setView('login'); setForgotStep('email'); }}
+                  >
+                    Back to Login
+                  </Button>
                 </div>
-
-              {error && (
-                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-200">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p className="text-sm font-medium italic">{error}</p>
-                </div>
-              )}
-
-              <form onSubmit={handleAction} className="space-y-4">
-                {view === 'signup' && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                    <Input 
-                      placeholder="Agent Name" 
-                      className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
+              ) : (
+                <>
+                  <div className="flex p-1 bg-white/5 rounded-2xl mb-8">
+                    <button 
+                      className={cn("flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all", view === 'login' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-white")}
+                      onClick={() => setView('login')}
+                    >
+                      Login
+                    </button>
+                    <button 
+                      className={cn("flex-1 py-2.5 text-xs font-bold uppercase tracking-widest rounded-xl transition-all", view === 'signup' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-slate-400 hover:text-white")}
+                      onClick={() => setView('signup')}
+                    >
+                      Join Team
+                    </button>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
-                  <Input 
-                    type="email" 
-                    placeholder="name@tozflow.com" 
-                    className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={view === 'forgot' && forgotStep === 'otp'}
-                  />
-                </div>
 
-                {view === 'forgot' && forgotStep === 'otp' && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Enter OTP (Sent to Email)</label>
-                      <Input 
-                        placeholder="123456" 
-                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600 font-mono tracking-[0.5em] text-center text-lg"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        required
-                      />
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">
+                      {view === 'login' ? 'Secure Login' : view === 'signup' ? 'Request Access' : 'Reset Secret Key'}
+                    </h2>
+                    <p className="text-slate-500 text-sm font-medium italic">
+                      {view === 'login' ? 'Authorized personnel access only.' : 
+                       view === 'signup' ? 'Provide your details for admin approval.' : 
+                       'Enter your email to receive a reset link.'}
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-200">
+                      <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                      <p className="text-sm font-medium italic">{error}</p>
                     </div>
+                  )}
+
+                  <form onSubmit={handleAction} className="space-y-4">
+                    {view === 'signup' && (
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                        <Input 
+                          placeholder="Agent Name" 
+                          className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          required
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
                       <Input 
-                        type="password"
-                        placeholder="••••••••" 
+                        type="email" 
+                        placeholder="name@tozflow.com" 
                         className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                       />
                     </div>
-                  </>
-                )}
 
-                {view !== 'forgot' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between ml-1">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Secret Key</label>
-                      {view === 'login' && (
+                    {view !== 'forgot' && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between ml-1">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Secret Key</label>
+                          {view === 'login' && (
+                            <button 
+                              type="button" 
+                              onClick={() => { setView('forgot'); setForgotStep('email'); }}
+                              className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
+                            >
+                              Forgot?
+                            </button>
+                          )}
+                        </div>
+                        <Input 
+                          type="password" 
+                          placeholder="••••••••" 
+                          className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <Button 
+                        className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]" 
+                        type="submit"
+                        disabled={loading || isProcessing}
+                      >
+                        {(loading || isProcessing) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
+                          view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
+                          view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
+                          <Zap className="w-5 h-5 mr-2" />
+                        )}
+                        {view === 'login' ? 'Enter Workspace' : 
+                         view === 'signup' ? 'Send Request' : 'Send Reset Link'}
+                      </Button>
+                      {view === 'forgot' && (
                         <button 
                           type="button" 
-                          onClick={() => { setView('forgot'); setForgotStep('email'); }}
-                          className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
+                          onClick={() => setView('login')}
+                          className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest"
                         >
-                          Forgot?
+                          Back to Login
                         </button>
                       )}
                     </div>
-                    <Input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <Button 
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]" 
-                    type="submit"
-                    disabled={loading || isProcessing}
-                  >
-                    {(loading || isProcessing) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
-                      view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
-                      view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
-                      <Zap className="w-5 h-5 mr-2" />
-                    )}
-                    {view === 'login' ? 'Enter Workspace' : 
-                     view === 'signup' ? 'Send Request' : 
-                     forgotStep === 'email' ? 'Send OTP' : 'Reset Password'}
-                  </Button>
-                  {view === 'forgot' && (
-                    <button 
-                      type="button" 
-                      onClick={() => setView('login')}
-                      className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest"
-                    >
-                      Back to Login
-                    </button>
-                  )}
-                </div>
-              </form>
+                  </form>
+                </>
+              )}
 
               <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
                 <Button 

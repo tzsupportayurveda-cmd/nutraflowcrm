@@ -151,13 +151,11 @@ export function TeamManager() {
                         {member.id !== adminUser?.id ? (
                           <div className="mt-1">
                             <DropdownMenu>
-                              <DropdownMenuTrigger
-                                render={
-                                  <button className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider hover:bg-emerald-100 transition-colors">
-                                    {member.role} <ChevronDown className="w-2.5 h-2.5" />
-                                  </button>
-                                }
-                              />
+                              <DropdownMenuTrigger asChild>
+                                <button className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider hover:bg-emerald-100 transition-colors">
+                                  {member.role} <ChevronDown className="w-2.5 h-2.5" />
+                                </button>
+                              </DropdownMenuTrigger>
                               <DropdownMenuContent align="start" className="w-32 p-1">
                                 {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Admin'] as const).map(r => (
                                   <DropdownMenuItem 

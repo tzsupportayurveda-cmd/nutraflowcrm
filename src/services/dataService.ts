@@ -88,12 +88,61 @@ export const dataService = {
       });
       
       if (counterPath === 'leads') {
-        return nextId < 10 ? `0${nextId}` : `${nextId}`;
+        return nextId.toString().padStart(2, '0');
       }
       return `${nextId}`;
     } catch (e) {
       console.error("Failed to generate sequential ID:", e);
-      return Math.floor(Math.random() * 1000).toString();
+      return Math.floor(Math.random() * 1000).toString().padStart(2, '0');
+    }
+  },
+
+  // --- Notifications ---
+  async addNotification(userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId,
+        title,
+        message,
+        type,
+        read: false,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error("Notification failed:", e);
+    }
+  },
+
+  subscribeNotifications(userId: string, callback: (notifications: any[]) => void) {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(notifications);
+    });
+  },
+
+  async markNotificationRead(id: string) {
+    try {
+      await updateDoc(doc(db, 'notifications', id), { read: true });
+    } catch (e) {
+      console.error("Failed to mark notification read:", e);
+    }
+  },
+
+  async clearNotifications(userId: string) {
+    try {
+      const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+      const snapshot = await getDocs(q);
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch (e) {
+      console.error("Failed to clear notifications:", e);
     }
   },
 
@@ -380,12 +429,26 @@ export const dataService = {
           type: 'refill'
         });
 
-        // 6. Update Lead status and LTV
+        // 6. Update Lead status and LTV and History
         const leadRef = doc(db, 'leads', lead.id);
+        const timestamp = new Date().toISOString();
+        const currentUser = auth.currentUser;
+        const historyItem: HistoryItem = {
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'status_change',
+          from: lead.status,
+          to: 'Order Confirmed',
+          updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+          updatedById: currentUser?.uid || 'system',
+          timestamp,
+          note: 'Order confirmed and stock deducted'
+        };
+
         transaction.update(leadRef, {
           status: 'Order Confirmed',
           ltv: (lead.ltv || 0) + lead.value,
-          updatedAt: new Date().toISOString()
+          updatedAt: timestamp,
+          history: arrayUnion(historyItem)
         });
       });
       
@@ -460,6 +523,14 @@ export const dataService = {
     }
   },
 
+  async deleteInventoryItem(itemId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'inventory', itemId));
+    } catch (e) {
+      handleFirestoreError(e, 'delete', `inventory/${itemId}`);
+    }
+  },
+
   async addInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<string> {
     try {
       const docRef = await addDoc(collection(db, 'inventory'), item);
@@ -471,11 +542,43 @@ export const dataService = {
 
   async updateOrderStatus(orderId: string, status: Order['status'], extras: Partial<Order> = {}): Promise<void> {
     try {
-      await updateDoc(doc(db, 'orders', orderId), { 
+      const orderRef = doc(db, 'orders', orderId);
+      const orderSnap = await getDoc(orderRef);
+      const orderData = orderSnap.data() as Order;
+      const timestamp = new Date().toISOString();
+      const currentUser = auth.currentUser;
+
+      await updateDoc(orderRef, { 
         status, 
         ...extras,
-        updatedAt: new Date().toISOString()
+        updatedAt: timestamp
       });
+
+      // If leadId exists, update the lead status too
+      if (orderData.leadId) {
+        const leadRef = doc(db, 'leads', orderData.leadId);
+        const leadSnap = await getDoc(leadRef);
+        if (leadSnap.exists()) {
+          const leadData = leadSnap.data() as Lead;
+          const historyItem: HistoryItem = {
+            id: Math.random().toString(36).substring(2, 9),
+            type: 'status_change',
+            from: leadData.status,
+            to: status as any, // Cast since LeadStatus might not have all Order statuses but usually they overlap
+            updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+            updatedById: currentUser?.uid || 'system',
+            timestamp,
+            note: `Order status updated to ${status}. ${extras.deliveryNotes || ''}`
+          };
+          await updateDoc(leadRef, {
+            status: status as any,
+            updatedAt: timestamp,
+            history: arrayUnion(historyItem)
+          });
+        }
+      }
+
+      await this.addAuditLog('Order Update', orderId, 'Order', `Status updated to ${status}`);
     } catch (e) {
       handleFirestoreError(e, 'update', `orders/${orderId}`);
     }

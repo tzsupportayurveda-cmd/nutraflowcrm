@@ -30,6 +30,7 @@ import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Order } from '@/src/types';
 import { format } from 'date-fns';
+import { LeadDetailDialog } from './LeadDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,8 @@ export function DeliveryPortal() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLeadDetailOpen, setIsLeadDetailOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   
   // Local state for update
   const [updateData, setUpdateData] = useState({
@@ -171,9 +174,15 @@ export function DeliveryPortal() {
                 <TableBody>
                   {filteredOrders.map(order => (
                     <TableRow key={order.id} className="h-20 hover:bg-slate-50/50 transition-colors group">
-                      <TableCell className="pl-6">
+                      <TableCell 
+                        className="pl-6 cursor-pointer" 
+                        onClick={() => {
+                          setSelectedLeadId(order.leadId);
+                          setIsLeadDetailOpen(true);
+                        }}
+                      >
                         <div className="flex flex-col leading-tight">
-                          <span className="font-black text-indigo-600">#{order.orderSerial || order.id.substring(0, 5)}</span>
+                          <span className="font-black text-indigo-600 hover:underline">#{order.orderSerial || order.id.substring(0, 5)}</span>
                           <span className="text-[10px] font-bold text-slate-400">{format(new Date(order.createdAt), 'MMM dd, h:mm a')}</span>
                         </div>
                       </TableCell>
@@ -316,6 +325,12 @@ export function DeliveryPortal() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <LeadDetailDialog 
+        leadId={selectedLeadId} 
+        open={isLeadDetailOpen} 
+        onOpenChange={setIsLeadDetailOpen} 
+      />
     </div>
   );
 }

@@ -19,8 +19,12 @@ import {
   User as UserIcon,
   ChevronDown,
   Loader2,
-  LogOut
+  LogOut,
+  Check
 } from 'lucide-react';
+import { dataService } from '@/src/services/dataService';
+import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -39,6 +43,17 @@ function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
   const { user, signOut, loading, impersonate, isImpersonating } = useAuth();
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      return dataService.subscribeNotifications(user.id, (data) => {
+        setNotifications(data);
+      });
+    }
+  }, [user?.id]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
     return (
@@ -115,10 +130,66 @@ function CRMApp() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-slate-500 relative hover:bg-slate-50">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-slate-500 relative hover:bg-slate-50 outline-none">
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[8px] font-black text-white flex items-center justify-center animate-pulse">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl border-slate-200 shadow-2xl bg-white overflow-hidden z-[100]">
+                <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Notifications</span>
+                    <span className="text-xs font-bold opacity-80">{unreadCount} New Messages</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => user?.id && dataService.clearNotifications(user.id)}
+                    className="text-[10px] font-black uppercase text-white/50 hover:text-white hover:bg-white/10"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-10 text-center space-y-2">
+                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+                        <Bell className="w-6 h-6 text-slate-200" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-900">No Notifications</p>
+                      <p className="text-[10px] text-slate-400 font-medium">We'll alert you when there's an update.</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => dataService.markNotificationRead(n.id)}
+                        className={cn(
+                          "p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors relative group",
+                          !n.read && "bg-indigo-50/30"
+                        )}
+                      >
+                        {!n.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="text-sm font-black text-slate-900">{n.title}</h4>
+                          {!n.read && <Check className="w-3.5 h-3.5 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">{n.message}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-2">
+                          {new Date(n.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-50">
               <HelpCircle className="w-5 h-5" />
             </Button>

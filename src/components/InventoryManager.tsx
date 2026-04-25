@@ -9,7 +9,8 @@ import {
   Box,
   Loader2,
   Plus,
-  Minus
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { 
   Table, 
@@ -98,6 +99,16 @@ export function InventoryManager() {
       toast.success('Stock updated successfully');
     } catch (error) {
       toast.error('Failed to update stock');
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+    try {
+      await dataService.deleteInventoryItem(id);
+      toast.success('Product deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete product');
     }
   };
 
@@ -242,18 +253,28 @@ export function InventoryManager() {
                   <TableCell className="font-medium text-slate-600">₹{item.price.toFixed(2)}</TableCell>
                   <TableCell className="font-bold text-slate-900">₹{(item.stock * item.price).toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-semibold"
-                      onClick={() => {
-                        setSelectedItem(item);
-                        setNewStock(item.stock);
-                        setIsUpdateOpen(true);
-                      }}
-                    >
-                      Update Stock
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-semibold"
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setNewStock(item.stock);
+                          setIsUpdateOpen(true);
+                        }}
+                      >
+                        Update Stock
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

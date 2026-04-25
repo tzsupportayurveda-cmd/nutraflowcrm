@@ -1,0 +1,387 @@
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  Mail,
+  Phone,
+  Calendar,
+  Loader2,
+  ChevronDown,
+  MapPin,
+  CheckCircle,
+  TrendingUp,
+  X
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Lead, LeadStatus, User, Order, InventoryItem, HistoryItem } from '@/src/types';
+import { cn } from '@/lib/utils';
+import { dataService } from '@/src/services/dataService';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
+const statusColors: Record<string, string> = {
+  'New Lead': 'bg-blue-50 text-blue-700 border-blue-200',
+  'Interested': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Order Confirmed': 'bg-emerald-600 text-white border-emerald-600',
+  'Dispatched': 'bg-blue-600 text-white border-blue-600',
+  'Shipped': 'bg-cyan-600 text-white border-cyan-600',
+  'Delivered': 'bg-emerald-500 text-white border-emerald-500',
+  'RTO/Cancelled': 'bg-red-50 text-red-700 border-red-200',
+  'Call Back': 'bg-purple-50 text-purple-700 border-purple-200',
+  'No Answer': 'bg-orange-50 text-orange-700 border-orange-200',
+  'Not Interested': 'bg-slate-100 text-slate-500 border-slate-200',
+  'Fake/Spam': 'bg-gray-100 text-gray-500 border-gray-200',
+  'Unavailable': 'bg-amber-50 text-amber-700 border-amber-200',
+  'Language Issue': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+};
+
+interface LeadDetailDialogProps {
+  leadId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDelete?: (id: string) => void;
+}
+
+export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadDetailDialogProps) {
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [editableLead, setEditableLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
+  const [statusOpen, setStatusOpen] = useState(false);
+  const { user: currentUser } = useAuth();
+
+  useEffect(() => {
+    if (leadId && open) {
+      setLoading(true);
+      // Fetch lead data
+      const unsub = dataService.subscribeLeads({ id: 'system', role: 'Admin' } as any, (leads) => {
+        const found = leads.find(l => l.id === leadId);
+        if (found) {
+          setLead(found);
+          setEditableLead({ ...found });
+          
+          // Fetch associations
+          dataService.getCustomerHistory(found.phone, found.email).then(setCustomerHistory);
+        }
+        setLoading(false);
+      });
+
+      dataService.getInventoryList().then(setInventory);
+
+      return () => unsub();
+    }
+  }, [leadId, open]);
+
+  const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
+    if (!editableLead) return;
+    try {
+      await dataService.updateLead(editableLead.id, { status, ...extras });
+      await dataService.addLeadHistory(editableLead.id, {
+        type: 'status_change',
+        from: lead?.status || 'Unknown',
+        to: status,
+        updatedBy: currentUser?.name || 'System',
+        updatedById: currentUser?.id || 'system',
+        note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
+      });
+      toast.success(`Status updated to ${status}`);
+    } catch (e) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!editableLead) return;
+    try {
+      setLoading(true);
+      const { id, history, ...updates } = editableLead;
+      await dataService.updateLead(id, updates);
+      await dataService.addLeadHistory(id, {
+        type: 'other',
+        updatedBy: currentUser?.name || 'System',
+        updatedById: currentUser?.id || 'system',
+        note: 'Updated lead details'
+      });
+      setHasChanges(false);
+      toast.success('Details saved');
+    } catch (e) {
+      toast.error('Save failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateOrder = async (l: Lead) => {
+    try {
+      setLoading(true);
+      await dataService.handleOrderConfirmation(l);
+      toast.success("Order created successfully");
+      onOpenChange(false);
+    } catch (e) {
+      toast.error("Failed to create order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[1000px] rounded-2xl p-0 overflow-hidden bg-white">
+        {loading && !editableLead ? (
+          <div className="flex flex-col items-center justify-center p-20 gap-4">
+            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+            <p className="text-slate-500 font-medium">Loading lead details...</p>
+          </div>
+        ) : editableLead ? (
+          <div className="flex h-[85vh] overflow-hidden">
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden border-r border-slate-100">
+              <div className="p-4 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className={cn("text-[10px] font-black uppercase tracking-widest px-3 py-1 border-2", statusColors[editableLead.status])}>
+                    {editableLead.status}
+                  </Badge>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {editableLead.serialId}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-xs font-bold text-slate-500">Close</Button>
+                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && onDelete && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        if (confirm('Delete lead?')) {
+                          onDelete(editableLead.id);
+                          onOpenChange(false);
+                        }
+                      }} 
+                      className="h-8 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      Delete Lead
+                    </Button>
+                  )}
+                  {hasChanges && (
+                    <Button onClick={handleSaveChanges} size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 shadow-sm">
+                      Save Profile
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                {/* Header Info */}
+                <div className="space-y-4">
+                  <Input 
+                    value={editableLead.name}
+                    onChange={(e) => {
+                      setEditableLead({ ...editableLead, name: e.target.value });
+                      setHasChanges(true);
+                    }}
+                    className="text-3xl font-black bg-transparent border-none p-0 h-auto focus-visible:ring-0 shadow-none placeholder:text-slate-200"
+                    placeholder="Customer Name"
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Phone</label>
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+                        <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                        <Input 
+                          value={editableLead.phone} 
+                          onChange={e => { setEditableLead({...editableLead, phone: e.target.value}); setHasChanges(true); }} 
+                          className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Email</label>
+                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 h-10">
+                        <Mail className="w-3.5 h-3.5 text-blue-500" />
+                        <Input 
+                          value={editableLead.email || ''} 
+                          onChange={e => { setEditableLead({...editableLead, email: e.target.value}); setHasChanges(true); }} 
+                          className="border-none bg-transparent shadow-none focus-visible:ring-0 text-sm font-bold h-full"
+                          placeholder="No email provided"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Full Address</label>
+                    <div className="flex items-start gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 mt-1" />
+                      <textarea 
+                        value={editableLead.address || ''} 
+                        onChange={e => { setEditableLead({...editableLead, address: e.target.value}); setHasChanges(true); }} 
+                        className="w-full bg-transparent border-none shadow-none focus:ring-0 text-sm font-bold min-h-[60px] resize-none outline-none"
+                        placeholder="No address provided"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">City</label>
+                      <Input value={editableLead.city || ''} onChange={e => { setEditableLead({...editableLead, city: e.target.value}); setHasChanges(true); }} className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pincode</label>
+                      <Input value={editableLead.pincode || ''} onChange={e => { setEditableLead({...editableLead, pincode: e.target.value}); setHasChanges(true); }} className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Package / Product</label>
+                      <select 
+                        value={editableLead.product || ''}
+                        onChange={e => {
+                          const prodName = e.target.value;
+                          const item = inventory.find(i => i.name === prodName);
+                          setEditableLead({
+                            ...editableLead, 
+                            product: prodName,
+                            value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
+                      >
+                        {inventory.map(item => (
+                          <option key={item.id} value={item.name}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
+                      <Input 
+                        type="number" 
+                        min="1" 
+                        value={editableLead.quantity || 1} 
+                        onChange={e => {
+                          const qty = parseInt(e.target.value) || 1;
+                          const item = inventory.find(i => i.name === editableLead.product);
+                          const price = item ? item.price : (editableLead.value / (editableLead.quantity || 1));
+                          setEditableLead({...editableLead, quantity: qty, value: price * qty});
+                          setHasChanges(true);
+                        }}
+                        className="h-10 bg-slate-50 border-slate-200 rounded-xl font-bold" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agent Notes</label>
+                  <textarea 
+                    value={editableLead.notes || ''}
+                    onChange={e => { setEditableLead({...editableLead, notes: e.target.value}); setHasChanges(true); }}
+                    className="w-full min-h-[100px] p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-slate-100 outline-none resize-none"
+                    placeholder="Add customer notes here..."
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pipeline Status</label>
+                  <div className="relative">
+                    <Button 
+                      onClick={() => setStatusOpen(!statusOpen)}
+                      className="w-full h-12 bg-slate-900 text-white gap-2 font-black uppercase text-[10px] tracking-widest rounded-xl"
+                    >
+                      <CheckCircle className="w-4 h-4" /> {editableLead.status}
+                      <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
+                    </Button>
+                    {statusOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 w-[300px] p-2 bg-white z-[1200] rounded-xl shadow-2xl border border-slate-200">
+                        {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Order Confirmed', 'RTO/Cancelled'].map(s => (
+                          <button 
+                            key={s} 
+                            onClick={() => {
+                              handleUpdateStatus(s as LeadStatus);
+                              setStatusOpen(false);
+                            }}
+                            className="w-full flex items-center h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl space-y-4">
+                  <h3 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Order Entry</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-emerald-700/60 uppercase">Order Value</span>
+                      <span className="text-xl font-black text-emerald-600">₹{(editableLead.value || 0).toLocaleString()}</span>
+                    </div>
+                    <Button 
+                      onClick={() => handleCreateOrder(editableLead)}
+                      className="bg-emerald-600 text-white font-black uppercase text-[10px] h-10 px-6 rounded-xl"
+                    >
+                      Confirm Order
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">History Log</label>
+                  <div className="space-y-3">
+                    {(editableLead.history || []).slice().reverse().map((item, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex justify-between items-start">
+                          <span className="text-[10px] font-black text-slate-900 uppercase">{item.type}</span>
+                          <span className="text-[9px] text-slate-400">{new Date(item.timestamp).toLocaleString()}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 font-medium">
+                          {item.type === 'status_change' ? `${item.from} → ${item.to}` : item.note}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1 font-bold">By {item.updatedBy}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Stats */}
+            <div className="w-80 flex flex-col bg-slate-50/50 p-6">
+              <div className="space-y-6">
+                <div className="p-4 bg-emerald-900 text-white rounded-2xl">
+                  <p className="text-[9px] font-black uppercase tracking-widest opacity-60">Customer LTV</p>
+                  <p className="text-2xl font-black">₹{(editableLead.ltv || 0).toLocaleString()}</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recent Orders</h4>
+                  {customerHistory.orders.map(o => (
+                    <div key={o.id} className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-black">#{o.orderSerial}</span>
+                        <Badge className="text-[8px] bg-indigo-50 text-indigo-600">{o.status}</Badge>
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500">₹{o.total.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}

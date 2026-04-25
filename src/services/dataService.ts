@@ -364,6 +364,14 @@ export const dataService = {
     );
   },
 
+  async updateTask(id: string, updates: Partial<Task>) {
+    try {
+      await updateDoc(doc(db, 'tasks', id), updates);
+    } catch (e) {
+      handleFirestoreError(e, 'update', `tasks/${id}`);
+    }
+  },
+
   // --- Lead Status Change with Stock & Tasks ---
   async handleOrderConfirmation(lead: Lead) {
     try {

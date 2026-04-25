@@ -169,7 +169,7 @@ export function LeadManager() {
         if (status === 'Call Back' && extras.callbackTime) {
           await dataService.addTask({
             title: `Callback requested for ${currentLead.name}`,
-            description: `Auto-generated callback task for lead ${currentLead.serialId || leadId}`,
+            description: `Scheduled callback for ${currentLead.name}. Phone: ${currentLead.phone}`,
             dueDate: extras.callbackTime,
             userId: currentUser.id,
             leadId: leadId,
@@ -549,6 +549,7 @@ export function LeadManager() {
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Value</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Assigned</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2 text-right">Added On</TableHead>
+                <TableHead className="w-10 px-2"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -592,19 +593,37 @@ export function LeadManager() {
                     </div>
                   </TableCell>
                   <TableCell className="px-2">
-                    <Badge variant="outline" className={cn(
-                      "text-[9px] font-black uppercase tracking-widest h-5 px-2 border-2",
-                      statusColors[lead.status]
-                    )}>
-                      {lead.status}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] font-black uppercase tracking-widest h-5 px-2 border-2 w-fit",
+                        statusColors[lead.status]
+                      )}>
+                        {lead.status}
+                      </Badge>
+                      {lead.status === 'Call Back' && lead.callbackTime && (
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-purple-600 animate-pulse">
+                          <Calendar className="w-2 h-2" />
+                          {new Date(lead.callbackTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="px-2">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-700 leading-none">₹{lead.value.toLocaleString()}</span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                        {lead.paymentMode} • {lead.quantity} Unit
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-700 leading-none">₹{lead.value.toLocaleString()}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                          {lead.paymentMode} • {lead.quantity} Unit
+                        </span>
+                      </div>
+                      <a 
+                        href={`tel:${lead.phone}`} 
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                        title="Call Customer"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                      </a>
                     </div>
                   </TableCell>
                   <TableCell className="px-2">
@@ -619,6 +638,27 @@ export function LeadManager() {
                     <span className="text-[10px] font-bold text-slate-400">
                       {new Date(lead.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                     </span>
+                  </TableCell>
+                  <TableCell className="px-2 text-right" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="w-4 h-4 text-slate-400" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40 z-[100]">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Status</DropdownMenuLabel>
+                        {['Call Back', 'No Answer', 'Interested', 'Order Confirmed', 'RTO/Cancelled'].map(s => (
+                          <DropdownMenuItem key={s} onSelect={() => handleUpdateStatus(lead.id, s as LeadStatus)}>
+                            {s}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => handleDelete(lead.id)} className="text-red-500 hover:text-red-600">
+                          Delete Lead
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}

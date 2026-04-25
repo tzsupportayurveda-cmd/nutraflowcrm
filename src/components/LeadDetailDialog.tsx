@@ -59,6 +59,8 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
   const [statusOpen, setStatusOpen] = useState(false);
+  const [showCallbackScheduler, setShowCallbackScheduler] = useState(false);
+  const [callbackTime, setCallbackTime] = useState('');
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
@@ -70,6 +72,9 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
         if (found) {
           setLead(found);
           setEditableLead({ ...found });
+          if (found.callbackTime) {
+            setCallbackTime(found.callbackTime);
+          }
           
           // Fetch associations
           dataService.getCustomerHistory(found.phone, found.email).then(setCustomerHistory);
@@ -87,6 +92,20 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     if (!editableLead) return;
     try {
       await dataService.updateLead(editableLead.id, { status, ...extras });
+      
+      // If callback, also create a task
+      if (status === 'Call Back' && extras.callbackTime) {
+        await dataService.addTask({
+          title: `Callback requested: ${editableLead.name}`,
+          description: `Scheduled callback for ${editableLead.name}. Phone: ${editableLead.phone}`,
+          dueDate: extras.callbackTime,
+          userId: editableLead.assignedToId || currentUser?.id || 'system',
+          leadId: editableLead.id,
+          status: 'pending',
+          type: 'callback'
+        });
+      }
+
       await dataService.addLeadHistory(editableLead.id, {
         type: 'status_change',
         from: lead?.status || 'Unknown',
@@ -99,6 +118,15 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     } catch (e) {
       toast.error('Failed to update status');
     }
+  };
+
+  const handleScheduleCallback = () => {
+    if (!callbackTime) {
+      toast.error("Please select a callback time");
+      return;
+    }
+    handleUpdateStatus('Call Back', { callbackTime });
+    setShowCallbackScheduler(false);
   };
 
   const handleSaveChanges = async () => {
@@ -294,6 +322,27 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pipeline Status</label>
+                  
+                  {editableLead.status === 'Call Back' && editableLead.callbackTime && (
+                    <div className="p-3 bg-purple-50 border border-purple-100 rounded-xl flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-purple-700/60 uppercase">Scheduled Callback</span>
+                        <span className="text-sm font-black text-purple-900">{new Date(editableLead.callbackTime).toLocaleString()}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowCallbackScheduler(true)}
+                        className="ml-auto h-7 text-[10px] font-black text-purple-600 hover:bg-purple-100 uppercase"
+                      >
+                        Reschedule
+                      </Button>
+                    </div>
+                  )}
+
                   <div className="relative">
                     <Button 
                       onClick={() => setStatusOpen(!statusOpen)}
@@ -308,8 +357,13 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                           <button 
                             key={s} 
                             onClick={() => {
-                              handleUpdateStatus(s as LeadStatus);
-                              setStatusOpen(false);
+                              if (s === 'Call Back') {
+                                setShowCallbackScheduler(true);
+                                setStatusOpen(false);
+                              } else {
+                                handleUpdateStatus(s as LeadStatus);
+                                setStatusOpen(false);
+                              }
                             }}
                             className="w-full flex items-center h-10 px-3 cursor-pointer rounded-lg hover:bg-slate-50 font-bold text-sm text-slate-700"
                           >
@@ -319,6 +373,32 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       </div>
                     )}
                   </div>
+
+                  {showCallbackScheduler && (
+                    <div className="mt-3 p-4 bg-purple-50 border border-purple-100 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-purple-900 uppercase tracking-widest">Schedule Callback</h4>
+                        <Button variant="ghost" size="sm" onClick={() => setShowCallbackScheduler(false)} className="h-6 w-6 p-0 rounded-full">
+                          <X className="w-3 h-3 text-purple-400" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-purple-600 uppercase">Select Date & Time</label>
+                        <Input 
+                          type="datetime-local" 
+                          value={callbackTime}
+                          onChange={(e) => setCallbackTime(e.target.value)}
+                          className="bg-white border-purple-200 rounded-xl font-bold"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleScheduleCallback}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] h-10 rounded-xl"
+                      >
+                        Confirm Schedule
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl space-y-4">

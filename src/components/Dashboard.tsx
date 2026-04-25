@@ -640,15 +640,29 @@ export function Dashboard() {
                 <h4 className="font-black text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">{task.title}</h4>
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2 italic">"{task.description}"</p>
                 <div className="pt-4 flex gap-2">
-                  <Button variant="ghost" size="sm" className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600">
-                    Details
-                  </Button>
+                  {task.type === 'callback' && (
+                    <Button 
+                      asChild 
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest h-8"
+                    >
+                      <a href={`tel:${task.description.match(/Phone: (\d+)/)?.[1] || ''}`}>
+                        Call Now
+                      </a>
+                    </Button>
+                  )}
                   <Button 
                     size="sm" 
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest h-8"
-                    onClick={() => {
-                        // Mark as completed logic would go here
-                        toast.success('Task marked as completed');
+                    className={cn(
+                      "flex-1 font-black uppercase text-[10px] tracking-widest h-8",
+                      task.type === 'callback' ? "bg-slate-100 text-slate-900 hover:bg-slate-200" : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    )}
+                    onClick={async () => {
+                        try {
+                          await dataService.updateTask(task.id, { status: 'completed' });
+                          toast.success('Task marked as completed');
+                        } catch (e) {
+                          toast.error('Failed to complete task');
+                        }
                     }}
                   >
                     Done

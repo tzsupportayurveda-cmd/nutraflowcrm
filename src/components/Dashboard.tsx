@@ -37,6 +37,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
@@ -221,33 +222,35 @@ export function Dashboard() {
                 <ChevronDown className="w-4 h-4 text-slate-400" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-black px-2 py-1.5">View Agent Performance</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setSelectedAgentId('all')} className="rounded-lg">All Company Data</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {teamMembers.map(member => (
-                  <DropdownMenuItem 
-                    key={member.id} 
-                    onSelect={() => setSelectedAgentId(member.id)}
-                    className="rounded-lg gap-2"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">
-                      {member.name.charAt(0)}
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{member.name}</span>
-                        <span className={cn(
-                          "text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter",
-                          member.role === 'Manager' ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"
-                        )}>
-                          {member.role}
-                        </span>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-black px-2 py-1.5">View Agent Performance</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setSelectedAgentId('all')} className="rounded-lg">All Company Data</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {teamMembers.map(member => (
+                    <DropdownMenuItem 
+                      key={member.id} 
+                      onSelect={() => setSelectedAgentId(member.id)}
+                      className="rounded-lg gap-2"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-bold text-emerald-700">
+                        {member.name.charAt(0)}
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono italic">ID: {member.id.substring(0, 8)}...</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-900">{member.name}</span>
+                          <span className={cn(
+                            "text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter",
+                            member.role === 'Manager' ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"
+                          )}>
+                            {member.role}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono italic">ID: {member.id.substring(0, 8)}...</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

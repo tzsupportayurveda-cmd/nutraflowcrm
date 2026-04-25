@@ -119,10 +119,16 @@ export const dataService = {
       where('userId', '==', userId),
       orderBy('timestamp', 'desc')
     );
-    return onSnapshot(q, (snapshot) => {
-      const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      callback(notifications);
-    });
+    return onSnapshot(q, 
+      (snapshot) => {
+        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(notifications);
+      },
+      (error) => {
+        console.error("Notifications subscription error:", error);
+        callback([]);
+      }
+    );
   },
 
   async markNotificationRead(id: string) {
@@ -346,10 +352,16 @@ export const dataService = {
       where('status', '==', 'pending'),
       orderBy('dueDate', 'asc')
     );
-    return onSnapshot(q, (snapshot) => {
-      const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-      callback(tasks);
-    });
+    return onSnapshot(q, 
+      (snapshot) => {
+        const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        callback(tasks);
+      },
+      (error) => {
+        console.error("Tasks subscription error:", error);
+        callback([]);
+      }
+    );
   },
 
   // --- Lead Status Change with Stock & Tasks ---

@@ -641,14 +641,12 @@ export function Dashboard() {
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2 italic">"{task.description}"</p>
                 <div className="pt-4 flex gap-2">
                   {task.type === 'callback' && (
-                    <Button 
-                      asChild 
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest h-8"
+                    <a 
+                      href={`tel:${task.description.match(/Phone: (\d+)/)?.[1] || ''}`}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-widest h-8 flex items-center justify-center rounded-lg no-underline"
                     >
-                      <a href={`tel:${task.description.match(/Phone: (\d+)/)?.[1] || ''}`}>
-                        Call Now
-                      </a>
-                    </Button>
+                      Call Now
+                    </a>
                   )}
                   <Button 
                     size="sm" 

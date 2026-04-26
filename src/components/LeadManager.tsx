@@ -641,10 +641,8 @@ export function LeadManager() {
                   </TableCell>
                   <TableCell className="px-2 text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                        </Button>
+                      <DropdownMenuTrigger className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors cursor-pointer outline-none">
+                        <MoreHorizontal className="w-4 h-4 text-slate-400" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40 z-[100]">
                         <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Status</DropdownMenuLabel>

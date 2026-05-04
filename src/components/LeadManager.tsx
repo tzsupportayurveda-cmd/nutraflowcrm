@@ -473,47 +473,70 @@ export function LeadManager() {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center gap-4 p-3 bg-emerald-600 text-white rounded-xl shadow-lg"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-white/10 min-w-[500px]"
         >
-          <span className="text-sm font-bold ml-2">{selectedLeads.length} Leads Selected</span>
-          <div className="h-6 w-px bg-white/20 mx-2" />
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase opacity-80">Change Status:</span>
-            <div className="flex gap-1 overflow-x-auto no-scrollbar">
-              {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
-                <button 
-                  key={s}
-                  onClick={() => handleBulkUpdate(s as LeadStatus)}
-                  className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded text-[10px] font-black uppercase tracking-widest whitespace-nowrap"
-                >
-                  {s}
-                </button>
-              ))}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black">
+              {selectedLeads.length}
             </div>
+            <span className="text-sm font-bold">Leads Selected</span>
           </div>
-          {currentUser?.role === 'Admin' && (
-            <>
-              <div className="h-6 w-px bg-white/20 mx-2" />
+
+          <div className="h-8 w-px bg-white/10 mx-2" />
+
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Bulk Actions:</span>
+            
+            {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="h-8 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase inline-flex items-center transition-colors outline-none">
-                  Assign To
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest">
+                    <UserPlus className="w-3.5 h-3.5" /> Assign To Agent
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48 bg-white z-[100]">
-                  {team.filter(t => t.role === 'Sales').map(agent => (
-                    <DropdownMenuItem key={agent.id} onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}>
-                      {agent.name}
-                    </DropdownMenuItem>
-                  ))}
+                <DropdownMenuContent align="end" className="w-56 p-2 bg-white">
+                  <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Sales Agent</DropdownMenuLabel>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
+                      <DropdownMenuItem 
+                        key={agent.id} 
+                        onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                        className="flex items-center gap-2 p-2"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">
+                          {agent.name[0]}
+                        </div>
+                        <span className="text-sm font-medium">{agent.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
-          )}
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest">
+                  Change Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-1 bg-white">
+                {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
+                  <DropdownMenuItem key={s} onSelect={() => handleBulkUpdate(s as LeadStatus)}>
+                    {s}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <Button 
             variant="ghost" 
-            className="ml-auto h-8 text-white/70 hover:text-white"
+            size="sm"
+            className="h-9 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest"
             onClick={() => setSelectedLeads([])}
           >
-            Deselect
+            Cancel
           </Button>
         </motion.div>
       )}

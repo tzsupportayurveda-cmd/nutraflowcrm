@@ -19,6 +19,8 @@ import { Lead, LeadStatus, User, Order, InventoryItem, HistoryItem } from '@/src
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/src/lib/firebase';
 import { 
   Dialog, 
   DialogContent, 
@@ -57,6 +59,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [team, setTeam] = useState<User[]>([]);
   const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
   const [statusOpen, setStatusOpen] = useState(false);
   const [showCallbackScheduler, setShowCallbackScheduler] = useState(false);
@@ -84,9 +87,21 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
       dataService.getInventoryList().then(setInventory);
 
-      return () => unsub();
+      // Fetch team for assignment
+      let teamUnsub = () => {};
+      if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
+        const q = collection(db, 'users');
+        teamUnsub = onSnapshot(q, (snapshot) => {
+          setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+        });
+      }
+
+      return () => {
+        unsub();
+        teamUnsub();
+      };
     }
-  }, [leadId, open]);
+  }, [leadId, open, currentUser]);
 
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
     if (!editableLead) return;
@@ -127,6 +142,29 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     }
     handleUpdateStatus('Call Back', { callbackTime });
     setShowCallbackScheduler(false);
+  };
+
+  const handleAssignLead = async (agent: User) => {
+    if (!editableLead) return;
+    try {
+      await dataService.updateLead(editableLead.id, { 
+        assignedTo: agent.name, 
+        assignedToId: agent.id 
+      });
+      await dataService.addLeadHistory(editableLead.id, {
+        type: 'assignment',
+        from: editableLead.assignedTo || 'Unassigned',
+        to: agent.name,
+        updatedBy: currentUser?.name || 'System',
+        updatedById: currentUser?.id || 'system'
+      });
+      toast.success(`Assigned to ${agent.name}`);
+      
+      // Update local state
+      setEditableLead({ ...editableLead, assignedTo: agent.name, assignedToId: agent.id });
+    } catch (e) {
+      toast.error('Assignment failed');
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -373,6 +411,31 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       </div>
                     )}
                   </div>
+
+                  {/* Assignment Section */}
+                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Assign Agent</label>
+                      <select 
+                        value={editableLead.assignedToId || ''}
+                        onChange={(e) => {
+                          const agent = team.find(t => t.id === e.target.value);
+                          if (agent) handleAssignLead(agent);
+                        }}
+                        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/10"
+                      >
+                        <option value="">Select Agent</option>
+                        {team.filter(t => t.role === 'Sales' || t.role === 'Manager').map(agent => (
+                          <option key={agent.id} value={agent.id}>{agent.name} ({agent.role})</option>
+                        ))}
+                      </select>
+                      {editableLead.assignedTo && (
+                        <p className="mt-1.5 text-[10px] font-bold text-slate-400 italic">
+                          Currently assigned to: <span className="text-emerald-600">{editableLead.assignedTo}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {showCallbackScheduler && (
                     <div className="mt-3 p-4 bg-purple-50 border border-purple-100 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-1">

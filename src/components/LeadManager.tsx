@@ -108,7 +108,7 @@ export function LeadManager() {
 
     // Also fetch team for assignment (Admin only)
     let teamUnsub = () => {};
-    if (currentUser?.role === 'Admin') {
+    if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
       const q = collection(db, 'users');
       teamUnsub = onSnapshot(q, (snapshot) => {
         setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
@@ -651,6 +651,19 @@ export function LeadManager() {
                             {s}
                           </DropdownMenuItem>
                         ))}
+                        {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign To</DropdownMenuLabel>
+                            <div className="max-h-[200px] overflow-y-auto">
+                              {team.filter(t => t.id !== lead.assignedToId).map(agent => (
+                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssign(lead.id, agent)}>
+                                  {agent.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </div>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={() => handleDelete(lead.id)} className="text-red-500 hover:text-red-600">
                           Delete Lead

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   MapPin,
   CheckCircle,
+  FileSpreadsheet,
   TrendingUp
 } from 'lucide-react';
 import { 
@@ -52,6 +53,7 @@ import {
 import { toast } from 'sonner';
 import { LeadAddDialog } from './LeadAddDialog';
 import { LeadDetailDialog } from './LeadDetailDialog';
+import { LeadImportDialog } from './LeadImportDialog';
 import { motion, AnimatePresence } from 'motion/react';
 
 const statusColors: Record<LeadStatus, string> = {
@@ -75,6 +77,7 @@ export function LeadManager() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [editableLead, setEditableLead] = useState<Lead | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -382,12 +385,25 @@ export function LeadManager() {
         </div>
         
         <div className="flex gap-2">
+          <LeadImportDialog 
+            open={isImportDialogOpen} 
+            onOpenChange={setIsImportDialogOpen} 
+          />
           <LeadAddDialog 
             open={isDialogOpen} 
             onOpenChange={setIsDialogOpen} 
             onAdd={handleAddLead} 
           />
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+            <Button 
+              variant="outline"
+              onClick={() => setIsImportDialogOpen(true)} 
+              className="border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 font-bold"
+            >
+              <FileSpreadsheet className="w-4 h-4" /> Import Excel
+            </Button>
+          )}
+          <Button onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2 font-bold">
             <UserPlus className="w-4 h-4" /> Add New Lead
           </Button>
         </div>

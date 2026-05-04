@@ -57,17 +57,25 @@ async function startServer() {
   // API Routes
   app.post('/api/webhook/lead', async (req, res) => {
     try {
+      // Simple API Key Security
+      const apiKey = req.headers['x-api-key'];
+      const expectedKey = process.env.SYNC_API_KEY || 'crm_sync_default_key_123';
+      
+      if (apiKey !== expectedKey) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid API Key' });
+      }
+
       const { 
         name, 
-        email, 
         phone, 
-        source = 'Website API', 
+        source = 'Excel Sync', 
         address = '', 
         city = '', 
         pincode = '', 
-        product = 'Advanced Gel Formula',
-        quantity = 1,
-        affiliateId: providedAffiliateId = ''
+        product = '',
+        package: leadPackage = '',
+        price = 0,
+        method = 'COD'
       } = req.body;
       
       if (!name || !phone) {
@@ -78,43 +86,31 @@ async function startServer() {
       const nextSerial = await getNextId('leads', 1);
       const serialId = nextSerial < 10 ? `0${nextSerial}` : `${nextSerial}`;
       
-      let finalAffiliateId = providedAffiliateId;
-      if (!finalAffiliateId) {
-        const nextAffId = await getNextId('affiliates', 101);
-        finalAffiliateId = `${nextAffId}`;
-      }
-
-      // Standard Pricing Logic: 1 bottle = 2999, 2 bottles = 3999
-      let value = 2999;
-      if (Number(quantity) === 2) value = 3999;
-      else if (Number(quantity) > 2) value = 3999 + ((Number(quantity) - 2) * 1500);
-
       const leadData = {
         serialId,
+        customerName: name, // Using standard field names
         name,
-        email: email || '',
         phone,
-        value,
+        value: Number(price) || 0,
         source,
         address,
         city,
         pincode,
-        product,
-        quantity: Number(quantity),
-        affiliateId: finalAffiliateId,
-        status: 'New',
-        paymentMode: 'COD',
+        product: product || leadPackage || 'Auto-Imported',
+        status: 'New Lead',
+        paymentMode: method || 'COD',
         assignedTo: 'Unassigned',
         assignedToId: '',
-        package: `${quantity} Bottle${Number(quantity) !== 1 ? 's' : ''}`,
+        package: leadPackage || product || '',
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         history: [{
           id: Math.random().toString(36).substring(2, 9),
           type: 'other',
-          updatedBy: 'System API',
+          updatedBy: 'Excel Sync',
           updatedById: 'api',
           timestamp: new Date().toISOString(),
-          note: 'Lead received via Website API'
+          note: 'Lead automatically synced from Excel/Sheet'
         }]
       };
 
@@ -126,7 +122,7 @@ async function startServer() {
         success: true, 
         message: 'Lead received and saved successfully!',
         leadId: docRef.id,
-        value: value
+        value: leadData.value
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown Server Error';

@@ -168,7 +168,7 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
           </div>
 
           <TabsContent value="manual">
-            <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto bg-slate-50/50">
+            <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50/50">
               {!file ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
@@ -253,7 +253,7 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
           </TabsContent>
 
           <TabsContent value="auto">
-            <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto bg-slate-50/50">
+            <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50/50">
               <div className="bg-emerald-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">

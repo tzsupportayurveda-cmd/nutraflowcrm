@@ -70,7 +70,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     if (leadId && open) {
       setLoading(true);
       // Fetch lead data
-      const unsub = dataService.subscribeLeads({ id: 'system', role: 'Admin' } as any, (leads) => {
+      const unsub = dataService.subscribeLeads(currentUser, (leads) => {
         const found = leads.find(l => l.id === leadId);
         if (found) {
           setLead(found);

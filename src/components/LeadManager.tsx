@@ -268,8 +268,8 @@ export function LeadManager() {
       await dataService.addLead({
         ...formData,
         status: formData.paymentMode === 'Prepaid' ? 'Order Confirmed' : formData.status,
-        assignedTo: currentUser.name,
-        assignedToId: currentUser.id,
+        assignedTo: formData.assignedTo || currentUser.name,
+        assignedToId: formData.assignedToId || currentUser.id,
       });
     } catch (error) {
       console.error(error);

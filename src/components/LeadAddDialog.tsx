@@ -9,9 +9,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LeadStatus, InventoryItem } from '../types';
+import { LeadStatus, InventoryItem, User } from '@/src/types';
 import { toast } from 'sonner';
-import { dataService } from '../services/dataService';
+import { dataService } from '@/src/services/dataService';
+import { useAuth } from '@/src/contexts/AuthContext';
 
 interface LeadAddDialogProps {
   open: boolean;
@@ -34,8 +35,12 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
     value: 0,
     source: 'Direct',
     paymentMode: 'COD' as 'COD' | 'Prepaid',
-    status: 'New Lead' as LeadStatus
+    status: 'New Lead' as LeadStatus,
+    assignedToId: '',
+    assignedTo: ''
   });
+  const [team, setTeam] = useState<User[]>([]);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -49,8 +54,12 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
           }));
         }
       });
+
+      if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
+        dataService.getTeamMembers().then(setTeam);
+      }
     }
-  }, [open]);
+  }, [open, currentUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +84,9 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
         value: inventory[0]?.price || 0,
         source: 'Direct',
         paymentMode: 'COD',
-        status: 'New Lead'
+        status: 'New Lead',
+        assignedToId: '',
+        assignedTo: ''
       });
       toast.success('Lead added successfully');
     } catch (error) {
@@ -221,6 +232,29 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
               </select>
             </div>
           </div>
+
+          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign To Agent</Label>
+              <select 
+                value={formData.assignedToId}
+                onChange={e => {
+                  const agent = team.find(t => t.id === e.target.value);
+                  setFormData({
+                    ...formData, 
+                    assignedToId: e.target.value,
+                    assignedTo: agent?.name || ''
+                  });
+                }}
+                className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+              >
+                <option value="">Auto-Assign (Round Robin)</option>
+                {team.filter(t => t.role === 'Sales').map(agent => (
+                  <option key={agent.id} value={agent.id}>{agent.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <DialogFooter className="pt-4">
             <Button type="submit" disabled={loading} className="w-full bg-slate-900 h-12 rounded-xl text-xs font-black uppercase tracking-widest">

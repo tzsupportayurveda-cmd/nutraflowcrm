@@ -147,9 +147,9 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!importing) onOpenChange(val); }}>
-      <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
-        <Tabs defaultValue="manual" className="w-full">
-          <div className="bg-slate-900 p-8 pb-0 text-white">
+      <DialogContent className="max-w-4xl bg-white p-0 overflow-hidden border-none rounded-3xl shadow-2xl h-[90vh] flex flex-col">
+        <Tabs defaultValue="manual" className="w-full h-full flex flex-col">
+          <div className="bg-slate-900 p-8 pb-0 text-white shrink-0">
             <DialogHeader>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-500 flex items-center justify-center">
@@ -167,8 +167,8 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
             </TabsList>
           </div>
 
-          <TabsContent value="manual">
-            <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50/50">
+          <TabsContent value="manual" className="flex-1 flex flex-col overflow-hidden m-0">
+            <div className="p-8 space-y-6 flex-1 overflow-y-auto bg-slate-50/50">
               {!file ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
@@ -252,8 +252,8 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
             </DialogFooter>
           </TabsContent>
 
-          <TabsContent value="auto">
-            <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto bg-slate-50/50">
+          <TabsContent value="auto" className="flex-1 flex flex-col overflow-hidden m-0">
+            <div className="p-8 space-y-6 flex-1 overflow-y-auto bg-slate-50/50">
               <div className="bg-emerald-600 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">

@@ -15,7 +15,8 @@ import {
   MapPin,
   CheckCircle,
   FileSpreadsheet,
-  TrendingUp
+  TrendingUp,
+  Trash2
 } from 'lucide-react';
 import { 
   Table, 
@@ -331,6 +332,22 @@ export function LeadManager() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedLeads.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedLeads.length} leads? This cannot be undone.`)) {
+      try {
+        setLoading(true);
+        await dataService.bulkDeleteLeads(selectedLeads);
+        toast.success(`Bulk deleted ${selectedLeads.length} leads`);
+        setSelectedLeads([]);
+      } catch (e) {
+        toast.error('Bulk delete failed');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const filteredLeads = leads.filter(lead => {
     // 1. Role & Access Filter
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
@@ -544,6 +561,17 @@ export function LeadManager() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBulkDelete}
+                className="h-9 px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white gap-2 border border-red-500/20 text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+              </Button>
+            )}
           </div>
 
           <Button 

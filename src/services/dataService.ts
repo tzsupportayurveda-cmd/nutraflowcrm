@@ -522,6 +522,20 @@ export const dataService = {
     }
   },
 
+  async bulkDeleteLeads(leadIds: string[]): Promise<void> {
+    try {
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      leadIds.forEach(id => {
+        batch.delete(doc(db, 'leads', id));
+      });
+      await batch.commit();
+      await this.addAuditLog('Bulk Delete', 'multiple', 'Lead', `Deleted ${leadIds.length} leads`);
+    } catch (e) {
+      handleFirestoreError(e, 'bulk_delete', 'leads');
+    }
+  },
+
   // --- Inventory ---
   subscribeInventory(callback: (items: InventoryItem[]) => void) {
     return onSnapshot(collection(db, 'inventory'), 

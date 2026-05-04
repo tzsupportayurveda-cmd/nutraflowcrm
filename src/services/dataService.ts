@@ -160,8 +160,9 @@ export const dataService = {
     if (['Admin', 'Manager', 'Marketer'].includes(user.role)) {
       q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
     } else {
-      // Sales reps only see their leads
-      q = query(collection(db, 'leads'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));
+      // Sales reps only see their leads. 
+      // Removing orderBy temporarily to avoid composite index requirement if it's missing.
+      q = query(collection(db, 'leads'), where('assignedToId', '==', user.id));
     }
     
     return onSnapshot(q, 

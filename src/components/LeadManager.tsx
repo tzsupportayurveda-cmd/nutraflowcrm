@@ -100,7 +100,11 @@ export function LeadManager() {
 
   useEffect(() => {
     const unsub = dataService.subscribeLeads(currentUser, (data) => {
-      setLeads(data);
+      // Sort manually since we removed it from some queries to avoid index issues
+      const sorted = [...data].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setLeads(sorted);
       setLoading(false);
     });
 

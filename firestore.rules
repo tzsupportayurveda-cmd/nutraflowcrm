@@ -57,10 +57,11 @@ service cloud.firestore {
     // 2. Leads
     match /leads/{leadId} {
       function canReadLead() {
+        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
         return request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
+               userRole in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
                (resource != null && resource.data.assignedToId == request.auth.uid) ||
-               (resource != null && resource.data.status == 'New Lead');
+               (resource != null && resource.data.status == 'New Lead' && userRole == 'Sales');
       }
 
       allow read: if isStaff() && canReadLead();

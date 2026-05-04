@@ -303,18 +303,42 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
                   <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Paste this code in App Script:</p>
                   <pre className="text-[10px] font-mono text-emerald-400 overflow-x-auto p-4 bg-black/30 rounded-xl leading-normal">
 {`function syncCRM(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var row = e.range.getRow();
+  
+  // Headers are in Row 1. Data starts from Row 2.
+  if (row < 2) return; 
+
   var url = "${window.location.origin}/api/webhook/lead";
   var payload = {
-    "name": e.range.offset(0, 1).getValue(), // Column B
-    "phone": e.range.offset(0, 2).getValue(), // Column C
-    "price": e.range.offset(0, 10).getValue() // Column K
+    "name": sheet.getRange(row, 2).getValue(),    // Column B (Name)
+    "phone": sheet.getRange(row, 3).getValue(),   // Column C (Phone)
+    "package": sheet.getRange(row, 4).getValue(), // Column D (Package)
+    "address": sheet.getRange(row, 5).getValue(), // Column E (Address)
+    "city": sheet.getRange(row, 6).getValue(),    // Column F (City)
+    "pincode": sheet.getRange(row, 7).getValue(), // Column G (Pincode)
+    "method": sheet.getRange(row, 8).getValue(),  // Column H (Method)
+    "price": sheet.getRange(row, 9).getValue(),   // Column I (Price)
+    "source": "Google Sheet Sync"
   };
-  UrlFetchApp.fetch(url, {
+
+  // Only send if Name and Phone are present
+  if (!payload.name || !payload.phone) return;
+
+  var options = {
     "method": "post",
     "headers": { "x-api-key": "crm_sync_default_key_123" },
     "contentType": "application/json",
-    "payload": JSON.stringify(payload)
-  });
+    "payload": JSON.stringify(payload),
+    "muteHttpExceptions": true
+  };
+  
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    Logger.log(response.getContentText());
+  } catch (err) {
+    Logger.log("Error: " + err.toString());
+  }
 }`}
                   </pre>
                 </div>

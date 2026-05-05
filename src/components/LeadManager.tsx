@@ -767,7 +767,10 @@ export function LeadManager() {
                   {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
                     <DropdownMenuItem 
                       key={agent.id}
-                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBulkUpdate(undefined, agent.id, agent.name);
+                      }}
                       className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
                     >
                       <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
@@ -790,7 +793,10 @@ export function LeadManager() {
                 {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
                   <DropdownMenuItem 
                     key={s} 
-                    onSelect={() => handleBulkUpdate(s as LeadStatus)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBulkUpdate(s as LeadStatus);
+                    }}
                     className="cursor-pointer text-slate-900"
                   >
                     {s}

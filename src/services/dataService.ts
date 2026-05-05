@@ -274,6 +274,24 @@ export const dataService = {
           updatePayload.history = arrayUnion(historyItem);
         }
 
+        // If status is Call Back, create a default task for tomorrow
+        if (updates.status === 'Call Back') {
+          const callbackDate = new Date();
+          callbackDate.setDate(callbackDate.getDate() + 1); // Default to tomorrow
+          updatePayload.callbackTime = callbackDate.toISOString();
+          
+          const taskRef = doc(collection(db, 'tasks'));
+          batch.set(taskRef, {
+            title: `Bulk Callback Task`,
+            description: `Scheduled callback for lead.`,
+            dueDate: callbackDate.toISOString(),
+            userId: updates.assignedToId || currentUser?.uid || 'system',
+            leadId: id,
+            status: 'pending',
+            type: 'callback'
+          });
+        }
+
         batch.update(ref, updatePayload);
       });
       

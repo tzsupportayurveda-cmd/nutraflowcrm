@@ -39,6 +39,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Toaster } from '@/components/ui/sonner';
 import { BrandLogo } from '@/src/components/BrandLogo';
 
+import { TaskReminderListener } from '@/src/components/TaskReminderListener';
+
 function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
@@ -253,6 +255,7 @@ function CRMApp() {
       </div>
       
       <Toaster position="top-right" />
+      <TaskReminderListener />
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

@@ -315,7 +315,11 @@ export function LeadManager() {
   };
   
   const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string) => {
-    if (selectedLeads.length === 0) return;
+    if (selectedLeads.length === 0) {
+      toast.error('Please select at least one lead');
+      return;
+    }
+    
     try {
       setLoading(true);
       const updates: Partial<Lead> = {};
@@ -324,10 +328,14 @@ export function LeadManager() {
         updates.assignedToId = agentId;
         updates.assignedTo = agentName;
       }
+      
+      console.log('Bulk Update:', { leadIds: selectedLeads, updates });
       await dataService.bulkUpdateLeads(selectedLeads, updates);
-      toast.success(`Bulk updated ${selectedLeads.length} leads`);
+      
+      toast.success(`Successfully updated ${selectedLeads.length} leads`);
       setSelectedLeads([]);
     } catch (e) {
+      console.error('Bulk update error:', e);
       toast.error('Bulk update failed');
     } finally {
       setLoading(false);
@@ -537,18 +545,23 @@ export function LeadManager() {
             {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                  >
                     <UserPlus className="w-3.5 h-3.5" /> Assign To Agent
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-2 bg-white">
+                <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[150]">
                   <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Sales Agent</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <div className="max-h-[300px] overflow-y-auto">
                     {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
                       <DropdownMenuItem 
                         key={agent.id} 
-                        onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
-                        className="flex items-center gap-2 p-2"
+                        onClick={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                        className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
                       >
                         <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">
                           {agent.name[0]}
@@ -556,6 +569,9 @@ export function LeadManager() {
                         <span className="text-sm font-medium">{agent.name}</span>
                       </DropdownMenuItem>
                     ))}
+                    {team.filter(t => t.role === 'Sales' && t.status === 'active').length === 0 && (
+                      <div className="p-4 text-center text-xs text-slate-400 font-bold uppercase">No active agents found</div>
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -567,9 +583,13 @@ export function LeadManager() {
                   Change Status
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 p-1 bg-white">
+              <DropdownMenuContent align="end" className="w-48 p-1 bg-white z-[150]">
                 {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
-                  <DropdownMenuItem key={s} onSelect={() => handleBulkUpdate(s as LeadStatus)}>
+                  <DropdownMenuItem 
+                    key={s} 
+                    onClick={() => handleBulkUpdate(s as LeadStatus)}
+                    className="cursor-pointer"
+                  >
                     {s}
                   </DropdownMenuItem>
                 ))}

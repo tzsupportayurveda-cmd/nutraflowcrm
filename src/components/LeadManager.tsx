@@ -316,7 +316,7 @@ export function LeadManager() {
   
   const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string) => {
     if (selectedLeads.length === 0) {
-      toast.error('Please select at least one lead');
+      toast.error('Pehle leads select karein');
       return;
     }
     
@@ -326,17 +326,16 @@ export function LeadManager() {
       if (status) updates.status = status;
       if (agentId) {
         updates.assignedToId = agentId;
-        updates.assignedTo = agentName;
+        updates.assignedTo = agentName || '';
       }
       
-      console.log('Bulk Update:', { leadIds: selectedLeads, updates });
       await dataService.bulkUpdateLeads(selectedLeads, updates);
       
-      toast.success(`Successfully updated ${selectedLeads.length} leads`);
+      toast.success(`${selectedLeads.length} leads successfully update ho gayi hain`);
       setSelectedLeads([]);
     } catch (e) {
       console.error('Bulk update error:', e);
-      toast.error('Bulk update failed');
+      toast.error('Update fail ho gaya');
     } finally {
       setLoading(false);
     }
@@ -523,101 +522,6 @@ export function LeadManager() {
           </Button>
         </div>
       </div>
-
-      {selectedLeads.length > 0 && (
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-white/10 min-w-[500px]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black">
-              {selectedLeads.length}
-            </div>
-            <span className="text-sm font-bold">Leads Selected</span>
-          </div>
-
-          <div className="h-8 w-px bg-white/10 mx-2" />
-
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Bulk Actions:</span>
-            
-            {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" /> Assign To Agent
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[150]">
-                  <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Sales Agent</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
-                      <DropdownMenuItem 
-                        key={agent.id} 
-                        onClick={() => handleBulkUpdate(undefined, agent.id, agent.name)}
-                        className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">
-                          {agent.name[0]}
-                        </div>
-                        <span className="text-sm font-medium">{agent.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                    {team.filter(t => t.role === 'Sales' && t.status === 'active').length === 0 && (
-                      <div className="p-4 text-center text-xs text-slate-400 font-bold uppercase">No active agents found</div>
-                    )}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 px-4 bg-white/5 hover:bg-white/10 text-white gap-2 border border-white/5 text-[10px] font-black uppercase tracking-widest">
-                  Change Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 p-1 bg-white z-[150]">
-                {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
-                  <DropdownMenuItem 
-                    key={s} 
-                    onClick={() => handleBulkUpdate(s as LeadStatus)}
-                    className="cursor-pointer"
-                  >
-                    {s}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleBulkDelete}
-                className="h-9 px-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white gap-2 border border-red-500/20 text-[10px] font-black uppercase tracking-widest transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Selected
-              </Button>
-            )}
-          </div>
-
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="h-9 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest"
-            onClick={() => setSelectedLeads([])}
-          >
-            Cancel
-          </Button>
-        </motion.div>
-      )}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
@@ -833,6 +737,88 @@ export function LeadManager() {
           </div>
         )}
       </div>
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedLeads.length > 0 && (
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl z-[100] flex items-center gap-8 border border-white/10 backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3 pr-8 border-r border-white/10">
+            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black">
+              {selectedLeads.length}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest">Leads Selected</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
+                  <UserPlus className="w-3.5 h-3.5" /> Assign To
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[999] mb-4">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Agent</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-[250px] overflow-y-auto">
+                  {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
+                    <DropdownMenuItem 
+                      key={agent.id}
+                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                      className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
+                        {agent.name[0]}
+                      </div>
+                      <span className="text-sm font-medium text-slate-900">{agent.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
+                  <CheckCircle className="w-3.5 h-3.5" /> Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 p-1 bg-white z-[999] mb-4">
+                {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
+                  <DropdownMenuItem 
+                    key={s} 
+                    onSelect={() => handleBulkUpdate(s as LeadStatus)}
+                    className="cursor-pointer text-slate-900"
+                  >
+                    {s}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleBulkDelete}
+              className="h-9 px-4 hover:bg-red-500 text-red-400 hover:text-white gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedLeads([])}
+              className="h-9 px-4 hover:bg-white/10 text-white/50 hover:text-white text-[10px] font-black uppercase tracking-widest"
+            >
+              Cancel
+            </Button>
+          </div>
+        </motion.div>
+      )}
 
     <LeadDetailDialog 
       leadId={selectedLead?.id || null} 

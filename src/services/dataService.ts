@@ -269,7 +269,7 @@ export const dataService = {
             updatedBy: currentUser?.displayName || currentUser?.email || 'System',
             updatedById: currentUser?.uid || 'system',
             timestamp,
-            note: `Bulk action: ${updates.status ? `Status to ${updates.status}` : `Assigned to ${updates.assignedTo}`}`
+            note: `Bulk action: ${updates.status ? `Status to ${updates.status}` : (updates.assignedToId ? `Assigned to ${updates.assignedTo}` : 'Updated')}`
           };
           updatePayload.history = arrayUnion(historyItem);
         }
@@ -279,7 +279,6 @@ export const dataService = {
       
       await batch.commit();
 
-      // If assigned to an agent, send one summary notification or individual ones
       if (updates.assignedToId) {
         await this.addNotification(
           updates.assignedToId,

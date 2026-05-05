@@ -86,6 +86,8 @@ export function LeadManager() {
   const [team, setTeam] = useState<User[]>([]);
   const { user: currentUser } = useAuth();
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [customerHistory, setCustomerHistory] = useState<{ leads: Lead[], orders: Order[] }>({ leads: [], orders: [] });
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -393,6 +395,18 @@ export function LeadManager() {
     return true;
   });
 
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const paginatedLeads = filteredLeads.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleSelectAllOnPage = (checked: boolean) => {
+    const pageIds = paginatedLeads.map(l => l.id);
+    if (checked) {
+      setSelectedLeads(prev => Array.from(new Set([...prev, ...pageIds])));
+    } else {
+      setSelectedLeads(prev => prev.filter(id => !pageIds.includes(id)));
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
@@ -607,12 +621,9 @@ export function LeadManager() {
                 <TableHead className="w-12 px-4">
                   <input 
                     type="checkbox" 
-                    className="rounded border-slate-300"
-                    checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
-                    onChange={(e) => {
-                      if (e.target.checked) setSelectedLeads(filteredLeads.map(l => l.id));
-                      else setSelectedLeads([]);
-                    }}
+                    className="rounded border-slate-300 w-4 h-4 cursor-pointer"
+                    checked={paginatedLeads.length > 0 && paginatedLeads.every(l => selectedLeads.includes(l.id))}
+                    onChange={(e) => handleSelectAllOnPage(e.target.checked)}
                   />
                 </TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Lead Info</TableHead>
@@ -624,7 +635,7 @@ export function LeadManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLeads.map((lead) => (
+              {paginatedLeads.map((lead) => (
                 <TableRow 
                   key={lead.id} 
                   className={cn(
@@ -746,8 +757,62 @@ export function LeadManager() {
               ))}
             </TableBody>
           </Table>
-      )}
-    </div>
+        )}
+
+        {/* Pagination Controls */}
+        {filteredLeads.length > itemsPerPage && (
+          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredLeads.length)} of {filteredLeads.length} Leads
+            </p>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-8 text-[10px] font-black uppercase tracking-widest border-slate-200"
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = currentPage;
+                  if (currentPage <= 3) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                  else pageNum = currentPage - 2 + i;
+                  
+                  if (pageNum < 1 || pageNum > totalPages) return null;
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "h-8 w-8 p-0 text-[10px] font-black",
+                        currentPage === pageNum ? "bg-emerald-600 hover:bg-emerald-700" : "border-slate-200"
+                      )}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="h-8 text-[10px] font-black uppercase tracking-widest border-slate-200"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
     <LeadDetailDialog 
       leadId={selectedLead?.id || null} 

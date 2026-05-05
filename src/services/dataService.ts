@@ -257,12 +257,11 @@ export const dataService = {
       
       leadIds.forEach(id => {
         const ref = doc(db, 'leads', id);
-        batch.update(ref, { 
+        const updatePayload: any = { 
           ...updates, 
           updatedAt: timestamp 
-        });
+        };
 
-        // Optionally add history for each
         if (updates.status || updates.assignedToId) {
           const historyItem: HistoryItem = {
             id: Math.random().toString(36).substring(2, 9),
@@ -272,11 +271,23 @@ export const dataService = {
             timestamp,
             note: `Bulk action: ${updates.status ? `Status to ${updates.status}` : `Assigned to ${updates.assignedTo}`}`
           };
-          batch.update(ref, { history: arrayUnion(historyItem) });
+          updatePayload.history = arrayUnion(historyItem);
         }
+
+        batch.update(ref, updatePayload);
       });
       
       await batch.commit();
+
+      // If assigned to an agent, send one summary notification or individual ones
+      if (updates.assignedToId) {
+        await this.addNotification(
+          updates.assignedToId,
+          'Bulk leads assigned',
+          `${leadIds.length} leads have been assigned to you via bulk action.`,
+          'info'
+        );
+      }
     } catch (e) {
       handleFirestoreError(e, 'bulk_update', 'leads');
     }

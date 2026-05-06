@@ -26,6 +26,7 @@ import { dataService } from '@/src/services/dataService';
 import { Lead } from '@/src/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { LeadDetailDialog } from '@/src/components/LeadDetailDialog';
 
 import { useAuth } from '@/src/contexts/AuthContext';
 
@@ -34,6 +35,8 @@ export function ConfirmedLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     const unsub = dataService.subscribeLeads(currentUser, (data) => {
@@ -138,9 +141,16 @@ export function ConfirmedLeads() {
             </TableHeader>
             <TableBody>
               {filtered.map((lead) => (
-                <TableRow key={lead.id} className="hover:bg-slate-50/50">
+                <TableRow 
+                  key={lead.id} 
+                  className="hover:bg-slate-50/50 cursor-pointer group"
+                  onClick={() => {
+                    setSelectedLead(lead);
+                    setIsDetailsOpen(true);
+                  }}
+                >
                   <TableCell>
-                    <div className="font-bold text-slate-900">{lead.name}</div>
+                    <div className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{lead.name}</div>
                     <div className="text-xs text-slate-600 truncate max-w-[200px] mt-1">
                       {lead.address}, {lead.city} - {lead.pincode}
                     </div>
@@ -171,7 +181,10 @@ export function ConfirmedLeads() {
                   <TableCell className="text-right">
                     <Button 
                       className="bg-slate-900 hover:bg-slate-800 text-white gap-2 rounded-xl h-10 px-6 shadow-md transition-all active:scale-95"
-                      onClick={() => handleDispatch(lead)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDispatch(lead);
+                      }}
                     >
                       <Truck className="w-4 h-4" /> Final Dispatch
                     </Button>
@@ -182,6 +195,14 @@ export function ConfirmedLeads() {
           </Table>
         )}
       </div>
+
+      {isDetailsOpen && (
+        <LeadDetailDialog 
+          open={isDetailsOpen}
+          onOpenChange={setIsDetailsOpen}
+          leadId={selectedLead?.id || null}
+        />
+      )}
     </div>
   );
 }

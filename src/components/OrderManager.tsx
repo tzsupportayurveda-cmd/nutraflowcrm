@@ -14,7 +14,8 @@ import {
   User,
   MapPin,
   Phone,
-  CreditCard
+  CreditCard,
+  ExternalLink
 } from 'lucide-react';
 import { 
   Table, 
@@ -30,8 +31,9 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Order } from '@/src/types';
+import { Order, Lead } from '@/src/types';
 import { format } from 'date-fns';
+import { LeadDetailDialog } from '@/src/components/LeadDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -65,6 +67,7 @@ export function OrderManager() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
 
   useEffect(() => {
     const unsub = dataService.subscribeOrders(currentUser, (data) => {
@@ -202,14 +205,24 @@ export function OrderManager() {
       {/* Order Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-2xl border-slate-200">
-          <DialogHeader className="border-b border-slate-100 pb-4">
-            <DialogTitle className="text-2xl font-black flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <ShoppingCart className="w-6 h-6 text-blue-600" />
-              </div>
-              Order #{selectedOrder?.orderSerial}
-            </DialogTitle>
-          </DialogHeader>
+              <DialogHeader className="border-b border-slate-100 pb-4">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-2xl font-black flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <ShoppingCart className="w-6 h-6 text-blue-600" />
+                    </div>
+                    Order #{selectedOrder?.orderSerial}
+                  </DialogTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsLeadDialogOpen(true)}
+                    className="font-black uppercase text-[10px] tracking-widest gap-2 bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> View Patient Lead
+                  </Button>
+                </div>
+              </DialogHeader>
           
           {selectedOrder && (
             <div className="grid grid-cols-2 gap-8 py-6">
@@ -342,6 +355,14 @@ export function OrderManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {isLeadDialogOpen && (
+        <LeadDetailDialog 
+          open={isLeadDialogOpen}
+          onOpenChange={setIsLeadDialogOpen}
+          leadId={selectedOrder?.leadId || null}
+        />
+      )}
     </div>
   );
 }

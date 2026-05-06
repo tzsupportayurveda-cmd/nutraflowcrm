@@ -208,6 +208,14 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Value (INR)</Label>
+              <Input 
+                type="number" 
+                value={formData.value}
+                onChange={e => setFormData({...formData, value: parseInt(e.target.value) || 0})}
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Source</Label>
               <select 
                 value={formData.source}
@@ -220,17 +228,18 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
                 <option value="WhatsApp">WhatsApp</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Mode</Label>
-              <select 
-                value={formData.paymentMode}
-                onChange={e => setFormData({...formData, paymentMode: e.target.value as any})}
-                className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
-              >
-                <option value="COD">COD (Delhivery)</option>
-                <option value="Prepaid">Prepaid (PhonePe)</option>
-              </select>
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Mode</Label>
+            <select 
+              value={formData.paymentMode}
+              onChange={e => setFormData({...formData, paymentMode: e.target.value as any})}
+              className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+            >
+              <option value="COD">COD (Delhivery)</option>
+              <option value="Prepaid">Prepaid (PhonePe)</option>
+            </select>
           </div>
 
           {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (

@@ -461,14 +461,25 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
                 <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl space-y-4">
                   <h3 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Order Entry</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-emerald-700/60 uppercase">Order Value</span>
-                      <span className="text-xl font-black text-emerald-600">₹{(editableLead.value || 0).toLocaleString()}</span>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col flex-1">
+                      <span className="text-[10px] font-bold text-emerald-700/60 uppercase">Order Value (₹)</span>
+                      <div className="flex items-center mt-1">
+                        <span className="text-xl font-black text-emerald-600 mr-2">₹</span>
+                        <Input 
+                          type="number"
+                          value={editableLead.value || 0}
+                          onChange={(e) => {
+                            setEditableLead({ ...editableLead, value: parseInt(e.target.value) || 0 });
+                            setHasChanges(true);
+                          }}
+                          className="bg-white border-emerald-100 rounded-xl text-xl font-black text-emerald-600 h-12 focus:ring-emerald-500 shadow-sm"
+                        />
+                      </div>
                     </div>
                     <Button 
                       onClick={() => handleCreateOrder(editableLead)}
-                      className="bg-emerald-600 text-white font-black uppercase text-[10px] h-10 px-6 rounded-xl"
+                      className="bg-emerald-600 text-white font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg hover:shadow-emerald-200 transition-all hover:bg-emerald-700 mt-4 sm:mt-0"
                     >
                       Confirm Order
                     </Button>

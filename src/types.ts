@@ -112,6 +112,8 @@ export interface User {
   avatar?: string;
   createdAt: string;
   lastLogin?: string;
+  lastSeen?: string;
+  isOnline?: boolean;
   earnings?: {
     daily: number;
     monthly: number;

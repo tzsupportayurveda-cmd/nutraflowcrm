@@ -45,10 +45,9 @@ export function TeamManager() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // We'll use a direct snapshot for team members for now
-    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const members = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      setTeam(members);
+    // Live presence subscription
+    const unsub = dataService.subscribeUsersPresence((users) => {
+      setTeam(users);
       setLoading(false);
     });
     return () => unsub();
@@ -123,7 +122,7 @@ export function TeamManager() {
               <TableRow className="border-b border-slate-100">
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Agent Identity</TableHead>
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Status</TableHead>
-                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Login Reference (ID)</TableHead>
+                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Last Activity</TableHead>
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Contact Profile</TableHead>
                 <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Administrative Action</TableHead>
               </TableRow>
@@ -142,11 +141,16 @@ export function TeamManager() {
                         />
                         <div className={cn(
                           "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white",
-                          member.status === 'active' ? "bg-emerald-500" : "bg-amber-500"
+                          member.isOnline ? "bg-emerald-500" : "bg-slate-300"
                         )} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-black text-slate-900">{member.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-slate-900">{member.name}</span>
+                          {member.isOnline && (
+                            <span className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1 rounded">Online Now</span>
+                          )}
+                        </div>
                         {member.id !== adminUser?.id ? (
                           <div className="mt-1">
                             <DropdownMenu>
@@ -185,10 +189,14 @@ export function TeamManager() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 group">
-                      <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                        {member.id}
-                      </span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span className="text-xs font-bold text-slate-600">
+                          {member.lastSeen ? new Date(member.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-mono text-slate-400">ID: {member.id}</span>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -680,6 +680,34 @@ export const dataService = {
     }
   },
 
+  async updateUserPresence(uid: string): Promise<void> {
+    try {
+      const timestamp = new Date().toISOString();
+      await updateDoc(doc(db, 'users', uid), { 
+        lastSeen: timestamp,
+        isOnline: true
+      });
+    } catch (e) {
+      // Don't throw for presence to avoid disrupting experience
+      console.error("Presence update failed:", e);
+    }
+  },
+
+  subscribeUsersPresence(callback: (users: User[]) => void) {
+    const q = query(collection(db, 'users'), where('status', '==', 'active'));
+    return onSnapshot(q, (snapshot) => {
+      const now = new Date().getTime();
+      const users = snapshot.docs.map(doc => {
+        const data = doc.data() as User;
+        const lastSeen = data.lastSeen ? new Date(data.lastSeen).getTime() : 0;
+        // If last seen more than 5 minutes ago, consider offline
+        const isOnline = data.isOnline && (now - lastSeen < 5 * 60 * 1000);
+        return { ...data, id: doc.id, isOnline } as User;
+      });
+      callback(users);
+    });
+  },
+
   async getTeamMembers(): Promise<User[]> {
     try {
       const q = query(collection(db, 'users'), where('status', '==', 'active'));

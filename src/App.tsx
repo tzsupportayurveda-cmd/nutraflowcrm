@@ -40,6 +40,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { BrandLogo } from '@/src/components/BrandLogo';
 
 import { TaskReminderListener } from '@/src/components/TaskReminderListener';
+import { PresenceListener } from '@/src/components/PresenceListener';
 
 function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -200,10 +201,13 @@ function CRMApp() {
               <DropdownMenuTrigger
                 className="pl-1 pr-2 h-11 gap-3 hover:bg-slate-50 rounded-lg border-transparent inline-flex items-center transition-colors outline-none cursor-pointer"
               >
-                <Avatar className="h-8 w-8 border border-slate-200 shadow-sm ring-2 ring-emerald-500/10">
-                  <AvatarImage src={user.avatar} />
-                  <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-8 w-8 border border-slate-200 shadow-sm ring-2 ring-emerald-500/10">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
+                </div>
                 <div className="hidden md:flex flex-col items-start leading-none pointer-events-none">
                   <span className="text-sm font-bold text-slate-900">{user.name}</span>
                   <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">{user.role}</span>
@@ -256,6 +260,7 @@ function CRMApp() {
       
       <Toaster position="top-right" />
       <TaskReminderListener />
+      <PresenceListener />
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

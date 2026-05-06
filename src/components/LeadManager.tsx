@@ -12,6 +12,7 @@ import {
   UserPlus,
   Loader2,
   ChevronDown,
+  ChevronRight,
   MapPin,
   CheckCircle,
   FileSpreadsheet,
@@ -92,6 +93,7 @@ export function LeadManager() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [statusOpen, setStatusOpen] = useState(false);
   const [callbackDialogOpen, setCallbackDialogOpen] = useState(false);
+  const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
   const [tempCallbackTime, setTempCallbackTime] = useState('');
   const [targetLeadId, setTargetLeadId] = useState<string | null>(null);
 
@@ -749,47 +751,16 @@ export function LeadManager() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none">
-                    <UserPlus className="w-3.5 h-3.5" /> Assign To
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[400px] bg-white z-[9999] p-0 overflow-hidden border-none shadow-2xl">
-                  <div className="p-6 border-b border-slate-100">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Select Team Member</h3>
-                    <p className="text-xs text-slate-400 mt-1">Assign {selectedLeads.length} selected leads to an agent.</p>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto p-2">
-                    {team.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No members found</div>
-                    ) : (
-                      team.filter(t => t.status === 'active' && t.id !== currentUser?.id).map(member => (
-                        <button
-                          key={member.id}
-                          onClick={() => {
-                            handleBulkUpdate(undefined, member.id, member.name);
-                            // The dialog will close because of the button click inside DialogContent usually 
-                            // but we can use a state if needed. Dialog usually needs an onOpenChange
-                          }}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
-                        >
-                          <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white",
-                            member.role === 'Admin' ? 'bg-purple-500' : member.role === 'Manager' ? 'bg-blue-500' : 'bg-emerald-500'
-                          )}>
-                            {member.name[0]}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{member.name}</p>
-                            <p className="text-[10px] font-black uppercase tracking-tight text-slate-400">{member.role}</p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsBulkAssignOpen(true)}
+                  className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Assign To
+                </Button>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -873,6 +844,54 @@ export function LeadManager() {
             Schedule Callback
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Bulk Assign Dialog */}
+    <Dialog open={isBulkAssignOpen} onOpenChange={setIsBulkAssignOpen}>
+      <DialogContent className="sm:max-w-[400px] bg-white z-[9999] p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-emerald-500" /> Bulk Assignment
+          </h3>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">Assigning {selectedLeads.length} leads</p>
+        </div>
+        <div className="max-h-[400px] overflow-y-auto p-4 space-y-2">
+          {team.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No active team members available</div>
+          ) : (
+            team.filter(t => t.status === 'active' && t.role !== 'Marketer').map(member => (
+              <button
+                key={member.id}
+                onClick={async () => {
+                  try {
+                    await handleBulkUpdate(undefined, member.id, member.name);
+                    setIsBulkAssignOpen(false);
+                  } catch (e) {
+                    console.error("Bulk update inside dialog failed", e);
+                  }
+                }}
+                className="w-full flex items-center justify-between p-3 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-100 rounded-xl transition-all text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm ring-2 ring-white",
+                    member.role === 'Admin' ? 'bg-purple-500' : member.role === 'Manager' ? 'bg-blue-500' : 'bg-emerald-500'
+                  )}>
+                    {member.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">{member.name}</p>
+                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-400">{member.role}</p>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight className="w-4 h-4 text-emerald-500" />
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   </div>

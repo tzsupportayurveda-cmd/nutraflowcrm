@@ -72,6 +72,8 @@ const statusColors: Record<LeadStatus, string> = {
   'Fake/Spam': 'bg-gray-100 text-gray-500 border-gray-200',
   'Unavailable': 'bg-amber-50 text-amber-700 border-amber-200',
   'Language Issue': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'Duplicate': 'bg-rose-50 text-rose-700 border-rose-200',
+  'Wrong Number': 'bg-zinc-100 text-zinc-500 border-zinc-200',
 };
 
 export function LeadManager() {
@@ -464,6 +466,8 @@ export function LeadManager() {
             <option value="Fake/Spam">Fake/Spam</option>
             <option value="Unavailable">Unavailable</option>
             <option value="Language Issue">Language Issue</option>
+            <option value="Duplicate">Duplicate</option>
+            <option value="Wrong Number">Wrong Number</option>
             <option value="RTO/Cancelled">RTO/Cancelled</option>
           </select>
 
@@ -574,7 +578,10 @@ export function LeadManager() {
                   </TableCell>
                   <TableCell className="px-2">
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{lead.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-slate-400">#{lead.serialId}</span>
+                        <span className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{lead.name}</span>
+                      </div>
                       <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-medium tracking-tight">
                         <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {lead.phone}</span>
                         {lead.email && (
@@ -648,7 +655,7 @@ export function LeadManager() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40 z-[100]">
                         <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Status</DropdownMenuLabel>
-                        {['Call Back', 'No Answer', 'Interested', 'Order Confirmed', 'RTO/Cancelled'].map(s => (
+                        {['Call Back', 'No Answer', 'Interested', 'Order Confirmed', 'Duplicate', 'Wrong Number', 'RTO/Cancelled'].map(s => (
                           <DropdownMenuItem key={s} onSelect={() => handleUpdateStatus(lead.id, s as LeadStatus)}>
                             {s}
                           </DropdownMenuItem>
@@ -769,7 +776,7 @@ export function LeadManager() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" align="center" className="w-48 p-1 bg-white z-[9999] mb-2 shadow-2xl border border-slate-200">
-                  {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
+                  {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Duplicate', 'Wrong Number', 'Unavailable'].map(s => (
                     <DropdownMenuItem 
                       key={s} 
                       onSelect={() => handleBulkUpdate(s as LeadStatus)}

@@ -44,6 +44,8 @@ const statusColors: Record<string, string> = {
   'Fake/Spam': 'bg-gray-100 text-gray-500 border-gray-200',
   'Unavailable': 'bg-amber-50 text-amber-700 border-amber-200',
   'Language Issue': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'Duplicate': 'bg-rose-50 text-rose-700 border-rose-200',
+  'Wrong Number': 'bg-zinc-100 text-zinc-500 border-zinc-200',
 };
 
 interface LeadDetailDialogProps {
@@ -385,8 +387,8 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       <ChevronDown className="w-4 h-4 ml-auto opacity-50" />
                     </Button>
                     {statusOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 w-[300px] p-2 bg-white z-[1200] rounded-xl shadow-2xl border border-slate-200">
-                        {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Order Confirmed', 'RTO/Cancelled'].map(s => (
+                      <div className="absolute bottom-full left-0 mb-2 w-[300px] p-2 bg-white z-[1200] rounded-xl shadow-2xl border border-slate-200 grid grid-cols-2 gap-1">
+                        {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Order Confirmed', 'Duplicate', 'Wrong Number', 'Fake/Spam', 'RTO/Cancelled'].map(s => (
                           <button 
                             key={s} 
                             onClick={() => {

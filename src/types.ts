@@ -11,7 +11,9 @@ export type LeadStatus =
   | 'Not Interested'
   | 'Fake/Spam'
   | 'Unavailable'
-  | 'Language Issue';
+  | 'Language Issue'
+  | 'Duplicate'
+  | 'Wrong Number';
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'RTO';
 

@@ -9,10 +9,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LeadStatus, InventoryItem, User } from '@/src/types';
+import { Lead, InventoryItem, User, LeadStatus } from '@/src/types';
 import { toast } from 'sonner';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
+import { History, AlertCircle, Calendar, User as UserIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface LeadAddDialogProps {
   open: boolean;
@@ -40,10 +42,13 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
     assignedTo: ''
   });
   const [team, setTeam] = useState<User[]>([]);
+  const [existingHistory, setExistingHistory] = useState<{ leads: Lead[] }>({ leads: [] });
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (open) {
+      setExistingHistory({ leads: [] });
       dataService.getInventoryList().then(items => {
         setInventory(items);
         if (items.length > 0 && !formData.product) {
@@ -60,6 +65,27 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
       }
     }
   }, [open, currentUser]);
+
+  const handlePhoneChange = async (phone: string) => {
+    setFormData(prev => ({ ...prev, phone }));
+    
+    if (phone.length >= 10) {
+      setCheckingDuplicates(true);
+      try {
+        const history = await dataService.getCustomerHistory(phone);
+        setExistingHistory({ leads: history.leads });
+        if (history.leads.length > 0) {
+          toast.info(`Customer already in CRM with ${history.leads.length} previous leads.`);
+        }
+      } catch (e) {
+        console.error("Duplicate check failed", e);
+      } finally {
+        setCheckingDuplicates(false);
+      }
+    } else {
+      setExistingHistory({ leads: [] });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,14 +160,53 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone Number</Label>
-              <Input 
-                placeholder="+91 99999 00000" 
-                value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-                required
-              />
+              <div className="relative">
+                <Input 
+                  placeholder="+91 99999 00000" 
+                  value={formData.phone}
+                  onChange={e => handlePhoneChange(e.target.value)}
+                  required
+                  className={cn(existingHistory.leads.length > 0 && "border-amber-500 ring-amber-500/10 focus:ring-amber-500")}
+                />
+                {checkingDuplicates && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
+          {existingHistory.leads.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2 text-amber-800">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Existing Customer History</span>
+              </div>
+              <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                {existingHistory.leads.map(lead => (
+                  <div key={lead.id} className="bg-white border border-amber-100 p-2 rounded-lg flex items-center justify-between group hover:border-amber-300 transition-colors">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-slate-900">{lead.name}</span>
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                          lead.status === 'Order Confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                        )}>
+                          {lead.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[9px] text-slate-400">
+                        <span className="flex items-center gap-1"><Calendar className="w-2.5 h-2.5" /> {new Date(lead.createdAt).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1"><UserIcon className="w-2.5 h-2.5" /> {lead.assignedTo}</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-black text-slate-900">₹{lead.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email Address (Optional)</Label>

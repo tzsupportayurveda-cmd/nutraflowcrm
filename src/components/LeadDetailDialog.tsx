@@ -10,7 +10,8 @@ import {
   MapPin,
   CheckCircle,
   TrendingUp,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -209,8 +210,31 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   </Badge>
                   <div className="h-4 w-px bg-slate-200" />
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {editableLead.serialId}</span>
+                  {editableLead.isArchived && (
+                    <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest ml-2 px-1.5 py-0">Bin</Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        handleSaveChanges(); // Save changes first
+                        dataService.updateLead(editableLead.id, { 
+                          isArchived: !editableLead.isArchived,
+                          assignedToId: !editableLead.isArchived ? 'unassigned' : editableLead.assignedToId,
+                          assignedTo: !editableLead.isArchived ? 'Unassigned' : editableLead.assignedTo
+                        });
+                        toast.success(editableLead.isArchived ? 'Restored from bin' : 'Moved to bin');
+                        onOpenChange(false);
+                      }}
+                      className="h-8 text-xs font-bold text-slate-500 hover:text-slate-900 border border-slate-200 px-3 flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      {editableLead.isArchived ? 'Restore' : 'Move to Bin'}
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-xs font-bold text-slate-500">Close</Button>
                   {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && onDelete && (
                     <Button 

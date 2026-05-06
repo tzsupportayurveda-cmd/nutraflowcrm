@@ -96,6 +96,7 @@ export function LeadManager() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [callbackDialogOpen, setCallbackDialogOpen] = useState(false);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [tempCallbackTime, setTempCallbackTime] = useState('');
   const [targetLeadId, setTargetLeadId] = useState<string | null>(null);
 
@@ -306,7 +307,7 @@ export function LeadManager() {
     }
   };
   
-  const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string) => {
+  const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string, isArchived?: boolean) => {
     if (selectedLeads.length === 0) {
       toast.error('Pehle leads select karein');
       return;
@@ -320,10 +321,18 @@ export function LeadManager() {
         updates.assignedToId = agentId;
         updates.assignedTo = agentName || '';
       }
+      if (isArchived !== undefined) {
+        updates.isArchived = isArchived;
+        // When moving to bin, unassign the lead so agents don't see it
+        if (isArchived) {
+          updates.assignedToId = 'unassigned';
+          updates.assignedTo = 'Unassigned';
+        }
+      }
       
       await dataService.bulkUpdateLeads(selectedLeads, updates);
       
-      toast.success(`${selectedLeads.length} leads successfully update ho gayi hain`);
+      toast.success(`${selectedLeads.length} leads successfully ${isArchived ? 'bin mein move' : 'update'} ho gayi hain`);
       setSelectedLeads([]);
     } catch (e) {
       console.error('Bulk update error:', e);
@@ -350,9 +359,20 @@ export function LeadManager() {
   };
 
   const filteredLeads = leads.filter(lead => {
+    // 0. Bin Filter (Critical: Hide archived from main view, show ONLY archived in Bin)
+    if (showArchived) {
+      if (!lead.isArchived) return false;
+    } else {
+      if (lead.isArchived) return false;
+    }
+
     // 1. Role & Access Filter
     const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
     const isOwner = lead.assignedToId === currentUser?.id;
+    
+    // If it's archived, only Admin/Manager should see it in the bin
+    if (showArchived && !isAdmin) return false;
+    
     if (!isAdmin && !isOwner) return false;
 
     // 2. Search Filter
@@ -436,6 +456,24 @@ export function LeadManager() {
           <Button onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2 font-bold">
             <UserPlus className="w-4 h-4" /> Add New Lead
           </Button>
+          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+            <Button 
+              variant={showArchived ? 'default' : 'outline'}
+              onClick={() => setShowArchived(!showArchived)} 
+              className={cn(
+                "gap-2 font-bold transition-all",
+                showArchived ? "bg-slate-900 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              <Trash2 className="w-4 h-4" /> 
+              {showArchived ? 'Exit Bin' : 'View Dustbin'}
+              {leads.filter(l => l.isArchived).length > 0 && !showArchived && (
+                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">
+                  {leads.filter(l => l.isArchived).length}
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -766,6 +804,17 @@ export function LeadManager() {
                   className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> Assign To
+                </Button>
+              )}
+
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => handleBulkUpdate(undefined, undefined, undefined, !showArchived)}
+                  className="h-9 px-4 hover:bg-white/10 text-emerald-400 hover:text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> {showArchived ? 'Restore' : 'Move to Bin'}
                 </Button>
               )}
 

@@ -66,6 +66,7 @@ export interface Lead {
   lastCallDate?: string;
   ltv?: number; // Lifetime Value
   callbackTime?: string;
+  isArchived?: boolean;
 }
 
 export interface Order {

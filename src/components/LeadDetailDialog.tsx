@@ -108,19 +108,6 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     try {
       await dataService.updateLead(editableLead.id, { status, ...extras });
       
-      // If callback, also create a task
-      if (status === 'Call Back' && extras.callbackTime) {
-        await dataService.addTask({
-          title: `Callback requested: ${editableLead.name}`,
-          description: `Scheduled callback for ${editableLead.name}. Phone: ${editableLead.phone}`,
-          dueDate: extras.callbackTime,
-          userId: editableLead.assignedToId || currentUser?.id || 'system',
-          leadId: editableLead.id,
-          status: 'pending',
-          type: 'callback'
-        });
-      }
-
       await dataService.addLeadHistory(editableLead.id, {
         type: 'status_change',
         from: lead?.status || 'Unknown',
@@ -368,7 +355,15 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-purple-700/60 uppercase">Scheduled Callback</span>
-                        <span className="text-sm font-black text-purple-900">{new Date(editableLead.callbackTime).toLocaleString()}</span>
+                        <span className="text-sm font-black text-purple-900">
+                          {(() => {
+                            try {
+                              return new Date(editableLead.callbackTime || '').toLocaleString();
+                            } catch (e) {
+                              return 'Invalid Date';
+                            }
+                          })()}
+                        </span>
                       </div>
                       <Button 
                         variant="ghost" 

@@ -159,45 +159,30 @@ export function LeadManager() {
 
     try {
       const currentLead = leads.find(l => l.id === leadId);
+      if (!currentLead) return;
+
       await dataService.updateLead(leadId, { status, ...extras });
       
-      // Log history
-      if (currentUser && currentLead && currentLead.status !== status) {
+      // Log history - Always log history even if user logic is tricky
+      if (currentUser) {
         await dataService.addLeadHistory(leadId, {
           type: 'status_change',
           from: currentLead.status,
           to: status,
-          updatedBy: currentUser.name,
+          updatedBy: currentUser.name || currentUser.email || 'System',
           updatedById: currentUser.id,
           note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
         });
-
-        // Update local editable state
-        if (editableLead?.id === leadId) {
-          setEditableLead(prev => prev ? ({ ...prev, status, ...extras }) : null);
-          setHasChanges(false);
-        }
-
-        // Create a task if callback is set
-        if (status === 'Call Back' && extras.callbackTime) {
-          await dataService.addTask({
-            title: `Callback requested for ${currentLead.name}`,
-            description: `Scheduled callback for ${currentLead.name}. Phone: ${currentLead.phone}`,
-            dueDate: extras.callbackTime,
-            userId: currentUser.id,
-            leadId: leadId,
-            status: 'pending',
-            type: 'callback'
-          });
-        }
       }
-      
+
       toast.success(`Status updated to ${status}`);
-      // Also update editable lead if it's the same lead
+      
+      // Update local states if needed
       if (editableLead && editableLead.id === leadId) {
         setEditableLead(prev => prev ? { ...prev, status, ...extras } : null);
       }
     } catch (e) {
+      console.error("Status update error:", e);
       toast.error('Failed to update status');
     }
   };
@@ -612,7 +597,13 @@ export function LeadManager() {
                       {lead.status === 'Call Back' && lead.callbackTime && (
                         <div className="flex items-center gap-1 text-[9px] font-bold text-purple-600 animate-pulse">
                           <Calendar className="w-2 h-2" />
-                          {new Date(lead.callbackTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {(() => {
+                            try {
+                              return new Date(lead.callbackTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            } catch (e) {
+                              return 'Invalid Date';
+                            }
+                          })()}
                         </div>
                       )}
                     </div>

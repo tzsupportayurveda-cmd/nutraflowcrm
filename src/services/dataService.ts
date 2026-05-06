@@ -512,11 +512,31 @@ export const dataService = {
       const docRef = doc(db, 'leads', id);
       const oldSnap = await getDoc(docRef);
       const oldData = oldSnap.data() as Lead;
+      const currentUser = auth.currentUser;
       
-      await updateDoc(docRef, {
+      const updatePayload: any = {
         ...updates,
         updatedAt: new Date().toISOString()
-      });
+      };
+
+      // If status is Call Back, ensure task and callbackTime
+      if (updates.status === 'Call Back') {
+        const callbackTime = updates.callbackTime || new Date(Date.now() + 86400000).toISOString();
+        updatePayload.callbackTime = callbackTime;
+
+        // Create the callback task
+        await addDoc(collection(db, 'tasks'), {
+          title: `Callback Result: ${oldData.name}`,
+          description: `Automatically created follow-up task for ${oldData.name}. Phone: ${oldData.phone}`,
+          dueDate: callbackTime,
+          userId: oldData.assignedToId || currentUser?.uid || 'system',
+          leadId: id,
+          status: 'pending',
+          type: 'callback'
+        });
+      }
+
+      await updateDoc(docRef, updatePayload);
 
       if (updates.status && updates.status !== oldData.status) {
         await this.addAuditLog('Status Change', id, 'Lead', `Status changed from ${oldData.status} to ${updates.status}`);

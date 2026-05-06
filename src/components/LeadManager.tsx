@@ -515,34 +515,6 @@ export function LeadManager() {
             </select>
           )}
 
-          {selectedLeads.length > 0 && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 gap-2 text-[10px] font-black uppercase tracking-widest">
-                  <UserPlus className="w-3.5 h-3.5" /> Assign {selectedLeads.length}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[150]">
-                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Sales Agent</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="max-h-[300px] overflow-y-auto">
-                  {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
-                    <DropdownMenuItem 
-                      key={agent.id} 
-                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
-                      className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
-                    >
-                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">
-                        {agent.name[0]}
-                      </div>
-                      <span className="text-sm font-medium">{agent.name}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
           <Button 
             variant="ghost" 
             size="sm" 
@@ -786,49 +758,60 @@ export function LeadManager() {
             </div>
 
             <div className="flex items-center gap-3">
-              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
-                      <UserPlus className="w-3.5 h-3.5" /> Assign To
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="top" align="center" className="w-56 p-2 bg-white z-[999] mb-2 shadow-2xl border border-slate-200">
-                    <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Agent</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div className="max-h-[250px] overflow-y-auto">
-                      {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
-                        <DropdownMenuItem 
-                          key={agent.id}
-                          onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
-                          className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none">
+                    <UserPlus className="w-3.5 h-3.5" /> Assign To
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[400px] bg-white z-[9999] p-0 overflow-hidden border-none shadow-2xl">
+                  <div className="p-6 border-b border-slate-100">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Select Team Member</h3>
+                    <p className="text-xs text-slate-400 mt-1">Assign {selectedLeads.length} selected leads to an agent.</p>
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto p-2">
+                    {team.length === 0 ? (
+                      <div className="p-8 text-center text-xs text-slate-400 uppercase font-bold">No members found</div>
+                    ) : (
+                      team.filter(t => t.status === 'active' && t.id !== currentUser?.id).map(member => (
+                        <button
+                          key={member.id}
+                          onClick={() => {
+                            handleBulkUpdate(undefined, member.id, member.name);
+                            // The dialog will close because of the button click inside DialogContent usually 
+                            // but we can use a state if needed. Dialog usually needs an onOpenChange
+                          }}
+                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
                         >
-                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
-                            {agent.name[0]}
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                            member.role === 'Admin' ? 'bg-purple-500' : member.role === 'Manager' ? 'bg-blue-500' : 'bg-emerald-500'
+                          )}>
+                            {member.name[0]}
                           </div>
-                          <span className="text-sm font-medium text-slate-900">{agent.name}</span>
-                        </DropdownMenuItem>
-                      ))}
-                      {team.filter(t => t.role === 'Sales' && t.status === 'active').length === 0 && (
-                        <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">No Active Agents</div>
-                      )}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{member.name}</p>
+                            <p className="text-[10px] font-black uppercase tracking-tight text-slate-400">{member.role}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
+                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none">
                     <CheckCircle className="w-3.5 h-3.5" /> Status
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="center" className="w-48 p-1 bg-white z-[999] mb-2 shadow-2xl border border-slate-200">
+                <DropdownMenuContent side="top" align="center" className="w-48 p-1 bg-white z-[9999] mb-2 shadow-2xl border border-slate-200">
                   {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
                     <DropdownMenuItem 
                       key={s} 
                       onSelect={() => handleBulkUpdate(s as LeadStatus)}
-                      className="cursor-pointer text-slate-900"
+                      className="cursor-pointer text-slate-900 font-medium hover:bg-slate-50"
                     >
                       {s}
                     </DropdownMenuItem>

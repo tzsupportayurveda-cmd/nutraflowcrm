@@ -121,14 +121,12 @@ export function LeadManager() {
 
     dataService.getInventoryList().then(setInventory);
 
-    // Also fetch team for assignment (Admin only)
+    // Also fetch team for assignment
     let teamUnsub = () => {};
-    if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
-      const q = collection(db, 'users');
-      teamUnsub = onSnapshot(q, (snapshot) => {
-        setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-      });
-    }
+    const q = collection(db, 'users');
+    teamUnsub = onSnapshot(q, (snapshot) => {
+      setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    });
 
     return () => {
       unsub();
@@ -772,86 +770,95 @@ export function LeadManager() {
       </div>
 
       {/* Floating Bulk Actions Bar */}
-      {selectedLeads.length > 0 && (
-        <motion.div 
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl z-[100] flex items-center gap-8 border border-white/10 backdrop-blur-xl"
-        >
-          <div className="flex items-center gap-3 pr-8 border-r border-white/10">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black">
-              {selectedLeads.length}
+      <AnimatePresence>
+        {selectedLeads.length > 0 && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl z-[100] flex items-center gap-8 border border-white/10 backdrop-blur-xl"
+          >
+            <div className="flex items-center gap-3 pr-8 border-r border-white/10">
+              <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black">
+                {selectedLeads.length}
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Leads Selected</span>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Leads Selected</span>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
-                  <UserPlus className="w-3.5 h-3.5" /> Assign To
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[999] mb-4">
-                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Agent</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="max-h-[250px] overflow-y-auto">
-                  {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
+            <div className="flex items-center gap-3">
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
+                      <UserPlus className="w-3.5 h-3.5" /> Assign To
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="top" align="center" className="w-56 p-2 bg-white z-[999] mb-2 shadow-2xl border border-slate-200">
+                    <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Agent</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="max-h-[250px] overflow-y-auto">
+                      {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
+                        <DropdownMenuItem 
+                          key={agent.id}
+                          onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                          className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
+                            {agent.name[0]}
+                          </div>
+                          <span className="text-sm font-medium text-slate-900">{agent.name}</span>
+                        </DropdownMenuItem>
+                      ))}
+                      {team.filter(t => t.role === 'Sales' && t.status === 'active').length === 0 && (
+                        <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">No Active Agents</div>
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
+                    <CheckCircle className="w-3.5 h-3.5" /> Status
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="center" className="w-48 p-1 bg-white z-[999] mb-2 shadow-2xl border border-slate-200">
+                  {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
                     <DropdownMenuItem 
-                      key={agent.id}
-                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
-                      className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
+                      key={s} 
+                      onSelect={() => handleBulkUpdate(s as LeadStatus)}
+                      className="cursor-pointer text-slate-900"
                     >
-                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
-                        {agent.name[0]}
-                      </div>
-                      <span className="text-sm font-medium text-slate-900">{agent.name}</span>
+                      {s}
                     </DropdownMenuItem>
                   ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest">
-                  <CheckCircle className="w-3.5 h-3.5" /> Status
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleBulkDelete}
+                  className="h-9 px-4 hover:bg-red-500 text-red-400 hover:text-white gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 p-1 bg-white z-[999] mb-4">
-                {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
-                  <DropdownMenuItem 
-                    key={s} 
-                    onSelect={() => handleBulkUpdate(s as LeadStatus)}
-                    className="cursor-pointer text-slate-900"
-                  >
-                    {s}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              )}
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleBulkDelete}
-              className="h-9 px-4 hover:bg-red-500 text-red-400 hover:text-white gap-2 text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </Button>
-
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setSelectedLeads([])}
-              className="h-9 px-4 hover:bg-white/10 text-white/50 hover:text-white text-[10px] font-black uppercase tracking-widest"
-            >
-              Cancel
-            </Button>
-          </div>
-        </motion.div>
-      )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setSelectedLeads([])}
+                className="h-9 px-4 hover:bg-white/10 text-white/50 hover:text-white text-[10px] font-black uppercase tracking-widest"
+              >
+                Cancel
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     <LeadDetailDialog 
       leadId={selectedLead?.id || null} 

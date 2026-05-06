@@ -517,6 +517,34 @@ export function LeadManager() {
             </select>
           )}
 
+          {selectedLeads.length > 0 && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 gap-2 text-[10px] font-black uppercase tracking-widest">
+                  <UserPlus className="w-3.5 h-3.5" /> Assign {selectedLeads.length}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-2 bg-white z-[150]">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 p-2">Select Sales Agent</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="max-h-[300px] overflow-y-auto">
+                  {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
+                    <DropdownMenuItem 
+                      key={agent.id} 
+                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
+                      className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold">
+                        {agent.name[0]}
+                      </div>
+                      <span className="text-sm font-medium">{agent.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <Button 
             variant="ghost" 
             size="sm" 
@@ -772,10 +800,7 @@ export function LeadManager() {
                   {team.filter(t => t.role === 'Sales' && t.status === 'active').map(agent => (
                     <DropdownMenuItem 
                       key={agent.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBulkUpdate(undefined, agent.id, agent.name);
-                      }}
+                      onSelect={() => handleBulkUpdate(undefined, agent.id, agent.name)}
                       className="flex items-center gap-2 p-2 hover:bg-slate-50 cursor-pointer"
                     >
                       <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-900 font-bold">
@@ -798,10 +823,7 @@ export function LeadManager() {
                 {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Unavailable'].map(s => (
                   <DropdownMenuItem 
                     key={s} 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBulkUpdate(s as LeadStatus);
-                    }}
+                    onSelect={() => handleBulkUpdate(s as LeadStatus)}
                     className="cursor-pointer text-slate-900"
                   >
                     {s}

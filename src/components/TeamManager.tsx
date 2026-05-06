@@ -42,16 +42,35 @@ import { toast } from 'sonner';
 export function TeamManager() {
   const { impersonate, isImpersonating, user: activeUser, adminUser } = useAuth();
   const [team, setTeam] = useState<User[]>([]);
+  const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Live presence subscription
-    const unsub = dataService.subscribeUsersPresence((users) => {
+    // 1. Live presence subscription
+    const unsubPresence = dataService.subscribeUsersPresence((users) => {
       setTeam(users);
       setLoading(false);
     });
-    return () => unsub();
-  }, []);
+
+    // 2. Fetch leads to count assignments
+    // We'll use getDocs for a one-time count to avoid heavy listeners for this view, 
+    // or we can use onSnapshot if real-time updates for counts are critical.
+    // For this view, one-time or periodic fetch is better for performance.
+    const unsubLeads = dataService.subscribeLeads(activeUser, (leads) => {
+      const counts: Record<string, number> = {};
+      leads.forEach(lead => {
+        if (lead.assignedToId) {
+          counts[lead.assignedToId] = (counts[lead.assignedToId] || 0) + 1;
+        }
+      });
+      setLeadCounts(counts);
+    });
+
+    return () => {
+      unsubPresence();
+      unsubLeads();
+    };
+  }, [activeUser]);
 
   const handleToggleStatus = async (uid: string, currentStatus: string) => {
     try {
@@ -92,7 +111,7 @@ export function TeamManager() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Members</p>
           <p className="text-3xl font-black text-slate-900">{team.length}</p>
@@ -100,6 +119,10 @@ export function TeamManager() {
         <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pending Approval</p>
           <p className="text-3xl font-black text-amber-600">{team.filter(u => u.status !== 'active').length}</p>
+        </div>
+        <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Leads Tracked</p>
+          <p className="text-3xl font-black text-blue-600">{Object.values(leadCounts).reduce((a, b) => a + b, 0)}</p>
         </div>
         <div className="p-4 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 text-white flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-1">
@@ -122,6 +145,7 @@ export function TeamManager() {
               <TableRow className="border-b border-slate-100">
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Agent Identity</TableHead>
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Status</TableHead>
+                <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Leads Assigned</TableHead>
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Last Activity</TableHead>
                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Contact Profile</TableHead>
                 <TableHead className="text-right font-black text-[10px] uppercase tracking-widest text-slate-500 py-4">Administrative Action</TableHead>
@@ -187,6 +211,12 @@ export function TeamManager() {
                     >
                       {member.status === 'active' ? 'Authorized' : 'Restricted'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-900">{leadCounts[member.id] || 0}</span>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">Current Leads</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">

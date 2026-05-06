@@ -107,9 +107,14 @@ export function LeadManager() {
   useEffect(() => {
     const unsub = dataService.subscribeLeads(currentUser, (data) => {
       // Sort manually since we removed it from some queries to avoid index issues
-      const sorted = [...data].sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const sorted = [...data].sort((a, b) => {
+        // First prioritize "New Lead" status
+        if (a.status === 'New Lead' && b.status !== 'New Lead') return -1;
+        if (a.status !== 'New Lead' && b.status === 'New Lead') return 1;
+        
+        // Then sort by createdAt DESC
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
       setLeads(sorted);
       setLoading(false);
     });

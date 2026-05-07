@@ -200,7 +200,7 @@ export function LandingPage() {
                       {view === 'login' ? 'Secure Login' : view === 'signup' ? 'Request Access' : 'Reset Secret Key'}
                     </h2>
                     <p className="text-slate-500 text-sm font-medium italic">
-                      {view === 'login' ? 'Authorized personnel access only.' : 
+                      {view === 'login' ? 'Enter your ID and secret key to access workspace.' : 
                        view === 'signup' ? 'Provide your details for admin approval.' : 
                        'Enter your email to receive a reset link.'}
                     </p>
@@ -209,98 +209,108 @@ export function LandingPage() {
                   {error && (
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-200">
                       <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                      <p className="text-sm font-medium italic">{error}</p>
+                      <p className="text-sm font-medium italic leading-relaxed">{error}</p>
                     </div>
                   )}
 
-                  <form onSubmit={handleAction} className="space-y-4">
-                    {view === 'signup' && (
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                        <Input 
-                          placeholder="Agent Name" 
-                          className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          required
-                        />
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
-                      <Input 
-                        type="email" 
-                        placeholder="name@tozflow.com" 
-                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    {view !== 'forgot' && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between ml-1">
-                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Secret Key</label>
-                          {view === 'login' && (
-                            <button 
-                              type="button" 
-                              onClick={() => { setView('forgot'); setForgotStep('email'); }}
-                              className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
-                            >
-                              Forgot?
-                            </button>
-                          )}
+                  <div className="space-y-6">
+                    <form onSubmit={handleAction} className="space-y-4">
+                      {view === 'signup' && (
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                          <Input 
+                            placeholder="Agent Name" 
+                            className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                          />
                         </div>
+                      )}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">ID (Email)</label>
                         <Input 
-                          type="password" 
-                          placeholder="••••••••" 
+                          type="email" 
+                          placeholder="name@tozflow.com" 
                           className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required
                         />
                       </div>
-                    )}
 
-                    <div className="pt-2">
-                      <Button 
-                        className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]" 
-                        type="submit"
-                        disabled={loading || isProcessing}
-                      >
-                        {(loading || isProcessing) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
-                          view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
-                          view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
-                          <Zap className="w-5 h-5 mr-2" />
-                        )}
-                        {view === 'login' ? 'Enter Workspace' : 
-                         view === 'signup' ? 'Send Request' : 'Send Reset Link'}
-                      </Button>
-                      {view === 'forgot' && (
-                        <button 
-                          type="button" 
-                          onClick={() => setView('login')}
-                          className="w-full mt-4 text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest"
-                        >
-                          Back to Login
-                        </button>
+                      {view !== 'forgot' && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between ml-1">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Secret Key (Password)</label>
+                            {view === 'login' && (
+                              <button 
+                                type="button" 
+                                onClick={() => { setView('forgot'); setForgotStep('email'); }}
+                                className="text-[10px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-wider"
+                              >
+                                Forgot?
+                              </button>
+                            )}
+                          </div>
+                          <Input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            className="bg-white/5 border-white/10 h-12 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 text-white placeholder:text-slate-600"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                        </div>
                       )}
+
+                      <div className="pt-2">
+                        <Button 
+                          className="w-full h-12 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]" 
+                          type="submit"
+                          disabled={loading || isProcessing}
+                        >
+                          {(loading || isProcessing) ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : (
+                            view === 'login' ? <LogIn className="w-5 h-5 mr-2" /> : 
+                            view === 'signup' ? <ShieldCheck className="w-5 h-5 mr-2" /> : 
+                            <Zap className="w-5 h-5 mr-2" />
+                          )}
+                          {view === 'login' ? 'Enter with ID' : 
+                           view === 'signup' ? 'Send Request' : 'Send Reset Link'}
+                        </Button>
+                      </div>
+                    </form>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/5"></div>
+                      </div>
+                      <div className="relative flex justify-center text-[10px] uppercase font-black tracking-[0.2em] text-slate-600">
+                        <span className="bg-[#0f172a] px-4">OR</span>
+                      </div>
                     </div>
-                  </form>
+
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-slate-900 border-white/10 hover:bg-slate-800 text-white h-12 rounded-xl transition-all font-bold gap-3"
+                      onClick={signIn}
+                      disabled={loading || isProcessing}
+                    >
+                      <Globe className="w-5 h-5" /> Continue with Google
+                    </Button>
+
+                    {view === 'forgot' && (
+                      <button 
+                        type="button" 
+                        onClick={() => setView('login')}
+                        className="w-full text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest"
+                      >
+                        Back to Login
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
-
-              <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-transparent border-white/10 hover:bg-white/5 text-white h-11 rounded-xl transition-all"
-                  onClick={signIn}
-                  disabled={loading}
-                >
-                  <Globe className="w-4 h-4 mr-2" /> Continue with Google
-                </Button>
-              </div>
             </div>
           </motion.div>
         </div>

@@ -122,7 +122,7 @@ export function TeamManager() {
         </div>
         <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Leads Tracked</p>
-          <p className="text-3xl font-black text-blue-600">{Object.values(leadCounts).reduce((a, b) => a + b, 0)}</p>
+          <p className="text-3xl font-black text-blue-600">{Object.values(leadCounts).reduce((a: number, b: number) => a + b, 0)}</p>
         </div>
         <div className="p-4 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20 text-white flex flex-col justify-center">
           <div className="flex items-center gap-2 mb-1">

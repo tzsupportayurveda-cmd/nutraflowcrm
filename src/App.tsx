@@ -142,29 +142,28 @@ function CRMApp() {
                   </span>
                 )}
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 p-0 rounded-2xl border-slate-200 shadow-2xl bg-white overflow-hidden z-[100]">
-                <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+              <DropdownMenuContent align="end" className="w-72 p-0 rounded-xl border-slate-200 shadow-2xl bg-white overflow-hidden z-[100]">
+                <div className="p-3 bg-slate-900 text-white flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Notifications</span>
-                    <span className="text-xs font-bold opacity-80">{unreadCount} New Messages</span>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Notifications</span>
+                    <span className="text-[11px] font-bold opacity-80">{unreadCount} New</span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => user?.id && dataService.clearNotifications(user.id)}
-                    className="text-[10px] font-black uppercase text-white/50 hover:text-white hover:bg-white/10"
+                    className="h-6 text-[9px] font-black uppercase text-white/50 hover:text-white hover:bg-white/10 px-2"
                   >
-                    Clear All
+                    Clear
                   </Button>
                 </div>
-                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                   {notifications.length === 0 ? (
-                    <div className="p-10 text-center space-y-2">
-                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                        <Bell className="w-6 h-6 text-slate-200" />
+                    <div className="p-8 text-center space-y-2">
+                      <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+                        <Bell className="w-5 h-5 text-slate-200" />
                       </div>
-                      <p className="text-sm font-bold text-slate-900">No Notifications</p>
-                      <p className="text-[10px] text-slate-400 font-medium">We'll alert you when there's an update.</p>
+                      <p className="text-xs font-bold text-slate-900">No Notifications</p>
                     </div>
                   ) : (
                     notifications.map((n) => (
@@ -172,17 +171,17 @@ function CRMApp() {
                         key={n.id} 
                         onClick={() => dataService.markNotificationRead(n.id)}
                         className={cn(
-                          "p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors relative group",
+                          "p-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors relative group",
                           !n.read && "bg-indigo-50/30"
                         )}
                       >
                         {!n.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
                         <div className="flex justify-between items-start gap-2">
-                          <h4 className="text-sm font-black text-slate-900">{n.title}</h4>
-                          {!n.read && <Check className="w-3.5 h-3.5 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                          <h4 className="text-xs font-black text-slate-900">{n.title}</h4>
+                          {!n.read && <Check className="w-3 h-3 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
                         </div>
-                        <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">{n.message}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter mt-2">
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-tight">{n.message}</p>
+                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1.5">
                           {new Date(n.timestamp).toLocaleString()}
                         </p>
                       </div>

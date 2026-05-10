@@ -50,6 +50,8 @@ const orderStatusColors = {
   'Dispatched': 'bg-teal-100 text-teal-700',
   'Delivered': 'bg-emerald-100 text-emerald-700',
   'Cancelled': 'bg-red-100 text-red-700',
+  'RTO': 'bg-orange-100 text-orange-700',
+  'Returned': 'bg-rose-100 text-rose-700',
 };
 
 const statusIcons = {
@@ -100,6 +102,16 @@ export function OrderManager() {
       setShipData({ trackingId: '', courier: 'Delhivery', notes: '' });
     } catch (error) {
       toast.error('Failed to update shipping info');
+    }
+  };
+
+  const handleSendToDelivery = async (orderId: string) => {
+    try {
+      await dataService.updateOrderStatus(orderId, 'Dispatched');
+      toast.success('Order sent to Delivery Portal successfully');
+      setIsDetailsOpen(false);
+    } catch (e) {
+      toast.error('Failed to send to delivery');
     }
   };
 
@@ -288,10 +300,23 @@ export function OrderManager() {
                   </h3>
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <p className="text-sm leading-relaxed text-slate-700 font-medium">
-                      {selectedOrder.shippingAddress || 'No address provided'}
+                      {selectedOrder.address || 'No address provided'}
                     </p>
                   </div>
                 </div>
+
+                {selectedOrder.status === 'Pending' && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Quick Actions</h3>
+                    <Button 
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] h-12 shadow-lg shadow-indigo-100 gap-2"
+                      onClick={() => handleSendToDelivery(selectedOrder.id)}
+                    >
+                      <Send className="w-4 h-4" /> Send to Delivery Portal
+                    </Button>
+                    <p className="text-[9px] text-slate-400 font-bold text-center italic">Sending to delivery portal will make it visible to the logistics team.</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-6">
@@ -326,9 +351,9 @@ export function OrderManager() {
                   </div>
                 </div>
 
-                {selectedOrder.status === 'Pending' && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                {['Pending', 'Dispatched'].includes(selectedOrder.status) && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
                   <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Dispatch Logistics</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Logistics Update</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[9px] font-bold text-slate-400 uppercase">Tracking ID</label>
@@ -344,11 +369,12 @@ export function OrderManager() {
                         <select 
                           value={shipData.courier}
                           onChange={e => setShipData({...shipData, courier: e.target.value})}
-                          className="w-full h-8 bg-white/10 border border-white/10 rounded-md px-2 text-xs font-bold outline-none"
+                          className="w-full h-8 bg-white/10 border border-white/10 rounded-md px-2 text-xs font-bold outline-none cursor-pointer"
                         >
                           <option value="Delhivery" className="bg-slate-900">Delhivery</option>
                           <option value="Shiprocket" className="bg-slate-900">Shiprocket</option>
                           <option value="BlueDart" className="bg-slate-900">BlueDart</option>
+                          <option value="Self Delivery" className="bg-slate-900">Self Delivery</option>
                         </select>
                       </div>
                     </div>
@@ -356,7 +382,7 @@ export function OrderManager() {
                       className="w-full bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[10px] h-9"
                       onClick={() => handleDispatch(selectedOrder.id)}
                     >
-                      Process Shipment
+                      {selectedOrder.status === 'Dispatched' ? 'Update Final Shipment' : 'Process Shipment'}
                     </Button>
                   </div>
                 )}
@@ -386,13 +412,13 @@ export function OrderManager() {
             <Button variant="ghost" className="font-bold text-slate-500 hover:text-slate-900" onClick={() => setIsDetailsOpen(false)}>
               Close
             </Button>
-            {selectedOrder?.status !== 'Dispatched' && selectedOrder?.status !== 'Delivered' && 
+            {selectedOrder?.status === 'Pending' && 
              (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
               <Button 
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-8 h-11 shadow-md hover:shadow-lg transition-all gap-2"
-                onClick={() => handleDispatch(selectedOrder.id)}
+                onClick={() => handleSendToDelivery(selectedOrder.id)}
               >
-                <Send className="w-4 h-4" /> Dispatch Order Now
+                <Send className="w-4 h-4" /> Send to Delivery Portal
               </Button>
             )}
           </DialogFooter>

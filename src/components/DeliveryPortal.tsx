@@ -197,10 +197,13 @@ export function DeliveryPortal() {
                       <TableCell className="text-center">
                         <Badge className={cn(
                           "font-black text-[10px] uppercase h-6 px-3 rounded-full border-none shadow-sm",
-                          order.status === 'Dispatched' ? "bg-blue-100 text-blue-700" :
+                          order.status === 'Dispatched' ? "bg-teal-100 text-teal-700" :
+                          order.status === 'Shipped' ? "bg-indigo-100 text-indigo-700" :
                           order.status === 'Out for Delivery' ? "bg-amber-100 text-amber-700" :
                           order.status === 'Delivered' ? "bg-emerald-100 text-emerald-700" :
-                          "bg-red-100 text-red-700"
+                          order.status === 'RTO' ? "bg-orange-100 text-orange-700" :
+                          order.status === 'Returned' ? "bg-rose-100 text-rose-700" :
+                          "bg-slate-100 text-slate-700"
                         )}>
                           {order.status}
                         </Badge>

@@ -15,7 +15,7 @@ export type LeadStatus =
   | 'Duplicate'
   | 'Wrong Number';
 
-export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'RTO';
+export type OrderStatus = 'Pending' | 'Processing' | 'Dispatched' | 'Shipped' | 'Delivered' | 'Returned' | 'Cancelled' | 'RTO';
 
 export interface HistoryItem {
   id: string;

@@ -14,7 +14,7 @@ import { dataService } from '@/src/services/dataService';
 import { User } from '@/src/types';
 import { toast } from 'sonner';
 
-const ADMIN_EMAIL = 'tzsupportayurveda@gmail.com';
+const ADMIN_EMAILS = ['tzsupportayurveda@gmail.com'];
 
 interface AuthContextType {
   user: User | null;
@@ -48,8 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setFirebaseUser(fbUser);
       
-      // Only clear error if we are switching users or logging in a real user
-      // Avoid clearing error when sign-out is triggered by restriction logic
       if (fbUser) {
         setError(null);
       }
@@ -61,9 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         if (fbUser) {
-          const isAdminUser = fbUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+          const isAdminUser = fbUser.email ? ADMIN_EMAILS.includes(fbUser.email.toLowerCase()) : false;
           
-          // Setup real-time profile listener for self-logout support
           const { doc, onSnapshot } = await import('firebase/firestore');
           const { db } = await import('@/src/lib/firebase');
           
@@ -74,12 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (isAdminUser) setAdminUser(profile);
               setUser(profile);
               
-              // No longer forcing logout here to allow "Pending Approval" UI
               if (profile.status !== 'active' && !isAdminUser) {
                 setError('Account approval pending. Kripya admin se sampark karein.');
               }
             } else {
-              // ... same default profile logic
               const defaultProfile: User = {
                 id: fbUser.uid,
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
@@ -91,13 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               };
               dataService.createUserProfile(defaultProfile);
             }
-            setLoading(false); // Set loading false ONLY after we have profile data
+            setLoading(false);
           });
         } else {
           setUser(null);
           setAdminUser(null);
           setImpersonatedUser(null);
-          setLoading(false); // Set loading false if not logged in
+          setLoading(false);
         }
       } catch (err: any) {
         console.error("Auth flow error:", err);
@@ -127,6 +122,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithGoogle();
     } catch (err: any) {
       console.error("Google login failed:", err);
+      // Handle various forms of the "popup closed" error
+      const errorMsg = err.message || "";
+      const errorCode = err.code || "";
+      if (errorCode === 'auth/popup-closed-by-user' || errorMsg.includes('popup-closed-by-user') || errorMsg.includes('closed the popup')) {
+        return;
+      }
       setError("Google login failed. Please try again.");
     } finally {
       setLoading(false);

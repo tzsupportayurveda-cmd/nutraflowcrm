@@ -300,127 +300,150 @@ export function Dashboard() {
       {/* Metric Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {currentUser?.role === 'Sales' ? (
-          <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group bg-slate-900 text-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">My Earnings</CardTitle>
-              <div className="p-2 bg-emerald-500 rounded-xl group-hover:scale-110 transition-transform">
-                <DollarSign className="w-4 h-4 text-white" />
+          <Card className="neo-shadow border-slate-200/60 overflow-hidden group hover:neo-shadow-lg transition-all duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 group-hover:scale-110 transition-transform duration-500">
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md text-[10px] font-black border-transparent">
+                  EARNINGS
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black">₹{stats.earnings.toLocaleString()}</div>
-              <p className="text-xs text-slate-400 font-bold flex items-center gap-1 mt-2">
-                <Target className="w-3 h-3 text-emerald-400" /> Commission earned
-              </p>
-            </CardContent>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">My Sales Commission</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">₹{stats.earnings.toLocaleString()}</h3>
+              </div>
+            </div>
+            <div className="h-1 w-full bg-slate-100 italic flex">
+               <div className="h-full w-2/3 bg-emerald-500/30" />
+            </div>
           </Card>
         ) : (
-          <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all group">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Total Leads</CardTitle>
-              <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                <FileText className="w-4 h-4" />
+          <Card className="neo-shadow border-slate-200/60 overflow-hidden group hover:neo-shadow-lg transition-all duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+                  <FileText className="w-5 h-5 text-indigo-600" />
+                </div>
+                <Badge className="bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-md text-[10px] font-black border-transparent">
+                  TOTAL VOLUME
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">{stats.leads}</div>
-              <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-2">
-                <TrendingUp className="w-3 h-3" /> Fresh leads processed
-              </p>
-            </CardContent>
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Total Leads Processed</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.leads}</h3>
+              </div>
+            </div>
           </Card>
         )}
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all group">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Total Revenue</CardTitle>
-            <div className="p-2 bg-blue-50 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-colors">
-              <DollarSign className="w-4 h-4" />
+        <Card className="neo-shadow border-slate-200/60 overflow-hidden group hover:neo-shadow-lg transition-all duration-300">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <Badge className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md text-[10px] font-black border-transparent">
+                REVENUE
+              </Badge>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900">₹{stats.revenue.toLocaleString()}</div>
-            <p className="text-xs text-blue-600 font-bold flex items-center gap-1 mt-2">
-              <Target className="w-3 h-3" /> Sales conversion value
-            </p>
-          </CardContent>
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Total Confirmed Value</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">₹{stats.revenue.toLocaleString()}</h3>
+            </div>
+          </div>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all group">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Confirmed</CardTitle>
-            <div className="p-2 bg-emerald-50 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-              <CheckCircle className="w-4 h-4" />
+        <Card className="neo-shadow border-slate-200/60 overflow-hidden group hover:neo-shadow-lg transition-all duration-300">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+              <Badge className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-md text-[10px] font-black border-transparent">
+                SUCCESS
+              </Badge>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900">{stats.confirmed}</div>
-            <p className="text-xs text-emerald-600 font-bold flex items-center gap-1 mt-2">
-              Success rate tracking
-            </p>
-          </CardContent>
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Total Confirmed Orders</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.confirmed}</h3>
+            </div>
+          </div>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-amber-500/10 transition-all group">
-          <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-            <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-400">Pending</CardTitle>
-            <div className="p-2 bg-amber-50 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors">
-              <Clock className="w-4 h-4" />
+        <Card className="neo-shadow border-slate-200/60 overflow-hidden group hover:neo-shadow-lg transition-all duration-300">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+                <Clock className="w-5 h-5 text-amber-600" />
+              </div>
+              <Badge className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-md text-[10px] font-black border-transparent">
+                PENDING
+              </Badge>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black text-slate-900">{stats.pending}</div>
-            <p className="text-xs text-amber-600 font-bold flex items-center gap-1 mt-2">
-              Orders being processed
-            </p>
-          </CardContent>
+            <div className="space-y-1">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Awaiting Finalization</p>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.pending}</h3>
+            </div>
+          </div>
         </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-50 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-lg font-black text-slate-900">Revenue Growth</CardTitle>
-              <CardDescription className="font-medium">Company earnings over time based on confirmed orders.</CardDescription>
+        <Card className="lg:col-span-4 neo-shadow border-slate-200/60 overflow-hidden bg-white">
+          <CardHeader className="bg-white border-b border-slate-50 p-6 flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Revenue Stream</CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Monthly Projection & Performance</CardDescription>
             </div>
-            <div className="flex -space-x-2">
+            <div className="flex -space-x-1.5">
               {leaderboardData.slice(0, 3).map((agent, i) => (
                 <div key={agent.id} className={cn(
-                  "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-1 ring-slate-100",
-                  i === 0 ? "bg-amber-400" : i === 1 ? "bg-slate-300" : "bg-amber-600"
+                  "w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-1 ring-slate-100 flex-shrink-0 transition-transform hover:-translate-y-1 cursor-help",
+                  i === 0 ? "bg-indigo-500 z-30" : i === 1 ? "bg-slate-400 z-20" : "bg-slate-700 z-10"
                 )}>
                   {agent.name.charAt(0)}
                 </div>
               ))}
             </div>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[350px] w-full">
+          <CardContent className="p-6">
+            <div className="h-[320px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.8} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="name" 
                     stroke="#94a3b8" 
-                    fontSize={12} 
-                    fontWeight={600}
+                    fontSize={10} 
+                    fontWeight={800}
                     tickLine={false} 
                     axisLine={false} 
+                    tick={{ fill: '#64748b' }}
                   />
                   <YAxis 
                     stroke="#94a3b8" 
-                    fontSize={12} 
-                    fontWeight={600}
+                    fontSize={10} 
+                    fontWeight={800}
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(value) => `₹${value}`}
+                    tickFormatter={(value) => `₹${value/1000}k`}
+                    tick={{ fill: '#64748b' }}
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#cbd5e1', fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}
                     cursor={{ fill: '#f8fafc' }}
                   />
-                  <Bar dataKey="revenue" fill={cn(currentUser?.role === 'Admin' ? "#10b981" : "#3b82f6")} radius={[6, 6, 0, 0]} barSize={40} />
+                  <Bar dataKey="revenue" fill="url(#barGradient)" radius={[4, 4, 0, 0]} barSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -428,18 +451,18 @@ export function Dashboard() {
         </Card>
 
         {/* Sales Leaderboard */}
-        <Card className="lg:col-span-3 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-          <CardHeader className="bg-slate-900 text-white border-none">
+        <Card className="lg:col-span-3 neo-shadow border-slate-200/60 overflow-hidden bg-white">
+          <CardHeader className="bg-slate-900 text-white p-6 border-none">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg font-black flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-400" />
-                  Sales Superstars
+                <CardTitle className="text-lg font-black flex items-center gap-2.5">
+                  <Trophy className="w-5 h-5 text-indigo-400" />
+                  Sales Efficiency
                 </CardTitle>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">This Month's Leaderboard</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Agent Rankings • Current Cycle</p>
               </div>
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-2 font-black text-[9px] uppercase tracking-tighter">
-                Live
+              <Badge className="bg-white/10 text-white border-white/10 px-2 font-black text-[9px] uppercase tracking-tighter">
+                Live Data
               </Badge>
             </div>
           </CardHeader>
@@ -449,96 +472,186 @@ export function Dashboard() {
                 <div key={agent.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      {index === 0 && <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center z-10 shadow-sm"><Trophy className="w-2.5 h-2.5 text-slate-900" /></div>}
+                      {index === 0 && (
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center z-10 shadow-lg shadow-indigo-500/20 border-2 border-white">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      )}
                       <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm",
-                        index === 0 ? "bg-amber-100 text-amber-700" : 
-                        index === 1 ? "bg-slate-100 text-slate-600" : 
-                        index === 2 ? "bg-orange-50 text-orange-700" : "bg-blue-50 text-blue-600"
+                        "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shadow-sm ring-1",
+                        index === 0 ? "bg-indigo-50 text-indigo-700 ring-indigo-100" : 
+                        index === 1 ? "bg-slate-50 text-slate-600 ring-slate-100" : 
+                        index === 2 ? "bg-slate-50 text-slate-700 ring-slate-100" : "bg-slate-50 text-slate-400 ring-slate-100 opacity-60"
                       )}>
                         {agent.name.charAt(0)}
                       </div>
                     </div>
                     <div>
-                      <p className="font-black text-slate-900 flex items-center gap-2">
-                        {agent.name}
+                      <div className="flex items-center gap-2">
+                        <p className="font-black text-slate-900 text-xs tracking-tight">{agent.name}</p>
                         {index < 3 && (
                           <span className={cn(
-                            "text-[8px] font-black uppercase tracking-tighter px-1 rounded-sm",
-                            index === 0 ? "bg-amber-400 text-slate-900" : 
-                            index === 1 ? "bg-slate-300 text-slate-700" : "bg-orange-400 text-white"
+                            "text-[8px] font-black uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-sm",
+                            index === 0 ? "bg-indigo-600 text-white" : 
+                            index === 1 ? "bg-slate-200 text-slate-700" : "bg-slate-100 text-slate-500"
                           )}>
-                            Rank #{index + 1}
+                            Top {index + 1}
                           </span>
                         )}
-                      </p>
-                      <p className="text-[10px] font-bold text-slate-400">
-                        {agent.confirmed} Orders Confirmed
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 font-mono mt-0.5 tracking-tighter">
+                        {agent.confirmed} ORDERS SECURED
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-emerald-600">₹{agent.revenue.toLocaleString()}</p>
-                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest group-hover:text-emerald-500 transition-colors">Revenue</p>
+                    <p className="font-black text-slate-900 text-sm tracking-tight font-mono">₹{agent.revenue.toLocaleString()}</p>
+                    <div className="h-1 w-16 bg-slate-100 rounded-full mt-1 ml-auto overflow-hidden">
+                       <div 
+                         className="h-full bg-indigo-500 transition-all duration-1000" 
+                         style={{ width: `${Math.min((agent.revenue / (leaderboardData[0]?.revenue || 1)) * 100, 100)}%` }} 
+                       />
+                    </div>
                   </div>
                 </div>
               )) : (
-                <div className="p-20 text-center text-slate-400 italic text-sm font-medium">
-                  No sales recorded yet.
+                <div className="p-20 text-center">
+                  <Trophy className="w-8 h-8 text-slate-200 mx-auto mb-3 opacity-20" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No rankings available</p>
                 </div>
               )}
             </div>
-            {leaderboardData.length > 3 && (
-              <div className="p-4 bg-slate-50 text-center">
-                <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 w-full">
-                  View Full Rankings
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-7 border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-          <CardHeader className="bg-white border-b border-slate-50">
-            <CardTitle className="text-lg font-black text-slate-900">Lead Conversion</CardTitle>
-            <CardDescription className="font-medium">Total leads assigned vs processed.</CardDescription>
+        <Card className="lg:col-span-7 neo-shadow border-slate-200/60 overflow-hidden bg-white">
+          <CardHeader className="bg-white border-b border-slate-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-black text-slate-900 tracking-tight">Conversion Velocity</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Yield trends over the fiscal period</CardDescription>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]" />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Lead Input</span>
+                </div>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="h-[350px] w-full">
+          <CardContent className="p-6">
+            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis 
                     dataKey="name" 
                     stroke="#94a3b8" 
-                    fontSize={12} 
-                    fontWeight={600}
+                    fontSize={10} 
+                    fontWeight={800}
                     tickLine={false} 
                     axisLine={false} 
                   />
                   <YAxis 
                     stroke="#94a3b8" 
-                    fontSize={12} 
-                    fontWeight={600}
+                    fontSize={10} 
+                    fontWeight={800}
                     tickLine={false} 
                     axisLine={false} 
                   />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#cbd5e1', fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="leads" 
-                    stroke="#10b981" 
-                    strokeWidth={4} 
-                    dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 8, strokeWidth: 0 }}
+                    stroke="#6366f1" 
+                    strokeWidth={3} 
+                    dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }} 
+                    activeDot={{ r: 6, strokeWidth: 4, stroke: '#fff' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Commercial Activity Stream */}
+      <div className="grid gap-6 lg:grid-cols-7">
+        <Card className="lg:col-span-7 neo-shadow border-slate-200/60 overflow-hidden bg-white">
+          <CardHeader className="bg-slate-50 border-b border-slate-100 p-6 flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <Target className="w-5 h-5 text-indigo-600" />
+                Commercial Activity Stream
+              </CardTitle>
+              <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 font-mono">
+                Real-time validation of business transitions
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest">LIVE FEED</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+             <div className="overflow-x-auto">
+               <table className="w-full">
+                 <thead className="bg-slate-50/50 border-b border-slate-100">
+                   <tr className="text-left">
+                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Entity</th>
+                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Operation</th>
+                     <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Value</th>
+                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50">
+                   {filteredLeads.slice(0, 5).map((lead, i) => (
+                     <tr key={lead.id} className="group hover:bg-slate-50/50 transition-colors">
+                       <td className="px-6 py-4">
+                         <div className="flex items-center gap-3">
+                           <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow-lg shadow-black/10">
+                             {lead.name.charAt(0)}
+                           </div>
+                           <div>
+                             <p className="text-sm font-black text-slate-900 leading-none mb-1">{lead.name}</p>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight font-mono">{lead.city || 'GLOBAL MARKET'}</p>
+                           </div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4">
+                         <div className="flex flex-col">
+                           <span className="text-[11px] font-black text-indigo-600 uppercase tracking-tighter">{lead.product}</span>
+                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">LEAD_INGRESS</span>
+                         </div>
+                       </td>
+                       <td className="px-4 py-4 text-right">
+                         <span className="text-sm font-black text-slate-900 font-mono">₹{lead.value.toLocaleString()}</span>
+                       </td>
+                       <td className="px-6 py-4 text-right">
+                         <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-2 bg-white px-2.5 h-6">
+                           {lead.status}
+                         </Badge>
+                       </td>
+                     </tr>
+                   ))}
+                   {filteredLeads.length === 0 && (
+                     <tr>
+                       <td colSpan={4} className="px-6 py-12 text-center text-slate-300 font-bold uppercase tracking-[0.2em] text-xs">
+                         Waiting for incoming telemetry...
+                       </td>
+                     </tr>
+                   )}
+                 </tbody>
+               </table>
+             </div>
           </CardContent>
         </Card>
       </div>

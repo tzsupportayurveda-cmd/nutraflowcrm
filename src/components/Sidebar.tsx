@@ -1,20 +1,12 @@
 
-import React from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Package, 
-  ShoppingCart, 
-  Settings, 
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Stethoscope,
-  Truck
-} from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut, ChevronLeft, ChevronRight, Stethoscope, Truck, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { BrandLogo } from './BrandLogo';
+import { motion } from 'motion/react';
 
 interface SidebarProps {
   activeTab: string;
@@ -23,20 +15,16 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
-import { useAuth } from '@/src/contexts/AuthContext';
-import { ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
-
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer'] },
-  { id: 'leads', label: 'All Leads', icon: Users, roles: ['Admin', 'Manager', 'Sales'] },
-  { id: 'confirmed', label: 'Confirmed Orders', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales'] },
-  { id: 'inventory', label: 'Inventory', icon: Package, roles: ['Admin', 'Manager', 'Inventory'] },
-  { id: 'orders', label: 'Dispatched', icon: ShoppingCart, roles: ['Admin', 'Manager'] },
-  { id: 'delivery', label: 'Logistics', icon: Truck, roles: ['Admin', 'Manager', 'Delivery'] },
-  { id: 'affiliate', label: 'Affiliates', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
-  { id: 'team', label: 'Admin & Team', icon: ShieldCheck, roles: ['Admin'] },
-  { id: 'settings', label: 'System Settings', icon: Settings, roles: ['Admin'] },
+  { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer'] },
+  { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales'] },
+  { id: 'inventory', label: 'SKU REPOSITORY', icon: Package, roles: ['Admin', 'Manager', 'Inventory'] },
+  { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager'] },
+  { id: 'delivery', label: 'LOGISTICS CHAIN', icon: Truck, roles: ['Admin', 'Manager', 'Delivery'] },
+  { id: 'affiliate', label: 'MARKETING HUB', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
+  { id: 'team', label: 'HUMAN RESOURCES', icon: ShieldCheck, roles: ['Admin'] },
+  { id: 'settings', label: 'SYSTEM CONFIG', icon: Settings, roles: ['Admin'] },
 ];
 
 export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: SidebarProps) {
@@ -48,73 +36,110 @@ export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: Si
 
   return (
     <div className={cn(
-      "flex flex-col h-screen bg-slate-950 text-white transition-all duration-300 ease-in-out border-r border-slate-800",
-      collapsed ? "w-20" : "w-64"
+      "flex flex-col h-screen bg-slate-950 text-white transition-all duration-500 ease-in-out border-r border-white/5 shadow-2xl relative z-30",
+      collapsed ? "w-20" : "w-72"
     )}>
-      <div className="flex items-center justify-between p-6 h-20">
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-slate-900 rounded-xl shadow-lg shadow-black/20 group">
-              <BrandLogo className="w-6 h-6 transition-transform group-hover:scale-110" />
+      {/* Header Profile Section */}
+      <div className="flex flex-col p-6 h-auto border-b border-white/5 bg-gradient-to-b from-slate-900 to-slate-950">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="relative group">
+            <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity duration-300" />
+            <div className="relative p-2.5 bg-slate-900 border border-white/10 rounded-2xl shadow-xl">
+              <BrandLogo className="w-6 h-6 text-indigo-400 group-hover:text-white transition-colors" />
             </div>
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">TOZ Flow</span>
           </div>
-        )}
-        {collapsed && (
-          <div className="flex items-center justify-center w-full">
-            <div className="p-1.5 bg-slate-900 rounded-xl group">
-              <BrandLogo className="w-6 h-6 transition-transform group-hover:scale-110" />
+          {!collapsed && (
+            <div className="flex flex-col leading-none animate-in fade-in slide-in-from-left-2 duration-700">
+              <span className="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">TOZ FLOW</span>
+              <span className="text-[9px] font-black tracking-widest text-indigo-500/80 uppercase mt-1">Enterprise Command</span>
+            </div>
+          )}
+        </div>
+
+        {!collapsed && user && (
+          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-3 group hover:bg-white/[0.08] transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-xs font-black ring-1 ring-white/10 overflow-hidden">
+              <img 
+                 src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                 alt="" 
+                 className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+              />
+            </div>
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-[11px] font-black uppercase tracking-tight truncate group-hover:text-indigo-300 transition-colors">{user.name}</span>
+              <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest h-5 px-2 bg-indigo-500/10 text-indigo-400 border-indigo-500/20 w-fit mt-1">{user.role}</Badge>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex-1 px-4 py-4 space-y-1.5 custom-scrollbar overflow-y-auto">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold px-4 mb-4">
-          {!collapsed ? "Global Navigation" : "Nav"}
-        </div>
+      <div className="flex-1 px-4 py-8 space-y-1.5 custom-scrollbar overflow-y-auto">
+        {!collapsed && (
+          <div className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-600 px-4 mb-6 flex items-center gap-2">
+            <div className="w-1 h-3 bg-indigo-500/40 rounded-full" />
+            Workspace Systems
+          </div>
+        )}
         {filteredNavItems.map((item) => (
           <Button
             key={item.id}
-            variant={activeTab === item.id ? "secondary" : "ghost"}
+            variant="ghost"
             className={cn(
-              "w-full justify-start gap-4 h-11 transition-all rounded-xl",
+              "w-full justify-start gap-4 h-12 transition-all duration-300 rounded-xl relative px-4 group overflow-hidden border border-transparent",
               activeTab === item.id 
-                ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 hover:text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/5 transition-all" 
-                : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent",
-              collapsed && "justify-center px-0"
+                ? "bg-indigo-500/15 text-white border-white/5" 
+                : "text-slate-500 hover:text-white hover:bg-white/5 hover:border-white/[0.02]",
+              collapsed && "justify-center px-0 h-14"
             )}
             onClick={() => setActiveTab(item.id)}
           >
-            <item.icon className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span className="font-semibold text-sm">{item.label}</span>}
+            {activeTab === item.id && (
+              <motion.div 
+                layoutId="active-pill" 
+                className="absolute left-0 top-3 bottom-3 w-1.5 bg-indigo-500 rounded-r-full shadow-[0_0_12px_rgba(99,102,241,0.6)]" 
+              />
+            )}
+            <item.icon className={cn(
+              "w-5 h-5 flex-shrink-0 transition-all duration-300",
+              activeTab === item.id ? "text-indigo-400 scale-110" : "text-slate-600 group-hover:text-slate-200 group-hover:scale-105"
+            )} />
+            {!collapsed && (
+              <span className={cn(
+                "text-[10px] uppercase tracking-[0.1em] transition-all duration-300", 
+                activeTab === item.id ? "font-black" : "font-bold"
+              )}>
+                {item.label}
+              </span>
+            )}
           </Button>
         ))}
       </div>
 
-      <div className="p-4 mt-auto space-y-2">
-        <Separator className="bg-slate-800/50 mb-4" />
+      <div className="p-4 mt-auto border-t border-white/5 bg-slate-950">
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-4 h-11 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl",
-            collapsed && "justify-center px-0"
+            "w-full justify-start gap-4 h-12 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl group transition-all px-4 border border-transparent hover:border-red-500/20",
+            collapsed && "justify-center px-0 h-14"
           )}
           onClick={signOut}
         >
-          <LogOut className="w-5 h-5" />
-          {!collapsed && <span className="font-medium">Logout</span>}
+          <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+          {!collapsed && <span className="font-black text-[10px] uppercase tracking-widest">Terminate Session</span>}
         </Button>
         
         <div className="pt-4 flex justify-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-10 h-10 rounded-xl text-slate-500 hover:text-white bg-white/5 border border-white/5 hover:bg-white/10"
+          <button
+            className="w-full h-10 flex items-center justify-center gap-3 rounded-xl bg-white/[0.03] border border-white/5 text-[10px] font-black uppercase text-slate-600 hover:bg-white/10 hover:text-white transition-all tracking-widest group"
             onClick={() => setCollapsed(!collapsed)}
           >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </Button>
+            {collapsed ? <ChevronRight size={16} className="text-indigo-400" /> : (
+              <>
+                <ChevronLeft size={16} className="text-indigo-400 transition-transform group-hover:-translate-x-1" />
+                <span className="opacity-60 group-hover:opacity-100">Compact Mode</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

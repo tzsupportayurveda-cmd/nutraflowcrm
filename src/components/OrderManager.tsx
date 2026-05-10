@@ -115,77 +115,120 @@ export function OrderManager() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold tracking-tight">Orders Tracking</h1>
-          <p className="text-slate-500">Monitor order fulfillment, shipping, and delivery lifecycle.</p>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Order Fulfillment</h1>
+            <Badge className="bg-blue-100 text-blue-700 border-none font-black text-[9px] uppercase tracking-widest px-2.5">
+              Processing Queue
+            </Badge>
+          </div>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Lifecycle monitoring of confirmed commercial transactions.</p>
         </div>
         {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-          <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-            <Truck className="w-4 h-4" /> Ship All Pending
+          <Button className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
+            <Truck className="w-4 h-4 text-blue-400" /> Batch Dispatch
           </Button>
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px] flex flex-col items-center justify-center">
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden neo-shadow min-h-[400px]">
         {loading ? (
-          <div className="flex flex-col items-center gap-4 p-10">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-            <p className="text-slate-500 font-medium">Fetching orders...</p>
+          <div className="flex flex-col items-center justify-center p-32 gap-4">
+             <div className="relative">
+              <div className="w-12 h-12 border-4 border-slate-100 border-t-blue-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+              </div>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Order Records...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 p-20 text-center text-slate-500">
-            <ShoppingCart className="w-12 h-12 text-slate-200" />
-            <p className="font-semibold text-slate-900 text-lg">No orders recorded</p>
-            <p className="max-w-xs mx-auto text-slate-400">{currentUser?.role === 'Admin' ? 'Wait for new orders or sync your e-commerce store.' : 'You haven\'t processed any orders yet.'}</p>
+          <div className="flex flex-col items-center justify-center p-32 text-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center">
+              <ShoppingCart className="w-8 h-8 text-slate-200" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-lg font-black text-slate-900 uppercase tracking-tight">No Transactions Recorded</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
+                {currentUser?.role === 'Admin' ? 'Awaiting commercial conversion from lead registry.' : 'Your assignment queue is currently empty.'}
+              </p>
+            </div>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow>
-                <TableHead className="font-bold">Order ID</TableHead>
-                <TableHead className="font-bold">Customer</TableHead>
-                <TableHead className="font-bold">Date</TableHead>
-                <TableHead className="font-bold">Total</TableHead>
-                <TableHead className="font-bold">Status</TableHead>
-                {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && <TableHead className="font-bold">Agent</TableHead>}
-                <TableHead className="text-right font-bold">Actions</TableHead>
+              <TableRow className="h-14 hover:bg-transparent border-b-slate-100">
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Order ID</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Entity Details</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Fulfillment Date</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Financial Value</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Status & Logistics</TableHead>
+                {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Assigned To</TableHead>}
+                <TableHead className="w-14 px-4"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredOrders.map((order) => {
-                const Icon = statusIcons[order.status] || Clock;
+                const Icon = statusIcons[order.status as keyof typeof statusIcons] || Clock;
                 return (
-                  <TableRow key={order.id} className="hover:bg-slate-50/50 group transition-colors">
-                    <TableCell className="font-mono text-sm font-black text-blue-600">
-                      {order.orderSerial || order.id.substring(0, 5)}
+                  <TableRow key={order.id} className="h-20 hover:bg-slate-50/30 group transition-all border-b-slate-50">
+                    <TableCell className="px-6">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-blue-600 font-mono tracking-tighter">#{order.orderSerial || order.id.substring(0, 8).toUpperCase()}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">TRAN_ID</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="font-bold text-slate-900">{order.customerName}</TableCell>
-                    <TableCell className="text-slate-500 text-sm font-medium">
-                      {format(new Date(order.createdAt), 'MMM dd, yyyy')}
+                    <TableCell className="px-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{order.customerName}</span>
+                        <span className="text-[10px] font-bold text-slate-500 font-mono tracking-tight">{order.phone || 'NO_PHONE'}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="font-black text-slate-900">₹{order.total.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant="secondary" className={cn(orderStatusColors[order.status], "gap-1 border-transparent px-2.5 py-0.5 font-bold shadow-sm w-fit")}>
-                          <Icon className="w-3 h-3" /> {order.status}
+                    <TableCell className="px-4">
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-slate-700 font-mono uppercase tracking-tighter">
+                          {format(new Date(order.createdAt), 'dd MMM yyyy').toUpperCase()}
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">TS_ENTRY</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-900 font-mono">₹{order.total.toLocaleString()}</span>
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Confirmed Revenue</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="outline" className={cn(
+                          "text-[9px] font-black uppercase tracking-widest h-6 px-2.5 border-2 w-fit rounded-lg shadow-sm transition-transform group-hover:scale-105",
+                          orderStatusColors[order.status as keyof typeof orderStatusColors] || "bg-slate-50 text-slate-400 border-slate-200"
+                        )}>
+                          <Icon className="w-3 h-3 mr-1.5" /> {order.status}
                         </Badge>
                         {order.trackingId && (
-                          <div className="flex items-center gap-1 text-[10px] font-black text-blue-600 uppercase tracking-tighter">
-                            <Truck className="w-2.5 h-2.5" /> {order.courier || 'Tracking'}: {order.trackingId}
+                          <div className="flex items-center gap-1.5 text-[9px] font-black text-blue-600 uppercase tracking-widest ml-1">
+                            <Truck className="w-2.5 h-2.5" /> 
+                            {order.courier?.toUpperCase() || 'LOGISTICS'}: <span className="font-mono text-slate-500">{order.trackingId}</span>
                           </div>
                         )}
                       </div>
                     </TableCell>
                     {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-                      <TableCell className="text-sm font-bold text-emerald-600">
-                        {order.agentName || 'System'}
+                      <TableCell className="px-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-white uppercase ring-2 ring-slate-100">
+                            {(order.agentName || 'S')[0]}
+                          </div>
+                          <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{order.agentName || 'SYSTEM_OP'}</span>
+                        </div>
                       </TableCell>
                     )}
-                    <TableCell className="text-right">
+                    <TableCell className="px-4 text-right">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                        className="h-10 w-10 border border-transparent hover:border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
                         onClick={() => {
                           setSelectedOrder(order);
                           setIsDetailsOpen(true);

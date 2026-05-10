@@ -115,164 +115,207 @@ export function InventoryManager() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold tracking-tight">Inventory & Stock</h1>
-          <p className="text-slate-500">Manage your product levels, formulations, and batch tracking.</p>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">SKU Registry</h1>
+            <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[9px] uppercase tracking-widest px-2.5">
+              Asset Tracking
+            </Badge>
+          </div>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Systematic inventory management and valuation control.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 border-slate-200">
-            <History className="w-4 h-4" /> Batch History
+          <Button variant="outline" className="neo-shadow border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
+            <History className="w-4 h-4 text-amber-500" /> Batch Audit
           </Button>
           
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-bold h-10 px-4 rounded-lg inline-flex items-center transition-colors">
-              <Box className="w-4 h-4" /> New Product
+            <DialogTrigger className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4 rounded-xl inline-flex items-center transition-all">
+              <Box className="w-4 h-4 text-emerald-400" /> Register SKU
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
+            <DialogContent className="max-w-md rounded-2xl border-slate-200 shadow-2xl">
+              <DialogHeader className="border-b border-slate-50 pb-4">
+                <DialogTitle className="text-xl font-black uppercase tracking-tight">Add Global SKU</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Name</Label>
-                  <Input id="name" className="col-span-3" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+              <div className="grid gap-6 py-8">
+                <div className="grid gap-2">
+                  <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Biological Name</Label>
+                  <Input id="name" className="h-11 rounded-xl border-slate-200 font-bold text-sm" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="category" className="text-right">Category</Label>
-                  <Input id="category" className="col-span-3" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="category" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classification</Label>
+                    <Input id="category" className="h-11 rounded-xl border-slate-200 font-bold text-sm" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="sku" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Asset Serial (SKU)</Label>
+                    <Input id="sku" className="h-11 rounded-xl border-slate-200 font-mono text-sm uppercase" value={newItem.sku} onChange={e => setNewItem({...newItem, sku: e.target.value})} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="sku" className="text-right">SKU</Label>
-                  <Input id="sku" className="col-span-3" value={newItem.sku} onChange={e => setNewItem({...newItem, sku: e.target.value})} />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="stock" className="text-right">Initial Stock</Label>
-                  <Input id="stock" type="number" className="col-span-3" value={newItem.stock} onChange={e => setNewItem({...newItem, stock: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="minStock" className="text-right">Min Stock</Label>
-                  <Input id="minStock" type="number" className="col-span-3" value={newItem.minStock} onChange={e => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">Price (₹)</Label>
-                  <Input id="price" type="number" className="col-span-3" value={newItem.price} onChange={e => setNewItem({...newItem, price: parseFloat(e.target.value) || 0})} />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="stock" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Onhand</Label>
+                    <Input id="stock" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.stock} onChange={e => setNewItem({...newItem, stock: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="minStock" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Threshold</Label>
+                    <Input id="minStock" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.minStock} onChange={e => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="price" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valuation</Label>
+                    <Input id="price" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.price} onChange={e => setNewItem({...newItem, price: parseFloat(e.target.value) || 0})} />
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleAddProduct}>Save Product</Button>
+              <DialogFooter className="bg-slate-50 p-4 -m-6 mt-6 rounded-b-2xl border-t border-slate-100 flex gap-2">
+                <Button variant="ghost" className="font-black uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setIsAddOpen(false)}>Abort</Button>
+                <Button className="bg-slate-900 hover:bg-black font-black uppercase text-[10px] tracking-widest px-8" onClick={handleAddProduct}>Commit Record</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-          <p className="text-sm font-medium text-emerald-800">Total SKU Count</p>
-          <p className="text-2xl font-bold text-emerald-900">{items.length}</p>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-emerald-200 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-emerald-600 transition-colors">Asset Taxonomy</p>
+             <Box className="w-4 h-4 text-emerald-500" />
+          </div>
+          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">{items.length}</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Active SKU Profiles</p>
         </div>
-        <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-          <p className="text-sm font-medium text-amber-800">Low Stock Items</p>
-          <p className="text-2xl font-bold text-amber-900">
+        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-amber-200 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-amber-600 transition-colors">Reserve Alerts</p>
+             <AlertTriangle className="w-4 h-4 text-amber-500" />
+          </div>
+          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">
             {items.filter(i => i.stock <= i.minStock).length}
           </p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Critical Restock Req.</p>
         </div>
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-          <p className="text-sm font-medium text-blue-800">Total Stock Value</p>
-          <p className="text-2xl font-bold text-blue-900">
+        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-blue-200 transition-colors">
+          <div className="flex items-center justify-between mb-4">
+             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-blue-600 transition-colors">Capital Valuation</p>
+             <History className="w-4 h-4 text-blue-500" />
+          </div>
+          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">
             ₹{items.reduce((acc, i) => acc + (i.stock * i.price), 0).toLocaleString()}
           </p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Inventory Net Worth</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px] flex flex-col items-center justify-center">
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden neo-shadow min-h-[400px]">
         {loading ? (
-          <div className="flex flex-col items-center gap-4 p-10">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-            <p className="text-slate-500 font-medium">Scanning inventory...</p>
+          <div className="flex flex-col items-center justify-center p-32 gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-slate-100 border-t-amber-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              </div>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Indexing Global Repository...</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 p-20 text-center text-slate-500">
-            <Package className="w-12 h-12 text-slate-200" />
-            <div>
-              <p className="text-slate-900 font-semibold text-lg">Inventory is empty</p>
-              <p className="max-w-xs mx-auto">Start by adding your first product formulation to track stock and sales.</p>
+          <div className="flex flex-col items-center justify-center p-32 text-center gap-8">
+            <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center relative">
+               <Package className="w-10 h-10 text-slate-200" />
+               <div className="absolute inset-0 border-2 border-dashed border-slate-100 rounded-full animate-[spin_20s_linear_infinite]" />
             </div>
-            <Button className="mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setIsAddOpen(true)}>Add Product</Button>
+            <div className="space-y-2">
+              <p className="text-xl font-black text-slate-900 uppercase tracking-tight">Repository Empty</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[280px] mx-auto leading-loose">Register formulation assets to initiate systematic stock tracking and valuation analysis.</p>
+            </div>
+            <Button className="neo-shadow bg-slate-900 hover:bg-black font-black uppercase text-[10px] tracking-widest px-8 h-12 rounded-xl" onClick={() => setIsAddOpen(true)}>Initialize SKU</Button>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Stock Level</TableHead>
-                <TableHead>Pending Leads</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Total Value</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="h-14 hover:bg-transparent border-b-slate-100">
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Biological Asset</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Classification</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Internal SKU</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Stock Integrity</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Demand Index</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Capitalization</TableHead>
+                <TableHead className="w-14 px-4"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id} className="hover:bg-slate-50/50">
-                  <TableCell className="font-medium text-slate-900">{item.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="font-normal border-slate-200">
-                      {item.category}
+                <TableRow key={item.id} className="h-20 hover:bg-slate-50/30 group transition-all border-b-slate-50">
+                  <TableCell className="px-6">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">PRODUCT_ENTITY</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4">
+                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border-2 border-slate-100 text-slate-500 rounded-lg">
+                      {item.category.toUpperCase()}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-slate-500">{item.sku}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1.5 min-w-[120px]">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{item.stock}</span>
-                        <span className="text-slate-400 text-xs shrink-0 font-medium">/ min {item.minStock}</span>
+                  <TableCell className="px-4 font-mono text-[11px] font-black text-slate-500 uppercase tracking-tighter">{item.sku}</TableCell>
+                  <TableCell className="px-4">
+                    <div className="flex flex-col gap-2.5 w-full max-w-[160px]">
+                      <div className="flex items-center justify-between">
+                        <span className={cn(
+                          "text-[11px] font-black font-mono",
+                          item.stock <= item.minStock ? "text-red-500" : "text-slate-900"
+                        )}>{item.stock}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono">MIN: {item.minStock}</span>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden shadow-inner ring-1 ring-slate-200/50">
                         <div 
                           className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            item.stock <= item.minStock ? "bg-amber-500" : "bg-emerald-500"
+                            "h-full rounded-full transition-all duration-700 ease-out",
+                            item.stock <= item.minStock ? "bg-red-500" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                           )}
-                          style={{ width: `${Math.min((item.stock / (item.minStock * 2)) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((item.stock / (item.minStock * 2.5)) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4">
                     <Badge variant="secondary" className={cn(
-                      "font-black text-[10px] uppercase tracking-widest",
-                      getPendingDemand(item.name) > 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                      "font-black text-[9px] uppercase tracking-[0.1em] h-7 px-3 flex items-center justify-center gap-1.5 rounded-xl border-2 transition-all",
+                      getPendingDemand(item.name) > 0 
+                        ? "bg-blue-50 text-blue-700 border-blue-100 shadow-sm scale-105" 
+                        : "bg-slate-50 text-slate-400 border-transparent shadow-none grayscale"
                     )}>
-                      {getPendingDemand(item.name)} pending
+                      {getPendingDemand(item.name) > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                      {getPendingDemand(item.name)} REQ
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium text-slate-600">₹{item.price.toFixed(2)}</TableCell>
-                  <TableCell className="font-bold text-slate-900">₹{(item.stock * item.price).toLocaleString()}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  <TableCell className="px-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-900 font-mono tracking-tight">₹{(item.stock * item.price).toLocaleString()}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">@ ₹{item.price.toLocaleString()} AU</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-semibold"
+                        className="h-9 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-white hover:bg-emerald-500 transition-all border border-transparent hover:border-emerald-600"
                         onClick={() => {
                           setSelectedItem(item);
                           setNewStock(item.stock);
                           setIsUpdateOpen(true);
                         }}
                       >
-                        Update Stock
+                        Adjust
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="h-9 w-9 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
                         onClick={() => handleDeleteItem(item.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </TableCell>

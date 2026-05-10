@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { dataService } from '@/src/services/dataService';
 import { useEffect } from 'react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -121,49 +122,56 @@ function CRMApp() {
             </Button>
           </div>
         )}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm shadow-slate-100">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <header className="h-16 glass sticky top-0 z-20 border-b border-slate-200/60 flex items-center justify-between px-6 shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus-within:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-shadow">
+          <div className="flex items-center gap-6 flex-1">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase font-black tracking-widest text-slate-400">
+                <span className="hover:text-slate-600 transition-colors cursor-pointer">Workspace</span>
+                <span className="opacity-40">/</span>
+                <span className="text-slate-900">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+              </div>
+            </div>
+            <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
+            <div className="relative w-full max-w-sm hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <Input 
-                placeholder="Search leads, products, orders..." 
-                className="pl-10 h-10 border-slate-200 bg-slate-50/50 focus-visible:bg-white transition-all ring-emerald-500/20"
+                placeholder="Quick search (Cmd + K)..." 
+                className="pl-9 h-9 border-slate-200 bg-slate-100/50 focus-visible:bg-white transition-all ring-primary/10 rounded-lg text-sm"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger className="text-slate-500 relative hover:bg-slate-50 outline-none flex items-center justify-center size-8 rounded-lg transition-colors group">
-                <Bell className="w-5 h-5 group-hover:text-slate-700" />
+              <DropdownMenuTrigger className="text-slate-500 relative hover:bg-slate-100 outline-none flex items-center justify-center size-9 rounded-lg transition-all group active:scale-95">
+                <Bell className="w-4.5 h-4.5 group-hover:text-slate-800 transition-colors" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[8px] font-black text-white flex items-center justify-center animate-pulse">
-                    {unreadCount}
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-indigo-600 rounded-full border-2 border-white text-[6px] font-black text-white flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 p-0 rounded-xl border-slate-200 shadow-2xl bg-white overflow-hidden z-[100]">
-                <div className="p-3 bg-slate-900 text-white flex items-center justify-between">
+              <DropdownMenuContent align="end" className="w-80 p-0 rounded-xl border-slate-200 shadow-2xl bg-white overflow-hidden z-[100] animate-in zoom-in-95 duration-200">
+                <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400">Notifications</span>
-                    <span className="text-[11px] font-bold opacity-80">{unreadCount} New</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Activity Center</span>
+                    <span className="text-xs font-bold opacity-80">{unreadCount} Pending updates</span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => user?.id && dataService.clearNotifications(user.id)}
-                    className="h-6 text-[9px] font-black uppercase text-white/50 hover:text-white hover:bg-white/10 px-2"
+                    className="h-7 text-[9px] font-black uppercase text-white/50 hover:text-white hover:bg-white/10 px-2 rounded-lg border border-white/5"
                   >
-                    Clear
+                    Mark all read
                   </Button>
                 </div>
-                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                <div className="max-h-[400px] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="p-8 text-center space-y-2">
-                      <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                        <Bell className="w-5 h-5 text-slate-200" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900">No Notifications</p>
+                    <div className="p-12 text-center text-slate-400">
+                      <Bell className="w-8 h-8 opacity-20 mx-auto mb-3" />
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Inbox Zero</p>
+                      <p className="text-[10px] mt-1 font-medium italic">You're all caught up.</p>
                     </div>
                   ) : (
                     notifications.map((n) => (
@@ -171,78 +179,73 @@ function CRMApp() {
                         key={n.id} 
                         onClick={() => dataService.markNotificationRead(n.id)}
                         className={cn(
-                          "p-3 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition-colors relative group",
-                          !n.read && "bg-indigo-50/30"
+                          "p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors relative group",
+                          !n.read && "bg-indigo-50/20"
                         )}
                       >
-                        {!n.read && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />}
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="text-xs font-black text-slate-900">{n.title}</h4>
-                          {!n.read && <Check className="w-3 h-3 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1">
+                            <h4 className={cn("text-xs transition-colors", n.read ? "text-slate-600 font-bold" : "text-slate-950 font-black")}>{n.title}</h4>
+                            <p className="text-[11px] text-slate-500 font-medium mt-1 leading-normal">{n.message}</p>
+                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-2">
+                              {format(new Date(n.timestamp), 'MMM dd, hh:mm a')}
+                            </p>
+                          </div>
+                          {!n.read && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full mt-1.5" />}
                         </div>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-tight">{n.message}</p>
-                        <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter mt-1.5">
-                          {new Date(n.timestamp).toLocaleString()}
-                        </p>
                       </div>
                     ))
                   )}
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="ghost" size="icon" className="text-slate-500 hover:bg-slate-50">
-              <HelpCircle className="w-5 h-5" />
-            </Button>
-            
-            <div className="w-px h-6 bg-slate-200 mx-2"></div>
+
+            <div className="w-px h-4 bg-slate-200 mx-2"></div>
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="pl-1 pr-2 h-11 gap-3 hover:bg-slate-50 rounded-lg border-transparent inline-flex items-center transition-colors outline-none cursor-pointer"
+                className="pl-1 pr-1 h-10 gap-2 hover:bg-slate-100 rounded-lg border-transparent inline-flex items-center transition-all outline-none cursor-pointer active:scale-95 group"
               >
                 <div className="relative">
-                  <Avatar className="h-8 w-8 border border-slate-200 shadow-sm ring-2 ring-emerald-500/10">
+                  <Avatar className="h-7 w-7 border-2 border-white shadow-sm ring-1 ring-slate-200 group-hover:ring-slate-300 transition-all">
                     <AvatarImage src={user.avatar} />
-                    <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                    <AvatarFallback className="bg-slate-100 text-slate-600"><UserIcon className="w-3.5 h-3.5" /></AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
                 </div>
-                <div className="hidden md:flex flex-col items-start leading-none pointer-events-none">
-                  <span className="text-sm font-bold text-slate-900">{user.name}</span>
-                  <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">{user.role}</span>
+                <div className="hidden lg:flex flex-col items-start leading-none pr-1">
+                  <span className="text-xs font-black text-slate-900">{user.name.split(' ')[0]}</span>
+                  <span className="text-[9px] text-slate-400 font-bold tracking-tighter uppercase mt-0.5">{user.role}</span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none" />
+                <ChevronDown className="w-3 h-3 text-slate-400 transition-transform group-data-[state=open]:rotate-180" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 p-3 rounded-2xl border-slate-200 shadow-xl bg-white z-[100]">
-                <div className="px-3 py-3 mb-2 bg-slate-50 rounded-xl border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Signed in as</p>
-                  <p className="text-sm font-black text-slate-900 truncate">{user.name}</p>
-                  <p className="text-[10px] font-bold text-slate-500 truncate">{user.email}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-transparent text-[9px] font-black uppercase tracking-tighter shadow-none">
-                      {user.role}
-                    </Badge>
-                    <span className="text-[10px] font-mono text-slate-400 py-0.5 px-1 bg-white border border-slate-100 rounded">
-                      ID: {user.id.substring(0, 8)}
-                    </span>
+              <DropdownMenuContent align="end" className="w-64 p-2 rounded-xl border-slate-200 shadow-2xl bg-white z-[120]">
+                <div className="px-3 py-3 mb-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                    <AvatarImage src={user.avatar} />
+                    <AvatarFallback><UserIcon className="w-5 h-5" /></AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-slate-900 truncate">{user.name}</p>
+                    <p className="text-[10px] font-bold text-slate-500 truncate">{user.email}</p>
                   </div>
                 </div>
                 
-                <DropdownMenuSeparator className="bg-slate-100 my-2" />
+                <DropdownMenuSeparator className="bg-slate-100 my-1" />
                 
                 <DropdownMenuItem 
-                  className="rounded-xl h-10 px-3 cursor-pointer hover:bg-slate-50 gap-3 group transition-all"
+                  className="rounded-lg h-9 px-3 cursor-pointer hover:bg-slate-50 gap-3 group transition-all"
                   onClick={() => setActiveTab('settings')}
                 >
-                  <UserIcon className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
-                  <span className="text-sm font-bold text-slate-700">Profile Settings</span>
+                  <UserIcon className="w-3.5 h-3.5 text-slate-400 group-hover:text-primary transition-colors" />
+                  <span className="text-xs font-bold text-slate-700">Account Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  className="rounded-xl h-10 px-3 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-3 group"
+                  className="rounded-lg h-9 px-3 text-red-600 focus:text-red-700 focus:bg-red-50/50 cursor-pointer gap-3 group"
                   onClick={signOut}
                 >
-                  <LogOut className="w-4 h-4 text-red-400 group-hover:text-red-600" />
-                  <span className="text-sm font-bold">Logout Session</span>
+                  <LogOut className="w-3.5 h-3.5 text-red-400 group-hover:text-red-600 transition-colors" />
+                  <span className="text-xs font-bold">Terminate Session</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -250,8 +253,8 @@ function CRMApp() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-8 lg:p-10 custom-scrollbar bg-slate-50/50">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+          <div className="max-w-7xl mx-auto space-y-6">
             {renderContent()}
           </div>
         </main>
@@ -263,21 +266,16 @@ function CRMApp() {
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
+          width: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 20px;
-          border: 2px solid transparent;
-          background-clip: content-box;
+          @apply bg-slate-200 rounded-full border-2 border-transparent bg-clip-content;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-          border: 2px solid transparent;
-          background-clip: content-box;
+          @apply bg-slate-300;
         }
       `}</style>
     </div>

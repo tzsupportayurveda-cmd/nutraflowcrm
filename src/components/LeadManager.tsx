@@ -429,60 +429,51 @@ export function LeadManager() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
-          <p className="text-slate-500">Track and manage your potential customers and sales pipeline.</p>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Lead Registry</h1>
+            <Badge className="bg-emerald-100 text-emerald-700 border-none font-black text-[9px] uppercase tracking-widest px-2.5">
+              Live Pipeline
+            </Badge>
+          </div>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Active sales funnel and customer acquisition records.</p>
         </div>
         
         <div className="flex gap-2">
-          <LeadImportDialog 
-            open={isImportDialogOpen} 
-            onOpenChange={setIsImportDialogOpen} 
-          />
-          <LeadAddDialog 
-            open={isDialogOpen} 
-            onOpenChange={setIsDialogOpen} 
-            onAdd={handleAddLead} 
-          />
           {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
             <Button 
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)} 
-              className="border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 font-bold"
+              className="neo-shadow border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4"
             >
-              <FileSpreadsheet className="w-4 h-4" /> Import Excel
+              <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Bulk Import
             </Button>
           )}
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 gap-2 font-bold">
-            <UserPlus className="w-4 h-4" /> Add New Lead
+          <Button onClick={() => setIsDialogOpen(true)} className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
+            <Plus className="w-4 h-4" /> Register New
           </Button>
           {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
             <Button 
-              variant={showArchived ? 'default' : 'outline'}
+              variant="ghost"
               onClick={() => setShowArchived(!showArchived)} 
               className={cn(
-                "gap-2 font-bold transition-all",
-                showArchived ? "bg-slate-900 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                "p-2 font-black transition-all rounded-xl",
+                showArchived ? "bg-red-50 text-red-600" : "text-slate-400 hover:bg-slate-100"
               )}
+              title={showArchived ? 'Main View' : 'Audit Bin'}
             >
-              <Trash2 className="w-4 h-4" /> 
-              {showArchived ? 'Exit Bin' : 'View Dustbin'}
-              {leads.filter(l => l.isArchived).length > 0 && !showArchived && (
-                <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">
-                  {leads.filter(l => l.isArchived).length}
-                </span>
-              )}
+              <Trash2 className="w-5 h-5" />
             </Button>
           )}
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+        <div className="relative flex-1 max-w-sm group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
           <Input 
-            placeholder="Quick search..." 
-            className="pl-9 border-slate-200 h-9 text-sm focus:ring-emerald-500/20 rounded-lg"
+            placeholder="Search leads by name, phone or email..." 
+            className="pl-10 border-slate-200 bg-white h-11 text-xs font-bold focus:ring-emerald-500/10 focus:border-emerald-500/50 rounded-xl neo-shadow transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -492,102 +483,85 @@ export function LeadManager() {
           <select 
             value={filters.status}
             onChange={e => setFilters({...filters, status: e.target.value})}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 neo-shadow"
           >
-            <option value="All">All Status</option>
-            <option value="New Lead">New Lead</option>
-            <option value="Call Back">Call Back</option>
-            <option value="No Answer">No Answer</option>
-            <option value="Interested">Interested</option>
-            <option value="Not Interested">Not Interested</option>
-            <option value="Order Confirmed">Order Confirmed</option>
-            <option value="Fake/Spam">Fake/Spam</option>
-            <option value="Unavailable">Unavailable</option>
-            <option value="Language Issue">Language Issue</option>
-            <option value="Duplicate">Duplicate</option>
-            <option value="Wrong Number">Wrong Number</option>
-            <option value="RTO/Cancelled">RTO/Cancelled</option>
+            <option value="All">ST: ALL RECORDS</option>
+            {Object.keys(statusColors).map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
           </select>
 
           <select 
             value={filters.product}
             onChange={e => setFilters({...filters, product: e.target.value})}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 neo-shadow"
           >
-            <option value="All">All Products</option>
+            <option value="All">INV: ALL ITEMS</option>
             {inventory.map(item => (
-              <option key={item.id} value={item.name}>{item.name}</option>
+              <option key={item.id} value={item.name}>{item.name.toUpperCase()}</option>
             ))}
           </select>
 
           <select 
             value={filters.dateRange}
             onChange={e => setFilters({...filters, dateRange: e.target.value})}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 neo-shadow"
           >
-            <option value="All">All Time</option>
-            <option value="Today">Today</option>
-            <option value="Yesterday">Yesterday</option>
-            <option value="7 Days">Last 7 Days</option>
+            <option value="All">PERIOD: LIFETIME</option>
+            <option value="Today">PERIOD: TODAY</option>
+            <option value="Yesterday">PERIOD: YESTERDAY</option>
+            <option value="7 Days">PERIOD: 7 DAYS</option>
           </select>
-
-          {currentUser?.role === 'Admin' && (
-            <select 
-              value={filters.salesRep}
-              onChange={e => setFilters({...filters, salesRep: e.target.value})}
-              className="h-9 rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-            >
-              <option value="All">All Agents</option>
-              {team.filter(t => t.role === 'Sales').map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          )}
 
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 text-xs text-slate-400 hover:text-red-500"
+            className="h-11 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500"
             onClick={() => setFilters({ status: 'All', source: 'All', product: 'All', salesRep: 'All', dateRange: 'All' })}
           >
-            Reset
+            Clear Filters
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden neo-shadow">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-20 gap-4">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-            <p className="text-slate-500 font-medium">Processing leads...</p>
+          <div className="flex flex-col items-center justify-center p-32 gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-slate-100 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              </div>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing database records...</p>
           </div>
         ) : filteredLeads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-20 text-center gap-4">
-            <Users className="w-12 h-12 text-slate-200" />
-            <div>
-              <p className="text-slate-900 font-semibold text-lg">No leads found</p>
-              <p className="text-slate-500">Try adjusting your search or add a new lead to get started.</p>
+          <div className="flex flex-col items-center justify-center p-32 text-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center">
+              <Users className="w-8 h-8 text-slate-200" />
             </div>
-            <Button variant="outline" className="mt-2" onClick={() => setSearchTerm('')}>Clear Search</Button>
+            <div className="space-y-1">
+              <p className="text-lg font-black text-slate-900 uppercase tracking-tight">Zero matching entries</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">Refine parameters or initiate manual registration.</p>
+            </div>
+            <Button variant="outline" className="h-10 rounded-xl px-6 font-black uppercase text-[10px] tracking-widest" onClick={() => setSearchTerm('')}>Reset Database Search</Button>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow className="h-10 hover:bg-transparent">
-                <TableHead className="w-12 px-4">
+              <TableRow className="h-14 hover:bg-transparent border-b-slate-100">
+                <TableHead className="w-14 px-6">
                   <input 
                     type="checkbox" 
-                    className="rounded border-slate-300 w-4 h-4 cursor-pointer"
+                    className="rounded-md border-slate-300 w-4 h-4 cursor-pointer accent-emerald-600 transition-all"
                     checked={paginatedLeads.length > 0 && paginatedLeads.every(l => selectedLeads.includes(l.id))}
                     onChange={(e) => handleSelectAllOnPage(e.target.checked)}
                   />
                 </TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Lead Info</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Status</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Value</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2">Assigned</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-2 text-right">Added On</TableHead>
-                <TableHead className="w-10 px-2"></TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Entity Details</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Validation State</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Commercial Data</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Ownership</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4 text-right">Registered</TableHead>
+                <TableHead className="w-14 px-4"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -595,18 +569,18 @@ export function LeadManager() {
                 <TableRow 
                   key={lead.id} 
                   className={cn(
-                    "group h-12 transition-colors cursor-pointer",
-                    selectedLeads.includes(lead.id) ? "bg-emerald-50/40" : "hover:bg-slate-50/50"
+                    "group h-16 transition-all duration-200 cursor-pointer border-b-slate-50",
+                    selectedLeads.includes(lead.id) ? "bg-emerald-50/20" : "hover:bg-slate-50/40"
                   )}
                   onClick={() => {
                     setSelectedLead(lead);
                     setIsDetailOpen(true);
                   }}
                 >
-                  <TableCell className="px-4" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="px-6" onClick={(e) => e.stopPropagation()}>
                     <input 
                       type="checkbox" 
-                      className="rounded border-slate-300"
+                      className="rounded-md border-slate-300 w-4 h-4 accent-emerald-600 cursor-pointer"
                       checked={selectedLeads.includes(lead.id)}
                       onChange={(e) => {
                         if (e.target.checked) setSelectedLeads([...selectedLeads, lead.id]);
@@ -614,106 +588,112 @@ export function LeadManager() {
                       }}
                     />
                   </TableCell>
-                  <TableCell className="px-2">
-                    <div className="flex flex-col">
+                  <TableCell className="px-4">
+                    <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-slate-400">#{lead.serialId}</span>
-                        <span className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">{lead.name}</span>
+                        <span className="text-[9px] font-black text-slate-400 font-mono">#{lead.serialId}</span>
+                        <span className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors uppercase tracking-tight">{lead.name}</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-medium tracking-tight">
-                        <span className="flex items-center gap-1"><Phone className="w-2.5 h-2.5" /> {lead.phone}</span>
-                        {lead.email && (
-                          <>
-                            <span className="opacity-30">•</span>
-                            <span className="flex items-center gap-1"><Mail className="w-2.5 h-2.5" /> {lead.email}</span>
-                          </>
-                        )}
-                        <span className="opacity-30">•</span>
-                        <span>{lead.city || 'No City'}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                        <span className="flex items-center gap-1 font-mono text-slate-500"><Phone className="w-2.5 h-2.5" /> {lead.phone}</span>
+                        <span className="opacity-20">|</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /> {lead.city || 'UNDEFINED'}</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-2">
-                    <div className="flex flex-col gap-1">
+                  <TableCell className="px-4">
+                    <div className="flex flex-col gap-1.5">
                       <Badge variant="outline" className={cn(
-                        "text-[9px] font-black uppercase tracking-widest h-5 px-2 border-2 w-fit",
+                        "text-[9px] font-black uppercase tracking-widest h-6 px-2.5 border-2 w-fit rounded-lg shadow-sm transition-transform group-hover:scale-105",
                         statusColors[lead.status]
                       )}>
                         {lead.status}
                       </Badge>
                       {lead.status === 'Call Back' && lead.callbackTime && (
-                        <div className="flex items-center gap-1 text-[9px] font-bold text-purple-600 animate-pulse">
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-indigo-600 uppercase tracking-widest ml-1">
+                          <div className="w-1 h-1 bg-indigo-500 rounded-full animate-ping" />
                           <Calendar className="w-2 h-2" />
                           {(() => {
                             try {
-                              return new Date(lead.callbackTime).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                              return new Date(lead.callbackTime).toLocaleString(undefined, { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                             } catch (e) {
-                              return 'Invalid Date';
+                              return 'ERR_TIMESTAMP';
                             }
                           })()}
                         </div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-2">
-                    <div className="flex items-center gap-2">
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-3">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-700 leading-none">₹{lead.value.toLocaleString()}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                          {lead.paymentMode} • {lead.quantity} Unit
+                        <span className="text-sm font-black text-slate-900 leading-none font-mono">₹{lead.value.toLocaleString()}</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mt-1.5">
+                          {lead.paymentMode} • {lead.quantity}U
                         </span>
                       </div>
                       <a 
                         href={`tel:${lead.phone}`} 
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
-                        title="Call Customer"
+                        className="p-2 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all transform hover:scale-110"
+                        title="Initiate Dial"
                       >
                         <Phone className="w-3.5 h-3.5" />
                       </a>
                     </div>
                   </TableCell>
-                  <TableCell className="px-2">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-black text-slate-500 uppercase">
+                  <TableCell className="px-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-slate-900 flex items-center justify-center text-[10px] font-black text-white uppercase shadow-lg shadow-slate-900/10 ring-2 ring-slate-100">
                         {(lead.assignedTo || 'U')[0]}
                       </div>
-                      <span className="text-xs font-bold text-slate-600">{lead.assignedTo || 'Unassigned'}</span>
+                      <div className="flex flex-col">
+                        <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{lead.assignedTo || 'UNASSIGNED'}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">AGENT OPS</span>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-2 text-right">
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {new Date(lead.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
-                    </span>
+                  <TableCell className="px-4 text-right">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] font-black text-slate-900 font-mono">
+                        {new Date(lead.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' }).toUpperCase()}
+                      </span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">UTM_ENTRY</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="px-2 text-right" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors cursor-pointer outline-none">
+                      <DropdownMenuTrigger className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-xl hover:bg-slate-100 transition-all cursor-pointer outline-none border border-transparent hover:border-slate-200">
                         <MoreHorizontal className="w-4 h-4 text-slate-400" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 z-[100]">
-                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Update Status</DropdownMenuLabel>
-                        {['Call Back', 'No Answer', 'Interested', 'Order Confirmed', 'Duplicate', 'Wrong Number', 'RTO/Cancelled'].map(s => (
-                          <DropdownMenuItem key={s} onSelect={() => handleUpdateStatus(lead.id, s as LeadStatus)}>
-                            {s}
-                          </DropdownMenuItem>
-                        ))}
+                      <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl shadow-2xl border-slate-100 z-[100]">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Lifecycle Management</DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-slate-50" />
+                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-1">
+                           {Object.keys(statusColors).map(s => (
+                             <DropdownMenuItem key={s} onSelect={() => handleUpdateStatus(lead.id, s as LeadStatus)} className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 gap-2">
+                               <div className={cn("w-2 h-2 rounded-full", statusColors[s as LeadStatus].split(' ')[0].replace('bg-', 'bg-'))} />
+                               {s}
+                             </DropdownMenuItem>
+                           ))}
+                        </div>
                         {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
                           <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign To</DropdownMenuLabel>
-                            <div className="max-h-[200px] overflow-y-auto">
+                            <DropdownMenuSeparator className="bg-slate-50" />
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Transfer Ownership</DropdownMenuLabel>
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar p-1">
                               {team.filter(t => t.id !== lead.assignedToId).map(agent => (
-                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssign(lead.id, agent)}>
+                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssign(lead.id, agent)} className="rounded-xl px-3 py-2 text-xs font-bold text-slate-600 gap-3">
+                                  <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-[9px] font-black">{agent.name[0]}</div>
                                   {agent.name}
                                 </DropdownMenuItem>
                               ))}
                             </div>
                           </>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleDelete(lead.id)} className="text-red-500 hover:text-red-600">
-                          Delete Lead
+                        <DropdownMenuSeparator className="bg-slate-50" />
+                        <DropdownMenuItem onSelect={() => handleDelete(lead.id)} className="rounded-xl px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600 gap-2">
+                          <Trash2 className="w-4 h-4" /> Purge Record
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

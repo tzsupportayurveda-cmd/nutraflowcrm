@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, 
   Search, 
@@ -15,6 +15,7 @@ import {
   ChevronRight,
   MapPin,
   CheckCircle,
+  Clock,
   FileSpreadsheet,
   TrendingUp,
   Trash2
@@ -417,6 +418,20 @@ export function LeadManager() {
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const paginatedLeads = filteredLeads.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  // Status Summary Calculations
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    leads.forEach(l => {
+      // Only count if not archived (unless viewing archived)
+      if (showArchived && !l.isArchived) return;
+      if (!showArchived && l.isArchived) return;
+      
+      const status = l.status || 'Unknown';
+      counts[status] = (counts[status] || 0) + 1;
+    });
+    return counts;
+  }, [leads, showArchived]);
+
   const handleSelectAllOnPage = (checked: boolean) => {
     const pageIds = paginatedLeads.map(l => l.id);
     if (checked) {
@@ -466,6 +481,39 @@ export function LeadManager() {
             </Button>
           )}
         </div>
+      </div>
+      
+      {/* Status Buckets */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {[
+          { label: 'New Leads', status: 'New Lead', icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+          { label: 'No Answer', status: 'No Answer', icon: Phone, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
+          { label: 'Call Back', status: 'Call Back', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+          { label: 'Interested', status: 'Interested', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+          { label: 'Confirmed', status: 'Order Confirmed', icon: CheckCircle, color: 'text-emerald-700', bg: 'bg-emerald-600/10', border: 'border-emerald-200' },
+        ].map((bucket) => (
+          <div 
+            key={bucket.status}
+            onClick={() => setFilters({ ...filters, status: bucket.status })}
+            className={cn(
+              "p-4 rounded-2xl border transition-all cursor-pointer neo-shadow group hover:scale-[1.02]",
+              filters.status === bucket.status ? cn(bucket.bg, bucket.border, "ring-2 ring-emerald-500/20") : "bg-white border-slate-100 hover:border-slate-200"
+            )}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className={cn("p-2 rounded-xl", bucket.bg)}>
+                <bucket.icon className={cn("w-4 h-4", bucket.color)} />
+              </div>
+              <span className={cn("text-2xl font-black font-mono", bucket.color)}>
+                {statusCounts[bucket.status] || 0}
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{bucket.label}</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Active Funnel</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="flex items-center gap-2">

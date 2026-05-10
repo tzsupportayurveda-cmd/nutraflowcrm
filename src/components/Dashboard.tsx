@@ -6,8 +6,11 @@ import {
   Package as PackageIcon, 
   DollarSign,
   Clock,
+  Phone,
+  Trash2,
   Filter,
   Calendar,
+  UserPlus,
   User as UserIcon,
   ChevronDown,
   Target,
@@ -132,6 +135,14 @@ export function Dashboard() {
   }, [leads, orders, dateFilter, selectedAgentId, currentUser, customStartDate, customEndDate]);
 
   const { filteredLeads, filteredOrders } = filteredData;
+
+  const leadStatusSummary = useMemo(() => {
+    const summary: Record<string, number> = {};
+    filteredLeads.forEach(l => {
+      summary[l.status] = (summary[l.status] || 0) + 1;
+    });
+    return summary;
+  }, [filteredLeads]);
 
   const leaderboardData = useMemo(() => {
     const leaderMap: Record<string, { id: string, name: string, confirmed: number, revenue: number, avatar?: string }> = {};
@@ -388,6 +399,33 @@ export function Dashboard() {
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Lead Pipeline Breakdown */}
+      <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight -mb-2">Lead Pipeline Breakdown</h2>
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {[
+          { label: 'New Ingress', status: 'New Lead', color: 'bg-blue-50 text-blue-600 border-blue-100', icon: UserPlus },
+          { label: 'Follow Ups', status: 'Call Back', color: 'bg-purple-50 text-purple-600 border-purple-100', icon: Clock },
+          { label: 'No Answer', status: 'No Answer', color: 'bg-orange-50 text-orange-600 border-orange-100', icon: Phone },
+          { label: 'Interested', status: 'Interested', icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+          { label: 'Unavailable', status: 'Unavailable', color: 'bg-amber-50 text-amber-600 border-amber-100', icon: AlertTriangle },
+          { label: 'Bin/Duplicates', status: 'Duplicate', color: 'bg-slate-50 text-slate-400 border-slate-100', icon: Trash2 },
+        ].map((item) => (
+          <Card key={item.label} className="neo-shadow border-slate-100 group hover:border-slate-300 transition-all cursor-default">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className={cn("p-1.5 rounded-lg", item.color.split(' ')[0])}>
+                  <item.icon className={cn("w-3.5 h-3.5", item.color.split(' ')[1])} />
+                </div>
+                <span className={cn("text-lg font-black font-mono", item.color.split(' ')[1])}>
+                  {leadStatusSummary[item.status] || 0}
+                </span>
+              </div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate">{item.label}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">

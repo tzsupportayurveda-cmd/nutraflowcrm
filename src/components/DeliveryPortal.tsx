@@ -23,7 +23,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
@@ -131,9 +131,15 @@ export function DeliveryPortal() {
             </div>
             <div className="flex flex-wrap gap-2">
               {['Dispatched', 'Out for Delivery', 'Delivered'].map(s => (
-                <Badge key={s} variant="outline" className="cursor-pointer hover:bg-slate-50 font-bold border-slate-200">
+                <div 
+                  key={s} 
+                  className={cn(
+                    badgeVariants({ variant: "outline" }), 
+                    "cursor-pointer hover:bg-slate-50 font-bold border-slate-200"
+                  )}
+                >
                   {s}
-                </Badge>
+                </div>
               ))}
             </div>
           </div>

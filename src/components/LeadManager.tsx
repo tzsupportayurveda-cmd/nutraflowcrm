@@ -27,7 +27,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Lead, LeadStatus, User, Order, InventoryItem } from '@/src/types';
@@ -799,10 +799,13 @@ export function LeadManager() {
               )}
 
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none">
-                    <CheckCircle className="w-3.5 h-3.5" /> Status
-                  </Button>
+                <DropdownMenuTrigger 
+                  className={cn(
+                    buttonVariants({ variant: "ghost", size: "sm" }),
+                    "h-9 px-4 hover:bg-white/10 text-white gap-2 text-[10px] font-black uppercase tracking-widest outline-none"
+                  )}
+                >
+                  <CheckCircle className="w-3.5 h-3.5" /> Status
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" align="center" className="w-48 p-1 bg-white z-[9999] mb-2 shadow-2xl border border-slate-200">
                   {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Fake/Spam', 'Duplicate', 'Wrong Number', 'Unavailable'].map(s => (

@@ -109,15 +109,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
     if (!editableLead) return;
     try {
-      await dataService.updateLead(editableLead.id, { status, ...extras });
-      
-      await dataService.addLeadHistory(editableLead.id, {
-        type: 'status_change',
-        from: lead?.status || 'Unknown',
-        to: status,
-        updatedBy: currentUser?.name || 'System',
-        updatedById: currentUser?.id || 'system',
-        note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
+      await dataService.updateLead(editableLead.id, { 
+        status, 
+        notes: extras.notes || editableLead.notes,
+        ...extras 
       });
       toast.success(`Status updated to ${status}`);
     } catch (e) {
@@ -141,13 +136,6 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
-      await dataService.addLeadHistory(editableLead.id, {
-        type: 'assignment',
-        from: editableLead.assignedTo || 'Unassigned',
-        to: agent.name,
-        updatedBy: currentUser?.name || 'System',
-        updatedById: currentUser?.id || 'system'
-      });
       toast.success(`Assigned to ${agent.name}`);
       
       // Update local state
@@ -163,12 +151,6 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
       setLoading(true);
       const { id, history, ...updates } = editableLead;
       await dataService.updateLead(id, updates);
-      await dataService.addLeadHistory(id, {
-        type: 'other',
-        updatedBy: currentUser?.name || 'System',
-        updatedById: currentUser?.id || 'system',
-        note: 'Updated lead details'
-      });
       setHasChanges(false);
       toast.success('Details saved');
     } catch (e) {

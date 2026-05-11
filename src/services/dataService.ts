@@ -417,6 +417,7 @@ export const dataService = {
       await addDoc(collection(db, 'logs'), {
         userId: user?.uid || 'system',
         userName: userData?.name || user?.email || 'System',
+        userEmail: user?.email || '',
         action,
         entityId,
         entityType,
@@ -426,6 +427,17 @@ export const dataService = {
     } catch (e) {
       console.error("Audit log failed:", e);
     }
+  },
+
+  subscribeAuditLogs(callback: (logs: AuditLog[]) => void) {
+    const q = query(
+      collection(db, 'logs'),
+      orderBy('timestamp', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
+      callback(logs);
+    });
   },
 
   // --- Tasks & Refills ---
@@ -574,13 +586,70 @@ export const dataService = {
     try {
       const docRef = doc(db, 'leads', id);
       const oldSnap = await getDoc(docRef);
+      if (!oldSnap.exists()) return;
+      
       const oldData = oldSnap.data() as Lead;
       const currentUser = auth.currentUser;
+      const timestamp = new Date().toISOString();
       
       const updatePayload: any = {
         ...updates,
-        updatedAt: new Date().toISOString()
+        updatedAt: timestamp
       };
+
+      // Track significant changes for history
+      const historyItems: HistoryItem[] = [];
+
+      // 1. Status Change
+      if (updates.status && updates.status !== oldData.status) {
+        historyItems.push({
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'status_change',
+          from: oldData.status,
+          to: updates.status,
+          updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+          updatedById: currentUser?.uid || 'system',
+          timestamp,
+          note: updates.notes ? `Note: ${updates.notes}` : undefined
+        });
+
+        // Audit log for status change
+        await this.addAuditLog('Status Change', id, 'Lead', `Status: ${oldData.status} -> ${updates.status} (Lead: ${oldData.name})`);
+      }
+
+      // 2. Assignment Change
+      if (updates.assignedToId && updates.assignedToId !== oldData.assignedToId) {
+        historyItems.push({
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'assignment',
+          from: oldData.assignedTo || 'Unassigned',
+          to: updates.assignedTo || 'Unassigned',
+          updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+          updatedById: currentUser?.uid || 'system',
+          timestamp,
+          note: `Reassigned: ${oldData.assignedTo || 'Unassigned'} → ${updates.assignedTo || 'Unassigned'}`
+        });
+        await this.addAuditLog('Reassigned', id, 'Lead', `Assigned: ${oldData.assignedTo} -> ${updates.assignedTo} (Lead: ${oldData.name})`);
+      }
+
+      // 3. Other updates (General info)
+      const tracks = ['name', 'phone', 'product', 'value', 'address'];
+      const changedFields = tracks.filter(field => (updates as any)[field] !== undefined && (updates as any)[field] !== (oldData as any)[field]);
+      
+      if (changedFields.length > 0 && historyItems.length === 0) {
+        historyItems.push({
+          id: Math.random().toString(36).substring(2, 9),
+          type: 'other',
+          updatedBy: currentUser?.displayName || currentUser?.email || 'System',
+          updatedById: currentUser?.uid || 'system',
+          timestamp,
+          note: `Updated: ${changedFields.join(', ')}`
+        });
+      }
+
+      if (historyItems.length > 0) {
+        updatePayload.history = arrayUnion(...historyItems);
+      }
 
       // If status is Call Back, ensure task and callbackTime
       if (updates.status === 'Call Back') {
@@ -589,10 +658,10 @@ export const dataService = {
 
         // Create the callback task
         await addDoc(collection(db, 'tasks'), {
-          title: `Callback Result: ${oldData.name}`,
+          title: `Callback: ${oldData.name}`,
           description: `Automatically created follow-up task for ${oldData.name}. Phone: ${oldData.phone}`,
           dueDate: callbackTime,
-          userId: oldData.assignedToId || currentUser?.uid || 'system',
+          userId: updates.assignedToId || oldData.assignedToId || currentUser?.uid || 'system',
           leadId: id,
           status: 'pending',
           type: 'callback'
@@ -600,10 +669,6 @@ export const dataService = {
       }
 
       await updateDoc(docRef, updatePayload);
-
-      if (updates.status && updates.status !== oldData.status) {
-        await this.addAuditLog('Status Change', id, 'Lead', `Status changed from ${oldData.status} to ${updates.status}`);
-      }
     } catch (e) {
       handleFirestoreError(e, 'update', `leads/${id}`);
     }
@@ -627,7 +692,20 @@ export const dataService = {
 
   async deleteLead(id: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'leads', id));
+      const docRef = doc(db, 'leads', id);
+      const snap = await getDoc(docRef);
+      const data = snap.data() as Lead | undefined;
+      
+      await deleteDoc(docRef);
+
+      if (data) {
+        await this.addAuditLog(
+          'Delete Lead', 
+          id, 
+          'Lead', 
+          `Lead Purged: ${data.name} (Phone: ${data.phone}, Serial: ${data.serialId}). Deletion by agent/staff.`
+        );
+      }
     } catch (e) {
       handleFirestoreError(e, 'delete', `leads/${id}`);
     }
@@ -637,11 +715,14 @@ export const dataService = {
     try {
       const { writeBatch } = await import('firebase/firestore');
       const batch = writeBatch(db);
+      
+      // We'll try to get names if possible for the log, but bulk might be many.
+      // At least we log the count and the IDs.
       leadIds.forEach(id => {
         batch.delete(doc(db, 'leads', id));
       });
       await batch.commit();
-      await this.addAuditLog('Bulk Delete', 'multiple', 'Lead', `Deleted ${leadIds.length} leads`);
+      await this.addAuditLog('Bulk Delete', 'multiple', 'Lead', `Purged ${leadIds.length} leads from database. IDs: ${leadIds.slice(0, 5).join(', ')}${leadIds.length > 5 ? '...' : ''}`);
     } catch (e) {
       handleFirestoreError(e, 'bulk_delete', 'leads');
     }

@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut, ChevronLeft, ChevronRight, Stethoscope, Truck, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingCart, Settings, LogOut, ChevronLeft, ChevronRight, Stethoscope, Truck, ShieldCheck, CheckCircle2, TrendingUp, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +24,7 @@ const navItems = [
   { id: 'delivery', label: 'LOGISTICS CHAIN', icon: Truck, roles: ['Admin', 'Manager', 'Delivery'] },
   { id: 'affiliate', label: 'MARKETING HUB', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
   { id: 'team', label: 'HUMAN RESOURCES', icon: ShieldCheck, roles: ['Admin'] },
+  { id: 'audit', label: 'AUDIT TRAIL', icon: History, roles: ['Admin', 'Manager'] },
   { id: 'settings', label: 'SYSTEM CONFIG', icon: Settings, roles: ['Admin'] },
 ];
 

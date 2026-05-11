@@ -592,8 +592,16 @@ export const dataService = {
       const currentUser = auth.currentUser;
       const timestamp = new Date().toISOString();
       
+      // Sanitizing payload: Remove any keys with undefined values
+      const sanitizedUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
       const updatePayload: any = {
-        ...updates,
+        ...sanitizedUpdates,
         updatedAt: timestamp
       };
 

@@ -111,7 +111,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     try {
       await dataService.updateLead(editableLead.id, { 
         status, 
-        notes: extras.notes || editableLead.notes,
+        notes: (extras.notes !== undefined ? extras.notes : (editableLead.notes || '')),
         ...extras 
       });
       toast.success(`Status updated to ${status}`);

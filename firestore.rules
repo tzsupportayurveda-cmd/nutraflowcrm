@@ -26,9 +26,9 @@ service cloud.firestore {
 
     function isSales() {
       return isSignedIn() && (
-        isAdmin() || 
+        request.auth.token.email == 'tzsupportayurveda@gmail.com' || 
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Sales', 'Marketer', 'Manager'])
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Sales', 'Marketer', 'Manager', 'Admin'])
       );
     }
 
@@ -57,24 +57,32 @@ service cloud.firestore {
     // 2. Leads
     match /leads/{leadId} {
       function canReadLead() {
-        let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-        return request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
-               userRole in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
-               (resource != null && resource.data.assignedToId == request.auth.uid) ||
-               (resource != null && resource.data.status == 'New Lead' && userRole == 'Sales');
+        return request.auth.token.email == 'tzsupportayurveda@gmail.com' || 
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
+                 (resource != null && resource.data.assignedToId == request.auth.uid) ||
+                 (resource != null && resource.data.status == 'New Lead' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales')
+               ));
       }
 
-      allow read: if isStaff() && canReadLead();
+      allow read: if canReadLead();
       
       allow create: if isStaff() && 
         request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'phone', 'createdAt']) &&
         request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
         request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
 
-      allow update: if isStaff() && (
+      allow update: if isSignedIn() && (
         isAdmin() ||
-        (resource.data.assignedToId == request.auth.uid && 
-         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 'quantity', 'address', 'city', 'pincode', 'name', 'phone', 'email']))
+        (resource != null && resource.data.assignedToId == request.auth.uid && 
+         incoming().diff(existing()).affectedKeys().hasOnly([
+           'status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 
+           'quantity', 'address', 'city', 'pincode', 'name', 'phone', 
+           'email', 'callbackTime', 'isArchived', 'assignedToId', 'assignedTo', 
+           'paymentMode', 'source', 'serialId', 'affiliateId'
+         ])) ||
+        (resource != null && (resource.data.assignedToId == "" || resource.data.assignedToId == "unassigned") &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['assignedToId', 'assignedTo', 'updatedAt', 'history']))
       );
       allow delete: if isAdmin();
     }

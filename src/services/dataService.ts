@@ -41,6 +41,17 @@ const handleFirestoreError = (error: any, operation: string, path: string | null
   throw new Error(JSON.stringify(errorInfo));
 };
 
+// Helper to remove undefined values for Firestore
+const sanitize = <T extends object>(obj: T): T => {
+  const result: any = {};
+  Object.entries(obj).forEach(([key, value]) => {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  });
+  return result;
+};
+
 export const dataService = {
   // --- User Profiles ---
   async getUserProfile(uid: string): Promise<User | null> {
@@ -326,14 +337,14 @@ export const dataService = {
         };
 
         if (updates.status || updates.assignedToId) {
-          const historyItem: HistoryItem = {
+          const historyItem: HistoryItem = sanitize({
             id: Math.random().toString(36).substring(2, 9),
             type: updates.status ? 'status_change' : 'assignment',
             updatedBy: currentUser?.displayName || currentUser?.email || 'System',
             updatedById: currentUser?.uid || 'system',
             timestamp,
             note: `Bulk action: ${updates.status ? `Status to ${updates.status}` : (updates.assignedToId ? `Assigned to ${updates.assignedTo}` : 'Updated')}`
-          };
+          });
           updatePayload.history = arrayUnion(historyItem);
         }
 
@@ -572,7 +583,7 @@ export const dataService = {
           status: 'Order Confirmed',
           ltv: (lead.ltv || 0) + lead.value,
           updatedAt: timestamp,
-          history: arrayUnion(historyItem)
+          history: arrayUnion(sanitize(historyItem))
         });
       });
       
@@ -593,12 +604,7 @@ export const dataService = {
       const timestamp = new Date().toISOString();
       
       // Sanitizing payload: Remove any keys with undefined values
-      const sanitizedUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
+      const sanitizedUpdates = sanitize(updates);
 
       const updatePayload: any = {
         ...sanitizedUpdates,
@@ -623,7 +629,7 @@ export const dataService = {
 
       // 1. Status Change
       if (updates.status && updates.status !== oldData.status) {
-        historyItems.push({
+        historyItems.push(sanitize({
           id: Math.random().toString(36).substring(2, 9),
           type: 'status_change',
           from: oldData.status,
@@ -632,7 +638,7 @@ export const dataService = {
           updatedById: currentUser?.uid || 'system',
           timestamp,
           note: updates.notes ? `Note: ${updates.notes}` : undefined
-        });
+        }));
 
         // Audit log for status change
         await this.addAuditLog('Status Change', id, 'Lead', `Status: ${oldData.status} -> ${updates.status} (Lead: ${oldData.name})`);
@@ -669,7 +675,8 @@ export const dataService = {
       }
 
       if (historyItems.length > 0) {
-        updatePayload.history = arrayUnion(...historyItems);
+        const sanitizedHistoryItems = historyItems.map(item => sanitize(item));
+        updatePayload.history = arrayUnion(...sanitizedHistoryItems);
       }
 
       // If status is Call Back, ensure task and callbackTime
@@ -698,11 +705,11 @@ export const dataService = {
   async addLeadHistory(id: string, historyItem: Omit<HistoryItem, 'id' | 'timestamp'>): Promise<void> {
     try {
       const docRef = doc(db, 'leads', id);
-      const newItem: HistoryItem = {
+      const newItem: HistoryItem = sanitize({
         ...historyItem,
         id: Math.random().toString(36).substring(2, 9),
         timestamp: new Date().toISOString()
-      };
+      });
       await updateDoc(docRef, {
         history: arrayUnion(newItem)
       });

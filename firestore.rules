@@ -123,5 +123,10 @@ service cloud.firestore {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if isSignedIn(); // System or agent can create/update
     }
+
+    // 8. Metadata (Counters)
+    match /metadata/{id} {
+      allow read, write: if isStaff();
+    }
   }
 }

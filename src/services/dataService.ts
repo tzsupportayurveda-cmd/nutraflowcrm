@@ -221,16 +221,29 @@ export const dataService = {
       const { writeBatch, runTransaction } = await import('firebase/firestore');
       const counterRef = doc(db, 'metadata', 'counters');
       
+      // Check if we need affiliate IDs
+      const needsAffiliateCount = leads.filter(l => !l.affiliateId).length;
+
       // Get necessary count of IDs in one transaction
-      const startSerialId = await runTransaction(db, async (transaction) => {
+      const ids = await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
-        let count = 1;
-        if (counterDoc.exists()) {
-          count = counterDoc.data()?.leads || 1;
+        const data = counterDoc.data() || {};
+        const startLeadId = data.leads || 1;
+        const startAffiliateIdValue = data.affiliates || 101;
+
+        const updates: any = { 
+          leads: startLeadId + leads.length 
+        };
+        
+        if (needsAffiliateCount > 0) {
+          updates.affiliates = startAffiliateIdValue + needsAffiliateCount;
         }
-        transaction.set(counterRef, { leads: count + leads.length }, { merge: true });
-        return count;
+
+        transaction.set(counterRef, updates, { merge: true });
+        return { startLeadId, startAffiliateId: startAffiliateIdValue };
       });
+
+      let currentAffiliateOffset = 0;
 
       // Split leads into batches of 500
       for (let i = 0; i < leads.length; i += 500) {
@@ -240,11 +253,18 @@ export const dataService = {
 
         chunk.forEach((lead, index) => {
           const leadRef = doc(collection(db, 'leads'));
-          const serialId = (startSerialId + i + index).toString().padStart(2, '0');
+          const serialId = (ids.startLeadId + i + index).toString().padStart(2, '0');
+          
+          let finalAffiliateId = lead.affiliateId;
+          if (!finalAffiliateId) {
+            finalAffiliateId = (ids.startAffiliateId + currentAffiliateOffset).toString();
+            currentAffiliateOffset++;
+          }
           
           batch.set(leadRef, {
             ...lead,
             serialId,
+            affiliateId: finalAffiliateId,
             createdAt: timestamp,
             updatedAt: timestamp,
             history: []

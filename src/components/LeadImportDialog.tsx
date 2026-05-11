@@ -52,26 +52,32 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
         
         if (rows.length > 0) {
-          const sheetHeaders = rows[0].map(h => String(h || '').trim()).filter(Boolean);
-          setHeaders(sheetHeaders);
+          // Use the raw first row for mapping keys, but show trimmed versions for UI
+          const rawHeaders = rows[0] as any[];
+          const cleanHeaders = rawHeaders.map(h => String(h || '').trim());
+          
+          setHeaders(cleanHeaders.filter(Boolean));
           setFile(selectedFile);
           
           // Basic auto-mapping
           const newMapping = { ...mapping };
-          sheetHeaders.forEach(h => {
+          cleanHeaders.forEach((h, index) => {
+            if (!h) return;
             const lowH = h.toLowerCase();
-            if (lowH.includes('name')) newMapping.name = h;
-            if (lowH.includes('phone') || lowH.includes('mobile') || lowH.includes('number') || lowH.includes('contact')) newMapping.phone = h;
-            if (lowH.includes('product') || lowH.includes('package') || lowH.includes('item')) newMapping.product = h;
-            if (lowH.includes('state')) newMapping.state = h;
-            if (lowH.includes('city')) newMapping.city = h;
-            if (lowH.includes('source')) newMapping.source = h;
-            if (lowH.includes('value') || lowH.includes('price') || lowH.includes('amount')) newMapping.value = h;
+            const originalHeader = rawHeaders[index];
+            
+            if (lowH.includes('name')) newMapping.name = originalHeader;
+            if (lowH.includes('phone') || lowH.includes('mobile') || lowH.includes('number') || lowH.includes('contact')) newMapping.phone = originalHeader;
+            if (lowH.includes('product') || lowH.includes('package') || lowH.includes('item')) newMapping.product = originalHeader;
+            if (lowH.includes('state')) newMapping.state = originalHeader;
+            if (lowH.includes('city')) newMapping.city = originalHeader;
+            if (lowH.includes('source')) newMapping.source = originalHeader;
+            if (lowH.includes('value') || lowH.includes('price') || lowH.includes('amount')) newMapping.value = originalHeader;
           });
           setMapping(newMapping);
 
-          // Get actual data for import as objects
-          const jsonData = XLSX.utils.sheet_to_json(ws);
+          // Get actual data for import as objects using original headers
+          const jsonData = XLSX.utils.sheet_to_json(ws, { defval: "" });
           setPreviewData(jsonData);
         }
       } catch (err) {
@@ -93,24 +99,27 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
 
     try {
       previewData.forEach(row => {
+        const rawPhone = String(row[mapping.phone] || '');
+        const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+        
         const leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'> = {
-          name: String(row[mapping.name] || 'Unknown'),
-          phone: String(row[mapping.phone] || ''),
-          product: String(row[mapping.product] || 'General Product'),
-          state: String(row[mapping.state] || ''),
-          city: String(row[mapping.city] || ''),
-          source: String(row[mapping.source] || 'Excel Import'),
-          value: Number(row[mapping.value]) || 0,
+          name: String(row[mapping.name] || 'Unknown').trim(),
+          phone: cleanPhone,
+          product: String(row[mapping.product] || 'General Product').trim(),
+          state: String(row[mapping.state] || '').trim(),
+          city: String(row[mapping.city] || '').trim(),
+          source: String(row[mapping.source] || 'Excel Import').trim(),
+          value: Number(String(row[mapping.value] || '0').replace(/[^0-9.]/g, '')) || 0,
           status: 'New Lead',
           assignedTo: currentUser?.name || 'Unassigned',
           assignedToId: currentUser?.id || 'system',
           paymentMode: 'COD',
           quantity: 1,
-          serialId: '', // Will be set by bulkAddLeads
-          affiliateId: '' // Will be set by bulkAddLeads
+          serialId: '', 
+          affiliateId: '' 
         } as any;
 
-        if (leadData.phone && leadData.phone !== 'undefined') {
+        if (leadData.phone && leadData.phone.length >= 10) {
           leadsToImport.push(leadData);
         }
       });

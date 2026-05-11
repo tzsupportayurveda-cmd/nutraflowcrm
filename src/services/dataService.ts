@@ -208,7 +208,7 @@ export const dataService = {
         affiliateId: finalAffiliateId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        history: lead.history || []
+        history: []
       });
       return docRef.id;
     } catch (e) {

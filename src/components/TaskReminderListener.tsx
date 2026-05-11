@@ -14,6 +14,8 @@ export function TaskReminderListener() {
     if (!user?.id) return;
 
     const unsub = dataService.subscribeTasks(user.id, (tasks) => {
+      if (user.notificationsEnabled === false) return;
+      
       const now = new Date();
       
       tasks.forEach(task => {

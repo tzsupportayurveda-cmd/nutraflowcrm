@@ -902,9 +902,7 @@ export function LeadManager() {
     <LeadAddDialog
       open={isDialogOpen}
       onOpenChange={setIsDialogOpen}
-      onSubmit={handleAddLead}
-      inventory={inventory}
-      team={team}
+      onAdd={handleAddLead}
     />
 
     <LeadImportDialog

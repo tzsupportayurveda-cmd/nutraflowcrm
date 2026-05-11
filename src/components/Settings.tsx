@@ -175,6 +175,35 @@ export function Settings() {
                   </div>
                 </div>
 
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Bell className="w-4 h-4" /></div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900">Push Notifications</p>
+                        <p className="text-[10px] text-slate-500 font-medium tracking-tight">Receive alerts for reminders and status changes.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {user?.notificationsEnabled !== false ? 'Active' : 'Muted'}
+                      </span>
+                      <Switch 
+                        checked={user?.notificationsEnabled !== false} 
+                        onCheckedChange={async (checked) => {
+                          if (!user) return;
+                          try {
+                            await dataService.updateUserProfile(user.id, { notificationsEnabled: checked });
+                            toast.success(`Notifications ${checked ? 'enabled' : 'muted'}`);
+                          } catch (e) {
+                            toast.error('Failed to update preference');
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end pt-2">
                   <Button 
                     className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl gap-2 shadow-lg"

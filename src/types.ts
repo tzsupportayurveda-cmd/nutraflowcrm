@@ -117,6 +117,7 @@ export interface User {
   lastLogin?: string;
   lastSeen?: string;
   isOnline?: boolean;
+  notificationsEnabled?: boolean;
   earnings?: {
     daily: number;
     monthly: number;

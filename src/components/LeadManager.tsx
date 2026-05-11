@@ -169,18 +169,6 @@ export function LeadManager() {
 
       await dataService.updateLead(leadId, { status, ...extras });
       
-      // Log history - Always log history even if user logic is tricky
-      if (currentUser) {
-        await dataService.addLeadHistory(leadId, {
-          type: 'status_change',
-          from: currentLead.status,
-          to: status,
-          updatedBy: currentUser.name || currentUser.email || 'System',
-          updatedById: currentUser.id,
-          note: extras.callbackTime ? `Callback scheduled for: ${new Date(extras.callbackTime).toLocaleString()}` : undefined
-        });
-      }
-
       toast.success(`Status updated to ${status}`);
       
       // Update local states if needed

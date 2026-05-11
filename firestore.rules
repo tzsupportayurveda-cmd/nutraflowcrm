@@ -73,16 +73,21 @@ service cloud.firestore {
         request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
 
       allow update: if isSignedIn() && (
-        isAdmin() ||
-        (resource != null && resource.data.assignedToId == request.auth.uid && 
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Manager', 'Admin']) ||
+        (resource != null && 
+         (
+           resource.data.assignedToId == request.auth.uid || 
+           resource.data.status == 'New Lead' ||
+           resource.data.assignedToId in ["", "unassigned", "system", "CRM User", null]
+         ) && 
          incoming().diff(existing()).affectedKeys().hasOnly([
            'status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 
            'quantity', 'address', 'city', 'pincode', 'name', 'phone', 
            'email', 'callbackTime', 'isArchived', 'assignedToId', 'assignedTo', 
-           'paymentMode', 'source', 'serialId', 'affiliateId'
-         ])) ||
-        (resource != null && (resource.data.assignedToId == "" || resource.data.assignedToId == "unassigned") &&
-         incoming().diff(existing()).affectedKeys().hasOnly(['assignedToId', 'assignedTo', 'updatedAt', 'history']))
+           'paymentMode', 'source', 'serialId', 'affiliateId', 'state'
+         ]))
       );
       allow delete: if isAdmin();
     }

@@ -112,7 +112,7 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
           value: Number(String(row[mapping.value] || '0').replace(/[^0-9.]/g, '')) || 0,
           status: 'New Lead',
           assignedTo: currentUser?.name || 'Unassigned',
-          assignedToId: currentUser?.id || 'system',
+          assignedToId: currentUser?.id || 'unassigned',
           paymentMode: 'COD',
           quantity: 1,
           serialId: '', 

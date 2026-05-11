@@ -597,6 +597,19 @@ export const dataService = {
         updatedAt: timestamp
       };
 
+      // Automatically assign if currently unassigned or system-assigned, or if taking action on a New Lead
+      const isUnassigned = !oldData.assignedToId || 
+                          oldData.assignedToId === 'unassigned' || 
+                          oldData.assignedToId === 'system' || 
+                          oldData.assignedToId === 'CRM User' ||
+                          oldData.status === 'New Lead';
+
+      if (isUnassigned && currentUser && !updates.assignedToId) {
+        const userData = await this.getUserProfile(currentUser.uid);
+        updatePayload.assignedToId = currentUser.uid;
+        updatePayload.assignedTo = userData?.name || currentUser.displayName || currentUser.email || 'Agent';
+      }
+
       // Track significant changes for history
       const historyItems: HistoryItem[] = [];
 

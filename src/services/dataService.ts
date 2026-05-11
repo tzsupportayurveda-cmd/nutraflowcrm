@@ -180,7 +180,7 @@ export const dataService = {
     );
   },
 
-  async addLead(lead: Omit<Lead, 'id' | 'createdAt'>): Promise<string> {
+  async addLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>): Promise<string> {
     try {
       const serialId = await this.getNextId('leads', 1);
       let finalAffiliateId = lead.affiliateId;
@@ -207,11 +207,54 @@ export const dataService = {
         serialId,
         affiliateId: finalAffiliateId,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         history: lead.history || []
       });
       return docRef.id;
     } catch (e) {
       return handleFirestoreError(e, 'create', 'leads');
+    }
+  },
+
+  async bulkAddLeads(leads: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>[]): Promise<void> {
+    try {
+      const { writeBatch, runTransaction } = await import('firebase/firestore');
+      const counterRef = doc(db, 'metadata', 'counters');
+      
+      // Get necessary count of IDs in one transaction
+      const startSerialId = await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        let count = 1;
+        if (counterDoc.exists()) {
+          count = counterDoc.data()?.leads || 1;
+        }
+        transaction.set(counterRef, { leads: count + leads.length }, { merge: true });
+        return count;
+      });
+
+      // Split leads into batches of 500
+      for (let i = 0; i < leads.length; i += 500) {
+        const batch = writeBatch(db);
+        const chunk = leads.slice(i, i + 500);
+        const timestamp = new Date().toISOString();
+
+        chunk.forEach((lead, index) => {
+          const leadRef = doc(collection(db, 'leads'));
+          const serialId = (startSerialId + i + index).toString().padStart(2, '0');
+          
+          batch.set(leadRef, {
+            ...lead,
+            serialId,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            history: []
+          });
+        });
+
+        await batch.commit();
+      }
+    } catch (e) {
+      return handleFirestoreError(e, 'write', 'leads_bulk');
     }
   },
 

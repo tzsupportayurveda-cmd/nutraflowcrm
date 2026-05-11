@@ -45,14 +45,14 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const bstr = evt.target?.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
+        const data = evt.target?.result;
+        const wb = XLSX.read(data, { type: 'array' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
         
-        if (data.length > 0) {
-          const sheetHeaders = data[0] as string[];
+        if (rows.length > 0) {
+          const sheetHeaders = rows[0].map(h => String(h || '').trim()).filter(Boolean);
           setHeaders(sheetHeaders);
           setFile(selectedFile);
           
@@ -61,16 +61,16 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
           sheetHeaders.forEach(h => {
             const lowH = h.toLowerCase();
             if (lowH.includes('name')) newMapping.name = h;
-            if (lowH.includes('phone') || lowH.includes('mobile') || lowH.includes('number')) newMapping.phone = h;
-            if (lowH.includes('product')) newMapping.product = h;
+            if (lowH.includes('phone') || lowH.includes('mobile') || lowH.includes('number') || lowH.includes('contact')) newMapping.phone = h;
+            if (lowH.includes('product') || lowH.includes('package') || lowH.includes('item')) newMapping.product = h;
             if (lowH.includes('state')) newMapping.state = h;
             if (lowH.includes('city')) newMapping.city = h;
             if (lowH.includes('source')) newMapping.source = h;
-            if (lowH.includes('value') || lowH.includes('price')) newMapping.value = h;
+            if (lowH.includes('value') || lowH.includes('price') || lowH.includes('amount')) newMapping.value = h;
           });
           setMapping(newMapping);
 
-          // Get actual data for import (skip header row)
+          // Get actual data for import as objects
           const jsonData = XLSX.utils.sheet_to_json(ws);
           setPreviewData(jsonData);
         }
@@ -79,7 +79,7 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
         console.error(err);
       }
     };
-    reader.readAsBinaryString(selectedFile);
+    reader.readAsArrayBuffer(selectedFile);
   };
 
   const handleImport = async () => {
@@ -89,42 +89,43 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
     }
 
     setImporting(true);
-    let successCount = 0;
-    let failCount = 0;
+    const leadsToImport: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>[] = [];
 
     try {
-      for (const row of previewData) {
-        try {
-          const leadData: Partial<Lead> = {
-            name: String(row[mapping.name] || 'Unknown'),
-            phone: String(row[mapping.phone] || ''),
-            product: String(row[mapping.product] || 'General Product'),
-            state: String(row[mapping.state] || ''),
-            city: String(row[mapping.city] || ''),
-            source: String(row[mapping.source] || 'Excel Import'),
-            value: Number(row[mapping.value]) || 0,
-            status: 'New Lead',
-            assignedTo: currentUser?.name || 'Unassigned',
-            assignedToId: currentUser?.id || 'system',
-            paymentMode: 'COD'
-          };
+      previewData.forEach(row => {
+        const leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'> = {
+          name: String(row[mapping.name] || 'Unknown'),
+          phone: String(row[mapping.phone] || ''),
+          product: String(row[mapping.product] || 'General Product'),
+          state: String(row[mapping.state] || ''),
+          city: String(row[mapping.city] || ''),
+          source: String(row[mapping.source] || 'Excel Import'),
+          value: Number(row[mapping.value]) || 0,
+          status: 'New Lead',
+          assignedTo: currentUser?.name || 'Unassigned',
+          assignedToId: currentUser?.id || 'system',
+          paymentMode: 'COD',
+          quantity: 1,
+          serialId: '', // Will be set by bulkAddLeads
+          affiliateId: '' // Will be set by bulkAddLeads
+        } as any;
 
-          if (leadData.phone) {
-            await dataService.addLead(leadData as Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>);
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch (e) {
-          failCount++;
+        if (leadData.phone && leadData.phone !== 'undefined') {
+          leadsToImport.push(leadData);
         }
-      }
+      });
 
-      toast.success(`Import Complete: ${successCount} leads added${failCount > 0 ? `, ${failCount} failed` : ''}`);
-      onOpenChange(false);
-      resetInternal();
+      if (leadsToImport.length > 0) {
+        await dataService.bulkAddLeads(leadsToImport);
+        toast.success(`Import Complete: ${leadsToImport.length} leads added successfully`);
+        onOpenChange(false);
+        resetInternal();
+      } else {
+        toast.error('No valid leads found in file');
+      }
     } catch (err) {
-      toast.error('Bulk import failed');
+      console.error(err);
+      toast.error('Bulk import failed. Please check your data format.');
     } finally {
       setImporting(false);
     }

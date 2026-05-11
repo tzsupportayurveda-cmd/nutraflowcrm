@@ -899,6 +899,19 @@ export function LeadManager() {
       onDelete={handleDelete}
     />
 
+    <LeadAddDialog
+      open={isDialogOpen}
+      onOpenChange={setIsDialogOpen}
+      onSubmit={handleAddLead}
+      inventory={inventory}
+      team={team}
+    />
+
+    <LeadImportDialog
+      open={isImportDialogOpen}
+      onOpenChange={setIsImportDialogOpen}
+    />
+
     {/* Callback Scheduler Dialog */}
     <Dialog open={callbackDialogOpen} onOpenChange={setCallbackDialogOpen}>
       <DialogContent className="sm:max-w-[400px] rounded-2xl bg-white border-none shadow-2xl p-6 z-[120]">

@@ -60,8 +60,11 @@ service cloud.firestore {
         return request.auth.token.email == 'tzsupportayurveda@gmail.com' || 
                (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
-                 (resource != null && resource.data.assignedToId == request.auth.uid) ||
-                 (resource != null && resource.data.status == 'New Lead' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales')
+                 (resource != null && (
+                   resource.data.get('assignedToId', '') == request.auth.uid ||
+                   resource.data.get('status', '') == 'New Lead' ||
+                   resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
+                 ))
                ));
       }
 
@@ -78,15 +81,16 @@ service cloud.firestore {
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Manager', 'Admin']) ||
         (resource != null && 
          (
-           resource.data.assignedToId == request.auth.uid || 
-           resource.data.status == 'New Lead' ||
-           resource.data.assignedToId in ["", "unassigned", "system", "CRM User", null]
+           resource.data.get('assignedToId', '') == request.auth.uid || 
+           resource.data.get('status', '') == 'New Lead' ||
+           resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
          ) && 
          incoming().diff(existing()).affectedKeys().hasOnly([
            'status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 
            'quantity', 'address', 'city', 'pincode', 'name', 'phone', 
            'email', 'callbackTime', 'isArchived', 'assignedToId', 'assignedTo', 
-           'paymentMode', 'source', 'serialId', 'affiliateId', 'state'
+           'paymentMode', 'source', 'serialId', 'affiliateId', 'state',
+           'createdAt', 'lastCallDate'
          ]))
       );
       allow delete: if isAdmin();

@@ -9,6 +9,7 @@ import {
   deleteDoc, 
   query, 
   where, 
+  or,
   orderBy, 
   onSnapshot,
   Timestamp,
@@ -171,9 +172,19 @@ export const dataService = {
     if (['Admin', 'Manager', 'Marketer'].includes(user.role)) {
       q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
     } else {
-      // Sales reps only see their leads. 
-      // Removing orderBy temporarily to avoid composite index requirement if it's missing.
-      q = query(collection(db, 'leads'), where('assignedToId', '==', user.id));
+      // Sales reps see their leads + unassigned leads + new leads
+      q = query(
+        collection(db, 'leads'), 
+        or(
+          where('assignedToId', '==', user.id),
+          where('status', '==', 'New Lead'),
+          where('assignedToId', '==', ''),
+          where('assignedToId', '==', 'unassigned'),
+          where('assignedToId', '==', 'system'),
+          where('assignedToId', '==', 'CRM User'),
+          where('assignedToId', '==', null)
+        )
+      );
     }
     
     return onSnapshot(q, 

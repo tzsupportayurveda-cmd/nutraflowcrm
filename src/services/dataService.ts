@@ -897,7 +897,7 @@ export const dataService = {
   },
 
   subscribeUsersPresence(callback: (users: User[]) => void) {
-    const q = query(collection(db, 'users'), where('status', '==', 'active'));
+    const q = query(collection(db, 'users'));
     return onSnapshot(q, (snapshot) => {
       const now = new Date().getTime();
       const users = snapshot.docs.map(doc => {
@@ -913,7 +913,7 @@ export const dataService = {
 
   async getTeamMembers(): Promise<User[]> {
     try {
-      const q = query(collection(db, 'users'), where('status', '==', 'active'));
+      const q = query(collection(db, 'users'));
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
     } catch (e) {

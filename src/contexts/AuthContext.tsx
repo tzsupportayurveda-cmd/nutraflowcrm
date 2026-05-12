@@ -68,10 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (snapshot.exists()) {
               const profile = { id: snapshot.id, ...snapshot.data() } as User;
               
-              if (isAdminUser) setAdminUser(profile);
+              if (isAdminUser || profile.role === 'Admin') setAdminUser(profile);
               setUser(profile);
               
-              if (profile.status !== 'active' && !isAdminUser) {
+              if (profile.role !== 'Admin' && profile.status !== 'active' && !isAdminUser) {
                 setError('Account approval pending. Kripya admin se sampark karein.');
               }
             } else {

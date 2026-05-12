@@ -201,10 +201,17 @@ export function TeamManager() {
                               <DropdownMenuContent align="start" className="w-40 p-2 rounded-xl shadow-2xl border-slate-100">
                                 <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-1">Change Clearance</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-slate-50" />
-                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Admin'] as const).map(r => (
+                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Delivery', 'Admin'] as const).map(r => (
                                   <DropdownMenuItem 
                                     key={r}
-                                    onClick={() => dataService.updateUserRole(member.id, r).then(() => toast.success(`Role updated to ${r}`))}
+                                    onClick={async () => {
+                                      try {
+                                        await dataService.updateUserRole(member.id, r);
+                                        toast.success(`Role updated: ${member.name} is now ${r}`);
+                                      } catch (err) {
+                                        toast.error(`Failed to update role for ${member.name}`);
+                                      }
+                                    }}
                                     className={cn(
                                       "rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors",
                                       member.role === r ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"

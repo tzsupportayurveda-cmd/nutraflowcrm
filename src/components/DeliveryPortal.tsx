@@ -30,7 +30,7 @@ import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { Order } from '@/src/types';
 import { format } from 'date-fns';
-import { LeadDetailDialog } from './LeadDetailDialog';
+import { OrderDetailDialog } from './OrderDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -48,9 +48,11 @@ export function DeliveryPortal() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLeadDetailOpen, setIsLeadDetailOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [selectedOrderForView, setSelectedOrderForView] = useState<Order | null>(null);
   
   // Local state for update
   const [updateData, setUpdateData] = useState({
@@ -181,16 +183,21 @@ export function DeliveryPortal() {
                   {filteredOrders.map(order => (
                     <TableRow key={order.id} className="h-20 hover:bg-slate-50/50 transition-colors group">
                       <TableCell 
-                        className="pl-6 cursor-pointer" 
-                        onClick={() => {
-                          setSelectedLeadId(order.leadId);
-                          setIsLeadDetailOpen(true);
-                        }}
+                        className="pl-6" 
                       >
-                        <div className="flex flex-col leading-tight">
-                          <span className="font-black text-indigo-600 hover:underline">#{order.orderSerial || order.id.substring(0, 5)}</span>
-                          <span className="text-[10px] font-bold text-slate-400">{format(new Date(order.createdAt), 'MMM dd, h:mm a')}</span>
-                        </div>
+                        <button 
+                          className="flex flex-col text-left group/id"
+                          onClick={() => {
+                            setSelectedOrderForView(order);
+                            setIsViewOpen(true);
+                          }}
+                        >
+                          <span className="font-black text-indigo-600 group-hover/id:text-indigo-700 transition-colors flex items-center gap-1.5">
+                            #{order.orderSerial || order.id.substring(0, 5)}
+                            <ChevronRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover/id:opacity-100 group-hover/id:translate-x-0 transition-all" />
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">{format(new Date(order.createdAt), 'MMM dd')}</span>
+                        </button>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col leading-tight">
@@ -334,6 +341,12 @@ export function DeliveryPortal() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <OrderDetailDialog 
+        order={selectedOrderForView} 
+        open={isViewOpen} 
+        onOpenChange={setIsViewOpen} 
+      />
 
       <LeadDetailDialog 
         leadId={selectedLeadId} 

@@ -34,6 +34,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { Order, Lead } from '@/src/types';
 import { format } from 'date-fns';
 import { LeadDetailDialog } from '@/src/components/LeadDetailDialog';
+import { OrderDetailDialog } from '@/src/components/OrderDetailDialog';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 const orderStatusColors = {
@@ -69,6 +71,7 @@ export function OrderManager() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -237,17 +240,34 @@ export function OrderManager() {
                       </TableCell>
                     )}
                     <TableCell className="px-4 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-10 w-10 border border-transparent hover:border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setIsDetailsOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4.5 h-4.5" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 border border-transparent hover:border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setIsDetailsOpen(true);
+                          }}
+                          title="View Details"
+                        >
+                          <Eye className="w-4.5 h-4.5" />
+                        </Button>
+                        {['Pending', 'Dispatched'].includes(order.status) && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-10 w-10 border border-transparent hover:border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setIsUpdateOpen(true);
+                            }}
+                            title="Quick Actions"
+                          >
+                            <Send className="w-4.5 h-4.5" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -258,170 +278,86 @@ export function OrderManager() {
       </div>
 
       {/* Order Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl border-slate-200">
-              <DialogHeader className="border-b border-slate-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-2xl font-black flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <ShoppingCart className="w-6 h-6 text-blue-600" />
-                    </div>
-                    Order #{selectedOrder?.orderSerial}
-                  </DialogTitle>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setIsLeadDialogOpen(true)}
-                    className="font-black uppercase text-[10px] tracking-widest gap-2 bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> View Patient Lead
-                  </Button>
-                </div>
-              </DialogHeader>
-          
-          {selectedOrder && (
-            <div className="grid grid-cols-2 gap-8 py-6">
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <User className="w-3.5 h-3.5" /> Customer Details
-                  </h3>
-                  <div className="bg-slate-50 p-4 rounded-xl space-y-1">
-                    <p className="font-black text-slate-900 text-lg">{selectedOrder.customerName}</p>
-                    <p className="text-sm text-slate-500 font-bold flex items-center gap-2">
-                      <Phone className="w-3 h-3" /> {selectedOrder.phone || 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5" /> Shipping Destination
-                  </h3>
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <p className="text-sm leading-relaxed text-slate-700 font-medium">
-                      {selectedOrder.address || 'No address provided'}
-                    </p>
-                  </div>
-                </div>
+      <OrderDetailDialog 
+        order={selectedOrder} 
+        open={isDetailsOpen} 
+        onOpenChange={setIsDetailsOpen} 
+      />
 
-                {selectedOrder.status === 'Pending' && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-                  <div className="space-y-3 pt-2">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Quick Actions</h3>
-                    <Button 
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] h-12 shadow-lg shadow-indigo-100 gap-2"
-                      onClick={() => handleSendToDelivery(selectedOrder.id)}
-                    >
-                      <Send className="w-4 h-4" /> Send to Delivery Portal
-                    </Button>
-                    <p className="text-[9px] text-slate-400 font-bold text-center italic">Sending to delivery portal will make it visible to the logistics team.</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <CreditCard className="w-3.5 h-3.5" /> Financial & Logistics
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge variant="outline" className="font-bold border-slate-200">{selectedOrder.paymentMode}</Badge>
-                    <Badge className={cn(orderStatusColors[selectedOrder.status], "font-black")}>
-                      {selectedOrder.status}
-                    </Badge>
-                  </div>
-                  <div className="pt-2">
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Total Amount</span>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight">₹{selectedOrder.total.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Order Items</h3>
-                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                    {selectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-lg">
-                        <span className="font-bold text-slate-700">Item #{idx + 1}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-400 font-medium text-xs">₹{item.price}</span>
-                          <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-black">x{item.quantity}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {['Pending', 'Dispatched'].includes(selectedOrder.status) && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-                  <div className="p-4 bg-slate-900 text-white rounded-2xl space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Logistics Update</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Tracking ID</label>
-                        <Input 
-                          placeholder="e.g. 123456789" 
-                          value={shipData.trackingId}
-                          onChange={e => setShipData({...shipData, trackingId: e.target.value})}
-                          className="bg-white/10 border-white/10 text-white h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-slate-400 uppercase">Courier</label>
-                        <select 
-                          value={shipData.courier}
-                          onChange={e => setShipData({...shipData, courier: e.target.value})}
-                          className="w-full h-8 bg-white/10 border border-white/10 rounded-md px-2 text-xs font-bold outline-none cursor-pointer"
-                        >
-                          <option value="Delhivery" className="bg-slate-900">Delhivery</option>
-                          <option value="Shiprocket" className="bg-slate-900">Shiprocket</option>
-                          <option value="BlueDart" className="bg-slate-900">BlueDart</option>
-                          <option value="Self Delivery" className="bg-slate-900">Self Delivery</option>
-                        </select>
-                      </div>
-                    </div>
-                    <Button 
-                      className="w-full bg-emerald-500 hover:bg-emerald-600 font-black uppercase text-[10px] h-9"
-                      onClick={() => handleDispatch(selectedOrder.id)}
-                    >
-                      {selectedOrder.status === 'Dispatched' ? 'Update Final Shipment' : 'Process Shipment'}
-                    </Button>
-                  </div>
-                )}
-
-                {selectedOrder.status === 'Shipped' && (currentUser?.role === 'Admin' || currentUser?.role === 'Delivery') && (
-                   <div className="flex gap-2">
-                     <Button 
-                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 font-bold text-xs h-9"
-                       onClick={() => handleStatusUpdate(selectedOrder.id, 'Delivered')}
-                     >
-                       Mark Delivered
-                     </Button>
-                     <Button 
-                       variant="outline"
-                       className="flex-1 border-red-200 text-red-600 font-bold text-xs h-9"
-                       onClick={() => handleStatusUpdate(selectedOrder.id, 'RTO')}
-                     >
-                       Mark RTO
-                     </Button>
-                   </div>
-                )}
+      {/* Quick Action / Dispatch Dialog */}
+      <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
+        <DialogContent className="max-w-md border-slate-200 rounded-2xl overflow-hidden p-0 border-none shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 p-8 text-white">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2">Order Processing</h4>
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-2xl font-black leading-tight">#{selectedOrder?.orderSerial}</h2>
+              <div className="p-3 bg-white/10 rounded-2xl">
+                <Package className="w-6 h-6 text-indigo-400" />
               </div>
             </div>
-          )}
+            <p className="mt-4 text-xs font-bold text-white/50">{selectedOrder?.customerName} • {selectedOrder?.product}</p>
+          </div>
           
-          <DialogFooter className="mt-4 pt-6 border-t border-slate-100 sm:justify-end gap-3">
-            <Button variant="ghost" className="font-bold text-slate-500 hover:text-slate-900" onClick={() => setIsDetailsOpen(false)}>
-              Close
-            </Button>
-            {selectedOrder?.status === 'Pending' && 
-             (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
-              <Button 
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-8 h-11 shadow-md hover:shadow-lg transition-all gap-2"
-                onClick={() => handleSendToDelivery(selectedOrder.id)}
-              >
-                <Send className="w-4 h-4" /> Send to Delivery Portal
-              </Button>
+          <div className="p-8 space-y-6 bg-white">
+            {selectedOrder?.status === 'Pending' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                  <p className="text-sm font-bold text-indigo-900">Push to Delivery Ops?</p>
+                  <p className="text-[10px] text-indigo-600/70 font-black uppercase mt-1">This will make the order visible in the Delivery Portal.</p>
+                </div>
+                <Button 
+                  className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-indigo-100"
+                  onClick={() => handleSendToDelivery(selectedOrder.id)}
+                >
+                  <Send className="w-4 h-4 mr-2" /> Send to Delivery Portal
+                </Button>
+              </div>
             )}
-          </DialogFooter>
+
+            {['Pending', 'Dispatched'].includes(selectedOrder?.status || '') && (
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Direct Dispatch (Admin)</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Courier</Label>
+                    <select 
+                      value={shipData.courier}
+                      onChange={e => setShipData({...shipData, courier: e.target.value})}
+                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none"
+                    >
+                      <option value="Delhivery">Delhivery</option>
+                      <option value="Shiprocket">Shiprocket</option>
+                      <option value="BlueDart">BlueDart</option>
+                      <option value="Self Delivery">Self Delivery</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tracking ID</Label>
+                    <Input 
+                      placeholder="Number" 
+                      value={shipData.trackingId}
+                      onChange={e => setShipData({...shipData, trackingId: e.target.value})}
+                      className="h-11 bg-slate-50 border-slate-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-emerald-100"
+                  onClick={() => selectedOrder && handleDispatch(selectedOrder.id)}
+                >
+                  Confirm Shipment
+                </Button>
+              </div>
+            )}
+
+            <Button 
+              variant="ghost" 
+              className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 h-10"
+              onClick={() => setIsUpdateOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -141,6 +141,23 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
     setFormData({ ...formData, quantity: qty, value: price * qty });
   };
 
+  const handlePincodeChange = async (pincode: string) => {
+    // Only allow numbers and max 6 digits
+    const cleanPincode = pincode.replace(/\D/g, '').slice(0, 6);
+    setFormData(prev => ({ ...prev, pincode: cleanPincode }));
+
+    if (cleanPincode.length === 6) {
+      const location = await dataService.fetchLocationByPincode(cleanPincode);
+      if (location) {
+        setFormData(prev => ({ 
+          ...prev, 
+          city: prev.city || location.city 
+        }));
+        toast.success(`Location detected: ${location.city}`);
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -242,7 +259,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
               <Input 
                 placeholder="400001" 
                 value={formData.pincode}
-                onChange={e => setFormData({...formData, pincode: e.target.value})}
+                onChange={e => handlePincodeChange(e.target.value)}
               />
             </div>
           </div>

@@ -524,6 +524,26 @@ export const dataService = {
     }
   },
 
+  async fetchLocationByPincode(pincode: string): Promise<{ city: string; state: string } | null> {
+    if (!pincode || pincode.length !== 6) return null;
+    try {
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await response.json();
+      
+      if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice.length > 0) {
+        const postOffice = data[0].PostOffice[0];
+        return {
+          city: postOffice.District,
+          state: postOffice.State
+        };
+      }
+      return null;
+    } catch (e) {
+      console.error("Pincode lookup failed:", e);
+      return null;
+    }
+  },
+
   // --- Lead Status Change with Stock & Tasks ---
   async handleOrderConfirmation(lead: Lead) {
     try {

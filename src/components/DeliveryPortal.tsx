@@ -31,6 +31,7 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { Order } from '@/src/types';
 import { format } from 'date-fns';
 import { OrderDetailDialog } from './OrderDetailDialog';
+import { LeadDetailDialog } from './LeadDetailDialog';
 import {
   Dialog,
   DialogContent,

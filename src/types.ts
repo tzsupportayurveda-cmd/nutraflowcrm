@@ -93,6 +93,8 @@ export interface Order {
   deliveredAt?: string;
   rtoReason?: string;
   deliveryNotes?: string;
+  state?: string;
+  history?: HistoryItem[];
 }
 
 export interface Task {

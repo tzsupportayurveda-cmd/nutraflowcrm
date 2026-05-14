@@ -160,6 +160,24 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     }
   };
 
+  const handlePincodeChange = async (pincode: string) => {
+    if (!editableLead) return;
+    const cleanPincode = pincode.replace(/\D/g, '').slice(0, 6);
+    setEditableLead({ ...editableLead, pincode: cleanPincode });
+    setHasChanges(true);
+
+    if (cleanPincode.length === 6) {
+      const location = await dataService.fetchLocationByPincode(cleanPincode);
+      if (location) {
+        setEditableLead(prev => prev ? { 
+          ...prev, 
+          city: prev.city || location.city 
+        } : null);
+        toast.success(`Location detected: ${location.city}`);
+      }
+    }
+  };
+
   const handleCreateOrder = async (l: Lead) => {
     try {
       setLoading(true);
@@ -299,7 +317,11 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pincode</label>
-                      <Input value={editableLead.pincode || ''} onChange={e => { setEditableLead({...editableLead, pincode: e.target.value}); setHasChanges(true); }} className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10" />
+                      <Input 
+                        value={editableLead.pincode || ''} 
+                        onChange={e => handlePincodeChange(e.target.value)} 
+                        className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10" 
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

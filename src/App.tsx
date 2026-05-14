@@ -43,6 +43,7 @@ import { BrandLogo } from '@/src/components/BrandLogo';
 
 import { TaskReminderListener } from '@/src/components/TaskReminderListener';
 import { PresenceListener } from '@/src/components/PresenceListener';
+import { InventoryAlertListener } from '@/src/components/InventoryAlertListener';
 
 function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -265,6 +266,7 @@ function CRMApp() {
       <Toaster position="top-right" />
       <TaskReminderListener />
       <PresenceListener />
+      <InventoryAlertListener />
       
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

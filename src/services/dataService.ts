@@ -125,6 +125,32 @@ export const dataService = {
     }
   },
 
+  async notifyStaff(roles: string[], title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
+    try {
+      const q = query(collection(db, 'users'), where('role', 'in', roles), where('status', '==', 'active'));
+      const snapshot = await getDocs(q);
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      
+      const timestamp = new Date().toISOString();
+      snapshot.docs.forEach(userDoc => {
+        const notifRef = doc(collection(db, 'notifications'));
+        batch.set(notifRef, {
+          userId: userDoc.id,
+          title,
+          message,
+          type,
+          read: false,
+          timestamp
+        });
+      });
+      
+      await batch.commit();
+    } catch (e) {
+      console.error("Notify staff failed:", e);
+    }
+  },
+
   subscribeNotifications(userId: string, callback: (notifications: any[]) => void) {
     const q = query(
       collection(db, 'notifications'),
@@ -502,6 +528,7 @@ export const dataService = {
   async handleOrderConfirmation(lead: Lead) {
     try {
       const { runTransaction } = await import('firebase/firestore');
+      let lowStockAlert: { name: string; stock: number; minStock: number } | null = null;
       
       await runTransaction(db, async (transaction) => {
         // 1. Find the product in inventory
@@ -517,14 +544,12 @@ export const dataService = {
           transaction.update(invDoc.ref, { stock: Math.max(0, newStock) });
           
           if (newStock <= invData.minStock) {
-            console.warn(`LOW STOCK ALERT: ${invData.name} is down to ${newStock}`);
+            lowStockAlert = { name: invData.name, stock: newStock, minStock: invData.minStock };
           }
         }
 
         // 3. Create Order
         const commission = (lead.value * 0.05); // 5% Commission
-        const orderId = `ORD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-        
         const orderRef = doc(collection(db, 'orders'));
         transaction.set(orderRef, {
           leadId: lead.id,
@@ -597,6 +622,16 @@ export const dataService = {
           history: arrayUnion(sanitize(historyItem))
         });
       });
+
+      // Notify outside transaction to avoid issues with retries and async writes
+      if (lowStockAlert) {
+        this.notifyStaff(
+          ['Admin', 'Manager', 'Inventory'],
+          'Critical Inventory Alert',
+          `Low Stock: "${lowStockAlert.name}" is down to ${lowStockAlert.stock} units. (Thresh: ${lowStockAlert.minStock})`,
+          'warning'
+        );
+      }
       
       await this.addAuditLog('Order Confirmed', lead.id, 'Lead', `Order created and stock deducted for ${lead.name}`);
     } catch (e) {
@@ -783,7 +818,21 @@ export const dataService = {
 
   async updateStock(itemId: string, newStock: number): Promise<void> {
     try {
-      await updateDoc(doc(db, 'inventory', itemId), { stock: newStock });
+      const itemRef = doc(db, 'inventory', itemId);
+      const itemSnap = await getDoc(itemRef);
+      if (itemSnap.exists()) {
+        const itemData = itemSnap.data() as InventoryItem;
+        await updateDoc(itemRef, { stock: newStock });
+
+        if (newStock <= itemData.minStock) {
+          this.notifyStaff(
+            ['Admin', 'Manager', 'Inventory'],
+            'Inventory Threshold Breached',
+            `Manual adjustment: "${itemData.name}" is now at ${newStock} units.`,
+            'warning'
+          );
+        }
+      }
     } catch (e) {
       handleFirestoreError(e, 'update', `inventory/${itemId}`);
     }

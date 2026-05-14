@@ -63,6 +63,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           const { doc, onSnapshot } = await import('firebase/firestore');
           const { db } = await import('@/src/lib/firebase');
+
+          // Detect Browser and Device
+          const ua = navigator.userAgent;
+          let browser = "Unknown Browser";
+          if (ua.indexOf("Firefox") > -1) browser = "Firefox";
+          else if (ua.indexOf("SamsungBrowser") > -1) browser = "Samsung Browser";
+          else if (ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) browser = "Opera";
+          else if (ua.indexOf("Trident") > -1) browser = "Internet Explorer";
+          else if (ua.indexOf("Edge") > -1) browser = "Edge";
+          else if (ua.indexOf("Chrome") > -1) browser = "Chrome";
+          else if (ua.indexOf("Safari") > -1) browser = "Safari";
+
+          let device = "Desktop";
+          if (/Mobi|Android/i.test(ua)) device = "Mobile";
+          if (/Tablet|iPad/i.test(ua)) device = "Tablet";
+
+          // Track if we've already updated the session this app load
+          let sessionUpdated = false;
           
           unsubscribeProfile = onSnapshot(doc(db, 'users', fbUser.uid), (snapshot) => {
             if (snapshot.exists()) {
@@ -70,6 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               if (isAdminUser || profile.role === 'Admin') setAdminUser(profile);
               setUser(profile);
+
+              // Update session once per login/refresh
+              if (!sessionUpdated) {
+                dataService.updateLoginSession(fbUser.uid, browser, device);
+                sessionUpdated = true;
+              }
               
               if (profile.role !== 'Admin' && profile.status !== 'active' && !isAdminUser) {
                 setError('Account approval pending. Kripya admin se sampark karein.');

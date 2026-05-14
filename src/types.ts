@@ -117,6 +117,8 @@ export interface User {
   avatar?: string;
   createdAt: string;
   lastLogin?: string;
+  lastBrowser?: string;
+  lastDevice?: string;
   lastSeen?: string;
   isOnline?: boolean;
   notificationsEnabled?: boolean;

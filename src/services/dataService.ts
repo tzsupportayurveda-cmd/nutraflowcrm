@@ -965,6 +965,36 @@ export const dataService = {
     }
   },
 
+  async updateLoginSession(uid: string, browser: string, device: string): Promise<void> {
+    try {
+      const docRef = doc(db, 'users', uid);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return;
+
+      const userData = snap.data() as User;
+      const timestamp = new Date().toISOString();
+      const isNewBrowser = userData.lastBrowser && userData.lastBrowser !== browser;
+      const isNewDevice = userData.lastDevice && userData.lastDevice !== device;
+
+      await updateDoc(docRef, {
+        lastLogin: timestamp,
+        lastBrowser: browser,
+        lastDevice: device
+      });
+
+      if (isNewBrowser || isNewDevice) {
+        await this.addAuditLog(
+          'Security Alert',
+          uid,
+          'User',
+          `Agent ${userData.name} logged in from a ${isNewBrowser ? 'new browser' : ''} ${isNewDevice ? 'new device' : ''}. Browser: ${browser}, Device: ${device}. Previous known: ${userData.lastBrowser || 'N/A'}`
+        );
+      }
+    } catch (e) {
+      console.error("Login session update failed:", e);
+    }
+  },
+
   subscribeUsersPresence(callback: (users: User[]) => void) {
     const q = query(collection(db, 'users'));
     return onSnapshot(q, (snapshot) => {

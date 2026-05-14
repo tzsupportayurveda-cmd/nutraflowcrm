@@ -163,7 +163,7 @@ export function TeamManager() {
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Administrative Identity</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Authorization</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Entity Load</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Telemetry</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Authorization Logs</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Comm Channel</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Administrative Action</TableHead>
               </TableRow>
@@ -249,14 +249,21 @@ export function TeamManager() {
                     </div>
                   </TableCell>
                   <TableCell className="px-4">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 min-w-[140px]">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-slate-300" />
-                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight font-mono">
-                          {member.lastSeen ? new Date(member.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toUpperCase() : 'NO_SIGNAL'}
+                        <Clock className="w-3 h-3 text-indigo-400" />
+                        <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight">
+                          {member.lastLogin ? new Date(member.lastLogin).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase() : 'NEVER_LOGGED'}
                         </span>
                       </div>
-                      <span className="text-[8px] font-mono text-slate-400 uppercase tracking-tighter opacity-50">UID: {member.id.substring(0, 12)}...</span>
+                      <div className="flex items-center gap-2">
+                        <div className="px-1.5 py-0.5 bg-slate-100 rounded text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">
+                          {member.lastDevice || 'Desktop'}
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-400 truncate max-w-[100px]" title={member.lastBrowser}>
+                          {member.lastBrowser || 'Unknown'}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="px-4 text-slate-600">

@@ -985,6 +985,18 @@ export const dataService = {
     }
   },
 
+  async updateInventoryItem(itemId: string, updates: Partial<InventoryItem>): Promise<void> {
+    try {
+      const docRef = doc(db, 'inventory', itemId);
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      handleFirestoreError(e, 'update', `inventory/${itemId}`);
+    }
+  },
+
   async deleteInventoryItem(orgId: string, itemId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'inventory', itemId));

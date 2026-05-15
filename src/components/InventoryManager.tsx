@@ -80,6 +80,47 @@ export function InventoryManager() {
     };
   }, [currentUser]);
 
+  const handleSyncDefaultRates = async () => {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
+    
+    const defaultProducts = [
+      { name: 'Advanced Gel Formula', price: 2999, category: 'Gel', sku: 'AGF-001' },
+      { name: 'Zosh Tablets (30 Caps)', price: 2999, category: 'Tablets', sku: 'ZT-030' },
+      { name: 'Booster 3X Pills', price: 2599, category: 'Pills', sku: 'B3X-001' },
+      { name: 'Booster Cream', price: 2590, category: 'Cream', sku: 'BC-001' }
+    ];
+
+    setLoading(true);
+    try {
+      const orgId = currentUser?.orgId || 'root-admin';
+      
+      for (const defProd of defaultProducts) {
+        const existing = items.find(i => i.name.toLowerCase() === defProd.name.toLowerCase());
+        if (existing) {
+          await dataService.updateInventoryItem(existing.id, { price: defProd.price });
+        } else {
+          await dataService.addInventoryItem(orgId, {
+            orgId,
+            name: defProd.name,
+            price: defProd.price,
+            category: defProd.category,
+            sku: defProd.sku,
+            stock: 100,
+            minStock: 10,
+            description: 'Default Product Rate Sync'
+          });
+        }
+      }
+      toast.success('Rates successfully synced to catalog');
+    } catch (err) {
+      console.error(err);
+      toast.error('Sync failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
@@ -134,12 +175,23 @@ export function InventoryManager() {
           </div>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Stock level monitoring and asset procurement tracking.</p>
         </div>
-        <Button 
-          onClick={() => setIsAddOpen(true)}
-          className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-xl"
-        >
-          <Plus className="w-4 h-4 text-emerald-400" /> Register New Asset
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={handleSyncDefaultRates}
+            variant="outline"
+            disabled={loading}
+            className="border-slate-200 hover:bg-slate-50 text-slate-600 gap-2 font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-xl"
+          >
+            <History className="w-4 h-4 text-indigo-400" /> 
+            {loading ? 'Syncing...' : 'Sync Default Rates'}
+          </Button>
+          <Button 
+            onClick={() => setIsAddOpen(true)}
+            className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-xl"
+          >
+            <Plus className="w-4 h-4 text-emerald-400" /> Register New Asset
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

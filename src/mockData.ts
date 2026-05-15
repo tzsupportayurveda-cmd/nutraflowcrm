@@ -11,8 +11,10 @@ export const MOCK_LEADS: Lead[] = [
 ];
 
 export const MOCK_INVENTORY: InventoryItem[] = [
-  { id: 'P1', orgId: 'test-org-123', name: 'Omega-3 Fish Oil', category: 'Supplements', sku: 'NF-O3-001', stock: 150, minStock: 50, price: 2999 },
-  { id: 'P2', orgId: 'test-org-123', name: 'Whey Protein Isolate', category: 'Protein', sku: 'NF-WP-002', stock: 45, minStock: 20, price: 5499 },
+  { id: 'P1', orgId: 'test-org-123', name: 'Advanced Gel Formula', category: 'Gel', sku: 'AGF-001', stock: 150, minStock: 20, price: 2999 },
+  { id: 'P2', orgId: 'test-org-123', name: 'Zosh Tablets (30 Caps)', category: 'Tablets', sku: 'ZT-030', stock: 100, minStock: 15, price: 2999 },
+  { id: 'P3', orgId: 'test-org-123', name: 'Booster 3X Pills', category: 'Pills', sku: 'B3X-001', stock: 80, minStock: 10, price: 2599 },
+  { id: 'P4', orgId: 'test-org-123', name: 'Booster Cream', category: 'Cream', sku: 'BC-001', stock: 60, minStock: 10, price: 2590 },
 ];
 
 export const MOCK_ORDERS: Order[] = [

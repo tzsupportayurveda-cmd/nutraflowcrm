@@ -44,27 +44,34 @@ export function TeamManager() {
   const { impersonate, isImpersonating, user: activeUser, adminUser } = useAuth();
   const [team, setTeam] = useState<User[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
+  const [confirmedCounts, setConfirmedCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!activeUser) return;
+    const isSuperAdmin = activeUser.role === 'SuperAdmin' || activeUser.email === 'tzsupportayurveda@gmail.com';
+    if (!activeUser.orgId && !isSuperAdmin) return;
+
     // 1. Live presence subscription
-    const unsubPresence = dataService.subscribeUsersPresence((users) => {
+    const unsubPresence = dataService.subscribeUsersPresence(activeUser, (users) => {
       setTeam(users);
       setLoading(false);
     });
 
-    // 2. Fetch leads to count assignments
-    // We'll use getDocs for a one-time count to avoid heavy listeners for this view, 
-    // or we can use onSnapshot if real-time updates for counts are critical.
-    // For this view, one-time or periodic fetch is better for performance.
+    // 2. Fetch leads to count assignments and confirmed orders
     const unsubLeads = dataService.subscribeLeads(activeUser, (leads) => {
       const counts: Record<string, number> = {};
+      const confirmed: Record<string, number> = {};
       leads.forEach(lead => {
         if (lead.assignedToId) {
           counts[lead.assignedToId] = (counts[lead.assignedToId] || 0) + 1;
+          if (lead.status === 'Order Confirmed' || lead.status === 'Dispatched' || lead.status === 'Delivered') {
+            confirmed[lead.assignedToId] = (confirmed[lead.assignedToId] || 0) + 1;
+          }
         }
       });
       setLeadCounts(counts);
+      setConfirmedCounts(confirmed);
     });
 
     return () => {
@@ -163,6 +170,7 @@ export function TeamManager() {
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Administrative Identity</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Authorization</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Entity Load</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Performance</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Authorization Logs</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Comm Channel</TableHead>
                 <TableHead className="text-right text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Administrative Action</TableHead>
@@ -201,7 +209,7 @@ export function TeamManager() {
                               <DropdownMenuContent align="start" className="w-40 p-2 rounded-xl shadow-2xl border-slate-100">
                                 <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-1">Change Clearance</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-slate-50" />
-                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Delivery', 'Admin'] as const).map(r => (
+                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Delivery', 'Admin', 'SuperAdmin'] as const).map(r => (
                                   <DropdownMenuItem 
                                     key={r}
                                     onClick={async () => {
@@ -246,6 +254,12 @@ export function TeamManager() {
                     <div className="flex flex-col">
                       <span className="text-sm font-black text-slate-900 font-mono tracking-tighter">{leadCounts[member.id] || 0}</span>
                       <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Assignments</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-emerald-600 font-mono tracking-tighter">{confirmedCounts[member.id] || 0}</span>
+                      <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest mt-1">Confirmed</span>
                     </div>
                   </TableCell>
                   <TableCell className="px-4">

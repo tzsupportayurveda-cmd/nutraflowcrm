@@ -10,7 +10,10 @@ import {
   Loader2,
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  Tag,
+  IndianRupee,
+  Factory
 } from 'lucide-react';
 import { 
   Table, 
@@ -25,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { dataService } from '@/src/services/dataService';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { InventoryItem, Lead } from '@/src/types';
 import {
   Dialog,
@@ -38,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 
 export function InventoryManager() {
+  const { user: currentUser } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,63 +57,65 @@ export function InventoryManager() {
     sku: '',
     stock: 0,
     minStock: 5,
-    price: 0
+    price: 0,
+    description: ''
   });
 
   useEffect(() => {
-    const unsubInv = dataService.subscribeInventory((data) => {
+    if (!currentUser) return;
+
+    const unsubInv = dataService.subscribeInventory(currentUser.orgId || '', (data) => {
       setItems(data);
+      setLoading(false);
     });
 
-    // Subscribe to leads to see "Pending" demand
-    const unsubLeads = dataService.subscribeLeads({ id: 'system', role: 'Admin' } as any, (data) => {
+    // Subscribe to leads to see confirmed demand if needed
+    const unsubLeads = dataService.subscribeLeads(currentUser, (data) => {
       setLeads(data);
-      setLoading(false);
     });
 
     return () => {
       unsubInv();
       unsubLeads();
     };
-  }, []);
+  }, [currentUser]);
 
-  const getPendingDemand = (productName: string) => {
-    return leads.filter(l => l.product === productName && !['Order Confirmed', 'RTO/Cancelled'].includes(l.status)).length;
-  };
-
-  const handleAddProduct = async () => {
-    if (!newItem.name || !newItem.sku) {
-      toast.error('Name and SKU are required');
-      return;
-    }
+  const handleAddItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.orgId) return;
     try {
-      await dataService.addInventoryItem(newItem);
+      await dataService.addInventoryItem(currentUser.orgId, {
+        ...newItem,
+        orgId: currentUser.orgId
+      });
+      toast.success('Successfully added to catalog');
       setIsAddOpen(false);
-      setNewItem({ name: '', category: '', sku: '', stock: 0, minStock: 5, price: 0 });
-      toast.success('Product added successfully');
-    } catch (error) {
-      toast.error('Failed to add product');
+      setNewItem({ name: '', category: '', sku: '', stock: 0, minStock: 5, price: 0, description: '' });
+    } catch (err) {
+      toast.error('Galti: Item add nahi hua');
     }
   };
 
   const handleUpdateStock = async () => {
-    if (!selectedItem) return;
+    if (!selectedItem || !currentUser?.orgId) return;
     try {
-      await dataService.updateStock(selectedItem.id, newStock);
+      await dataService.updateStock(currentUser.orgId, selectedItem.id, newStock);
+      toast.success('Inventory ledger updated');
       setIsUpdateOpen(false);
-      toast.success('Stock updated successfully');
-    } catch (error) {
-      toast.error('Failed to update stock');
+    } catch (err) {
+      toast.error('Update failed');
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
-    try {
-      await dataService.deleteInventoryItem(id);
-      toast.success('Product deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete product');
+  const handleDelete = async (id: string) => {
+    if (!currentUser?.orgId) return;
+    if (confirm('Are you sure? This item will be purged from catalog.')) {
+      try {
+        await dataService.deleteInventoryItem(currentUser.orgId, id);
+        toast.success('Item removed');
+      } catch (e) {
+        toast.error('Deletion failed');
+      }
     }
   };
 
@@ -117,261 +124,335 @@ export function InventoryManager() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">SKU Registry</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Master Inventory</h1>
             <Badge className="bg-amber-100 text-amber-700 border-none font-black text-[9px] uppercase tracking-widest px-2.5">
-              Asset Tracking
+              Live Ledger
             </Badge>
           </div>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Systematic inventory management and valuation control.</p>
+          <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Stock level monitoring and asset procurement tracking.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="neo-shadow border-slate-200 text-slate-600 hover:bg-slate-50 gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
-            <History className="w-4 h-4 text-amber-500" /> Batch Audit
-          </Button>
-          
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4 rounded-xl inline-flex items-center transition-all">
-              <Box className="w-4 h-4 text-emerald-400" /> Register SKU
-            </DialogTrigger>
-            <DialogContent className="max-w-md rounded-2xl border-slate-200 shadow-2xl">
-              <DialogHeader className="border-b border-slate-50 pb-4">
-                <DialogTitle className="text-xl font-black uppercase tracking-tight">Add Global SKU</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-6 py-8">
-                <div className="grid gap-2">
-                  <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Biological Name</Label>
-                  <Input id="name" className="h-11 rounded-xl border-slate-200 font-bold text-sm" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="category" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classification</Label>
-                    <Input id="category" className="h-11 rounded-xl border-slate-200 font-bold text-sm" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="sku" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Asset Serial (SKU)</Label>
-                    <Input id="sku" className="h-11 rounded-xl border-slate-200 font-mono text-sm uppercase" value={newItem.sku} onChange={e => setNewItem({...newItem, sku: e.target.value})} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="stock" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Onhand</Label>
-                    <Input id="stock" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.stock} onChange={e => setNewItem({...newItem, stock: parseInt(e.target.value) || 0})} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="minStock" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Threshold</Label>
-                    <Input id="minStock" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.minStock} onChange={e => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="price" className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valuation</Label>
-                    <Input id="price" type="number" className="h-11 rounded-xl border-slate-200 font-mono text-sm" value={newItem.price} onChange={e => setNewItem({...newItem, price: parseFloat(e.target.value) || 0})} />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="bg-slate-50 p-4 -m-6 mt-6 rounded-b-2xl border-t border-slate-100 flex gap-2">
-                <Button variant="ghost" className="font-black uppercase text-[10px] tracking-widest text-slate-400" onClick={() => setIsAddOpen(false)}>Abort</Button>
-                <Button className="bg-slate-900 hover:bg-black font-black uppercase text-[10px] tracking-widest px-8" onClick={handleAddProduct}>Commit Record</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+        <Button 
+          onClick={() => setIsAddOpen(true)}
+          className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 px-6 rounded-xl"
+        >
+          <Plus className="w-4 h-4 text-emerald-400" /> Register New Asset
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/10 flex items-center justify-between group hover:border-indigo-200 transition-colors">
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total SKU Count</p>
+            <p className="text-2xl font-black text-slate-900">{items.length}</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+            <Box className="w-6 h-6" />
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/10 flex items-center justify-between group hover:border-rose-200 transition-colors">
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Critical Stock</p>
+            <p className="text-2xl font-black text-rose-600">{items.filter(i => i.stock <= i.minStock).length}</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-emerald-200 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-emerald-600 transition-colors">Asset Taxonomy</p>
-             <Box className="w-4 h-4 text-emerald-500" />
-          </div>
-          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">{items.length}</p>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Active SKU Profiles</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-amber-200 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-amber-600 transition-colors">Reserve Alerts</p>
-             <AlertTriangle className="w-4 h-4 text-amber-500" />
-          </div>
-          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">
-            {items.filter(i => i.stock <= i.minStock).length}
-          </p>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Critical Restock Req.</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl border border-slate-200/60 neo-shadow group hover:border-blue-200 transition-colors">
-          <div className="flex items-center justify-between mb-4">
-             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-blue-600 transition-colors">Capital Valuation</p>
-             <History className="w-4 h-4 text-blue-500" />
-          </div>
-          <p className="text-3xl font-black text-slate-900 font-mono tracking-tighter">
-            ₹{items.reduce((acc, i) => acc + (i.stock * i.price), 0).toLocaleString()}
-          </p>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-2">Inventory Net Worth</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden neo-shadow min-h-[400px]">
+      <div className="bg-white rounded-3xl border border-slate-200/60 shadow-2xl shadow-slate-200/20 overflow-hidden neo-shadow min-h-[400px]">
         {loading ? (
           <div className="flex flex-col items-center justify-center p-32 gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 border-4 border-slate-100 border-t-amber-500 rounded-full animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-              </div>
-            </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Indexing Global Repository...</p>
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Master Ledger...</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-32 text-center gap-8">
-            <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center relative">
-               <Package className="w-10 h-10 text-slate-200" />
-               <div className="absolute inset-0 border-2 border-dashed border-slate-100 rounded-full animate-[spin_20s_linear_infinite]" />
+          <div className="flex flex-col items-center justify-center p-32 text-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-200">
+              <Package className="w-10 h-10" />
             </div>
-            <div className="space-y-2">
-              <p className="text-xl font-black text-slate-900 uppercase tracking-tight">Repository Empty</p>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[280px] mx-auto leading-loose">Register formulation assets to initiate systematic stock tracking and valuation analysis.</p>
+            <div className="space-y-1">
+              <p className="text-xl font-black text-slate-900 uppercase tracking-tight">Catalog Is Empty</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">Register your first product to begin tracking fulfillments.</p>
             </div>
-            <Button className="neo-shadow bg-slate-900 hover:bg-black font-black uppercase text-[10px] tracking-widest px-8 h-12 rounded-xl" onClick={() => setIsAddOpen(true)}>Initialize SKU</Button>
           </div>
         ) : (
           <Table>
             <TableHeader className="bg-slate-50/50">
-              <TableRow className="h-14 hover:bg-transparent border-b-slate-100">
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-6">Biological Asset</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Classification</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Internal SKU</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Stock Integrity</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Demand Index</TableHead>
-                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Capitalization</TableHead>
-                <TableHead className="w-14 px-4"></TableHead>
+              <TableRow className="h-16 hover:bg-transparent border-b-slate-100">
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-8">Product Entity</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Identification</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Inventory Status</TableHead>
+                <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Price Point</TableHead>
+                <TableHead className="w-20 px-8 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id} className="h-20 hover:bg-slate-50/30 group transition-all border-b-slate-50">
-                  <TableCell className="px-6">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors uppercase tracking-tight">{item.name}</span>
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">PRODUCT_ENTITY</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border-2 border-slate-100 text-slate-500 rounded-lg">
-                      {item.category.toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4 font-mono text-[11px] font-black text-slate-500 uppercase tracking-tighter">{item.sku}</TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex flex-col gap-2.5 w-full max-w-[160px]">
-                      <div className="flex items-center justify-between">
-                        <span className={cn(
-                          "text-[11px] font-black font-mono",
-                          item.stock <= item.minStock ? "text-red-500" : "text-slate-900"
-                        )}>{item.stock}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono">MIN: {item.minStock}</span>
+              {items.map((item) => {
+                const isCritical = item.stock <= item.minStock;
+                return (
+                  <TableRow key={item.id} className="h-24 hover:bg-slate-50/30 group transition-all border-b-slate-50">
+                    <TableCell className="px-8">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+                          isCritical ? "bg-rose-50 text-rose-600" : "bg-slate-900 text-white"
+                        )}>
+                          <Tag className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{item.name}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{item.category}</span>
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden shadow-inner ring-1 ring-slate-200/50">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-700 ease-out",
-                            item.stock <= item.minStock ? "bg-red-500" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                          )}
-                          style={{ width: `${Math.min((item.stock / (item.minStock * 2.5)) * 100, 100)}%` }}
-                        ></div>
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-indigo-600 font-mono">#{item.sku}</span>
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mt-1">SKU_REF</span>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <Badge variant="secondary" className={cn(
-                      "font-black text-[9px] uppercase tracking-[0.1em] h-7 px-3 flex items-center justify-center gap-1.5 rounded-xl border-2 transition-all",
-                      getPendingDemand(item.name) > 0 
-                        ? "bg-blue-50 text-blue-700 border-blue-100 shadow-sm scale-105" 
-                        : "bg-slate-50 text-slate-400 border-transparent shadow-none grayscale"
-                    )}>
-                      {getPendingDemand(item.name) > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
-                      {getPendingDemand(item.name)} REQ
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-slate-900 font-mono tracking-tight">₹{(item.stock * item.price).toLocaleString()}</span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">@ ₹{item.price.toLocaleString()} AU</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-9 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-white hover:bg-emerald-500 transition-all border border-transparent hover:border-emerald-600"
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setNewStock(item.stock);
-                          setIsUpdateOpen(true);
-                        }}
-                      >
-                        Adjust
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex flex-col min-w-[100px]">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className={cn(
+                              "text-sm font-black tracking-tighter",
+                              isCritical ? "text-rose-600" : "text-slate-900"
+                            )}>
+                              {item.stock} / {item.minStock}
+                            </span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Stock Units</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className={cn(
+                                "h-full transition-all duration-1000 ease-out",
+                                isCritical ? "bg-rose-500" : "bg-indigo-500"
+                              )}
+                              style={{ width: `${Math.min(100, (item.stock / (item.minStock * 4)) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        {isCritical && (
+                          <div className="flex items-center gap-1 text-rose-600 animate-pulse">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">Refill Required</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex items-center gap-1 font-mono text-base font-black text-slate-900 underline decoration-indigo-200 underline-offset-4">
+                        <IndianRupee className="w-3.5 h-3.5 text-slate-400" />
+                        {item.price.toLocaleString()}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-8 text-right">
+                      <div className="flex items-center justify-end gap-2 pr-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 border border-slate-200 hover:bg-slate-900 hover:text-white rounded-xl transition-all"
+                          onClick={() => {
+                            setSelectedItem(item);
+                            setNewStock(item.stock);
+                            setIsUpdateOpen(true);
+                          }}
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 border border-slate-200 hover:bg-rose-600 hover:text-white rounded-xl transition-all"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
       </div>
 
+      {/* Add Item Dialog */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="max-w-xl rounded-3xl p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95 duration-200">
+          <form onSubmit={handleAddItem}>
+            <div className="bg-slate-900 p-8 text-white flex items-center justify-between">
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2">Inventory Management</h4>
+                <h2 className="text-2xl font-black tracking-tight uppercase">Catalog Registration</h2>
+              </div>
+              <div className="p-4 bg-white/10 rounded-3xl">
+                <Plus className="w-6 h-6 text-indigo-400" />
+              </div>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Product Name</Label>
+                  <Input 
+                    required 
+                    value={newItem.name}
+                    onChange={e => setNewItem({...newItem, name: e.target.value})}
+                    placeholder="E.g. Booster 3X Pills" 
+                    className="h-12 bg-slate-50 border-slate-200 rounded-xl px-4 font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category Tag</Label>
+                  <Input 
+                    required 
+                    value={newItem.category}
+                    onChange={e => setNewItem({...newItem, category: e.target.value})}
+                    placeholder="Supplements" 
+                    className="h-12 bg-slate-50 border-slate-200 rounded-xl px-4 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU Code</Label>
+                  <Input 
+                    required 
+                    value={newItem.sku}
+                    onChange={e => setNewItem({...newItem, sku: e.target.value})}
+                    placeholder="NF-B3X-001" 
+                    className="h-12 bg-slate-50 border-slate-200 rounded-xl px-4 font-black text-indigo-600 font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Unit Price (₹)</Label>
+                  <Input 
+                    type="number" 
+                    required 
+                    value={newItem.price}
+                    onChange={e => setNewItem({...newItem, price: Number(e.target.value)})}
+                    className="h-12 bg-slate-50 border-slate-200 rounded-xl px-4 font-black"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 border-t border-slate-100 pt-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Initial Stock Units</Label>
+                  <Input 
+                    type="number" 
+                    required 
+                    value={newItem.stock}
+                    onChange={e => setNewItem({...newItem, stock: Number(e.target.value)})}
+                    className="h-12 bg-slate-50 border-slate-200 rounded-xl px-4 font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-rose-400">Threshold Alert Level</Label>
+                  <Input 
+                    type="number" 
+                    required 
+                    value={newItem.minStock}
+                    onChange={e => setNewItem({...newItem, minStock: Number(e.target.value)})}
+                    className="h-12 bg-rose-50 border-rose-100 rounded-xl px-4 font-bold text-rose-600"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={() => setIsAddOpen(false)}
+                  className="rounded-xl h-12 font-bold px-6 text-slate-400"
+                >
+                  Discard
+                </Button>
+                <Button 
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-black uppercase text-[10px] tracking-widest px-8 shadow-xl shadow-indigo-100"
+                >
+                  Publish Asset
+                </Button>
+              </DialogFooter>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Update Stock Dialog */}
       <Dialog open={isUpdateOpen} onOpenChange={setIsUpdateOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-emerald-600" />
-              Update Stock Level
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-8">
-            <p className="text-center text-slate-500 text-sm font-medium mb-6">
-              Adjusting inventory for <span className="text-slate-900 font-bold">{selectedItem?.name}</span>
-            </p>
+        <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-slate-900 p-8 text-white">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-2">Stock Ledger</h4>
+            <h2 className="text-2xl font-black uppercase">{selectedItem?.name}</h2>
+            <p className="mt-2 text-xs font-bold text-white/40">Manual stock adjustment and procurement log.</p>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Inventory</span>
+                <span className="text-2xl font-black text-slate-900">{selectedItem?.stock} Units</span>
+              </div>
+              <ArrowUpDown className="w-6 h-6 text-slate-300" />
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Adjustment To</span>
+                <span className="text-2xl font-black text-indigo-600">{newStock} Units</span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-center gap-6">
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-12 w-12 rounded-full border-slate-200 hover:bg-slate-50 transition-colors"
-                onClick={() => setNewStock(Math.max(0, newStock - 1))}
+                className="w-14 h-14 rounded-2xl border-2 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100 transition-all"
+                onClick={() => setNewStock(Math.max(0, newStock - 10))}
               >
-                <Minus className="w-5 h-5 text-slate-600" />
+                <Minus className="w-6 h-6" />
               </Button>
-              <div className="text-center">
+              <div className="flex flex-col items-center gap-1 flex-1">
                 <Input 
-                  type="number" 
-                  className="w-28 h-12 text-center text-2xl font-black border-slate-200 focus:ring-emerald-500" 
-                  value={newStock} 
-                  onChange={e => setNewStock(parseInt(e.target.value) || 0)}
+                  type="number"
+                  value={newStock}
+                  onChange={e => setNewStock(Number(e.target.value))}
+                  className="h-16 text-center text-2xl font-black text-slate-900 border-none bg-slate-50 rounded-2xl ring-2 ring-slate-100 focus-visible:ring-indigo-200"
                 />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Precise Entry</span>
               </div>
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-12 w-12 rounded-full border-slate-200 hover:bg-slate-50 transition-colors"
-                onClick={() => setNewStock(newStock + 1)}
+                className="w-14 h-14 rounded-2xl border-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100 transition-all"
+                onClick={() => setNewStock(newStock + 10)}
               >
-                <Plus className="w-5 h-5 text-slate-600" />
+                <Plus className="w-6 h-6" />
+              </Button>
+            </div>
+
+            <div className="flex gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsUpdateOpen(false)}
+                className="flex-1 h-14 rounded-2xl font-bold text-slate-400"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateStock}
+                className="flex-1 h-14 bg-slate-900 hover:bg-black text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-slate-200"
+              >
+                Update Ledger
               </Button>
             </div>
           </div>
-          <DialogFooter className="sm:justify-center gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => setIsUpdateOpen(false)}>Cancel</Button>
-            <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 shadow-sm" onClick={handleUpdateStock}>Update Stock</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+

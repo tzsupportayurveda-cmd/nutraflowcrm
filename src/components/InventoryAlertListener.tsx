@@ -1,28 +1,27 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { toast } from 'sonner';
 import { AlertTriangle, Box, ArrowRight } from 'lucide-react';
-import { InventoryItem } from '@/src/types';
 
 export function InventoryAlertListener() {
   const { user } = useAuth();
   // Map of itemId -> last seen stock level that we alerted for
-  const [lastAlertedStock, setLastAlertedStock] = useState<Record<string, number>>({});
+  const lastAlertedStockRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !user?.orgId) return;
     
     // Only Admin, Manager, and Inventory roles should see these alerts
     if (!['Admin', 'Manager', 'Inventory'].includes(user.role)) return;
 
-    const unsub = dataService.subscribeInventory((items) => {
+    const unsub = dataService.subscribeInventory(user.orgId, (items) => {
       items.forEach(item => {
         // If stock is below or at minStock
         if (item.stock <= item.minStock) {
           // Only alert if we haven't alerted for this specific stock level yet
-          if (lastAlertedStock[item.id] !== item.stock) {
+          if (lastAlertedStockRef.current[item.id] !== item.stock) {
             toast(
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-amber-600">
@@ -46,28 +45,20 @@ export function InventoryAlertListener() {
               }
             );
 
-            // Update local state to avoid repeat toasts for the SAME stock level
-            setLastAlertedStock(prev => ({
-              ...prev,
-              [item.id]: item.stock
-            }));
+            // Update ref
+            lastAlertedStockRef.current[item.id] = item.stock;
           }
         } else {
           // If stock is now above threshold, clear the last alerted stock level
-          // so if it falls again, we can alert again.
-          if (lastAlertedStock[item.id] !== undefined) {
-            setLastAlertedStock(prev => {
-              const next = { ...prev };
-              delete next[item.id];
-              return next;
-            });
+          if (lastAlertedStockRef.current[item.id] !== undefined) {
+            delete lastAlertedStockRef.current[item.id];
           }
         }
       });
     });
 
     return () => unsub();
-  }, [user?.id, user?.role, lastAlertedStock]);
+  }, [user?.id, user?.orgId, user?.role]);
 
   return null;
 }

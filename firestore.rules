@@ -7,143 +7,177 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // common helpers
-    function isSignedIn() {
-      return request.auth != null;
+    // --- GLOBAL HELPERS ---
+    function isSignedIn() { 
+      return request.auth != null; 
     }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
+    
+    function isSuperAdmin() { 
       return isSignedIn() && (
-        request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
-      );
+        request.auth.token.email.lower() == 'tzsupportayurveda@gmail.com' ||
+        getUserField('role', 'none') == 'SuperAdmin'
+      ); 
+    }
+    
+    // Safer user data lookup
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isSales() {
-      return isSignedIn() && (
-        request.auth.token.email == 'tzsupportayurveda@gmail.com' || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Sales', 'Marketer', 'Manager', 'Admin'])
-      );
+    function getUserField(field, defaultValue) {
+      return userExists() ? getUserDoc().get(field, defaultValue) : defaultValue;
     }
 
-    function isStaff() {
-      return isSignedIn() && (
-        request.auth.token.email == 'tzsupportayurveda@gmail.com' ||
-        exists(/databases/$(database)/documents/users/$(request.auth.uid))
-      );
+    function isOwner(userId) { 
+      return isSignedIn() && request.auth.uid == userId; 
+    }
+    
+    function getUserOrgId() {
+      return getUserField('orgId', 'none');
     }
 
-    function hasRole(role) {
-      return isSignedIn() && (
-        (request.auth.token.email == 'tzsupportayurveda@gmail.com' && role == 'Admin') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role)
-      );
+    function getUserRole() {
+      return getUserField('role', 'none');
+    }
+
+    function isSameOrg(orgId) {
+      return isSignedIn() && (getUserOrgId() == orgId || isSuperAdmin());
+    }
+
+    function belongsToUserOrg() {
+      return isSignedIn() && (isSuperAdmin() || resource.data.get('orgId', null) == getUserOrgId());
+    }
+
+    // Role helpers
+    function isAdmin() { return isSignedIn() && (getUserRole() == 'Admin' || isSuperAdmin()); }
+    function isSuperAdminUser() { return isSuperAdmin(); }
+    function hasRole(role) { return isSignedIn() && getUserRole() == role; }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- ENTITY VALIDATIONS ---
+    function isValidLead(data) {
+      return (isSuperAdmin() || (
+        data.keys().hasAll(['orgId', 'name', 'status', 'phone']) && 
+        data.orgId == getUserOrgId() &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+        data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50 &&
+        (data.get('email', '') is string && data.email.size() <= 200) &&
+        (data.get('address', '') is string && data.address.size() <= 1000)
+      ));
+    }
+
+    function isValidOrder(data) {
+      return (isSuperAdmin() || (
+        data.keys().hasAll(['orgId', 'customerId', 'product', 'status', 'total']) && 
+        data.orgId == getUserOrgId() &&
+        data.product is string && data.product.size() <= 200 &&
+        data.total is number && data.total >= 0
+      ));
+    }
+
+    function isValidTask(data) {
+       return (isSuperAdmin() || (
+        data.keys().hasAll(['orgId', 'title', 'userId', 'dueDate', 'status']) && 
+        data.orgId == getUserOrgId() &&
+        data.title is string && data.title.size() <= 500
+      ));
+    }
+
+    // --- COLLECTIONS ---
+
+    // 0. Organizations (SaaS tenants)
+    match /organizations/{orgId} {
+      allow read: if isSameOrg(orgId) || isSuperAdmin();
+      allow create: if isSignedIn(); // Allow anyone to register an org
+      allow update: if (isSameOrg(orgId) && isAdmin()) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
     }
 
     // 1. User Profiles
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin() || hasRole('Manager');
+      allow read: if isSignedIn() && (isOwner(userId) || (isSameOrg(resource.data.get('orgId', null)) && (isAdmin() || hasRole('Manager'))) || isSuperAdmin());
+      allow create: if isSignedIn(); 
+      allow update: if isOwner(userId) || (isSameOrg(existing().get('orgId', null)) && isAdmin()) || isSuperAdmin();
     }
 
     // 2. Leads
     match /leads/{leadId} {
       function canReadLead() {
-        return request.auth.token.email == 'tzsupportayurveda@gmail.com' || 
-               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'Marketer', 'Manager', 'Inventory', 'Delivery'] ||
-                 (resource != null && (
-                   resource.data.get('assignedToId', '') == request.auth.uid ||
-                   resource.data.get('status', '') == 'New Lead' ||
-                   resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
-                 ))
+        return isSuperAdmin() || 
+               (isSameOrg(resource.data.orgId) && (
+                 getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery'] ||
+                 resource.data.assignedToId == request.auth.uid ||
+                 resource.data.status == 'New Lead' ||
+                 resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
                ));
       }
 
-      allow read: if canReadLead();
-      
-      allow create: if isStaff() && 
-        request.resource.data.keys().hasAll(['name', 'status', 'assignedToId', 'phone', 'createdAt']) &&
-        request.resource.data.name is string && request.resource.data.name.size() <= 200 &&
-        request.resource.data.phone is string && request.resource.data.phone.size() <= 20;
-
-      allow update: if isSignedIn() && (
-        isAdmin() || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Manager', 'Admin']) ||
-        (resource != null && 
-         (
-           resource.data.get('assignedToId', '') == request.auth.uid || 
-           resource.data.get('status', '') == 'New Lead' ||
-           resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
-         ) && 
-         incoming().diff(existing()).affectedKeys().hasOnly([
-           'status', 'notes', 'updatedAt', 'ltv', 'history', 'product', 
-           'quantity', 'address', 'city', 'pincode', 'name', 'phone', 
-           'email', 'callbackTime', 'isArchived', 'assignedToId', 'assignedTo', 
-           'paymentMode', 'source', 'serialId', 'affiliateId', 'state',
-           'createdAt', 'lastCallDate'
-         ]))
+      allow list: if isSignedIn() && (
+        isSuperAdmin() || 
+        resource.data.get('orgId', null) == getUserOrgId()
       );
-      allow delete: if isAdmin();
-    }
+      allow get: if canReadLead();
+      
+      allow create: if isSignedIn() && isValidLead(incoming()) && isValidId(leadId);
 
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
+      allow update: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().orgId) && (
+        isAdmin() || 
+        hasRole('Manager') ||
+        (existing().assignedToId == request.auth.uid || 
+         existing().status == 'New Lead' ||
+         existing().get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
+        )
+      ) && incoming().orgId == existing().orgId && isValidLead(incoming()))); 
+      
+      allow delete: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().orgId) && isAdmin()));
+    }
 
     // 3. Inventory
     match /inventory/{itemId} {
-      allow read: if isSignedIn();
-      allow write: if hasRole('Inventory') || isAdmin();
+      allow list: if isSignedIn() && (resource.data.get('orgId', null) == getUserOrgId() || isSuperAdmin());
+      allow get: if belongsToUserOrg();
+      allow write: if (belongsToUserOrg() && (hasRole('Inventory') || isAdmin())) || isSuperAdmin();
     }
 
     // 4. Orders
     match /orders/{orderId} {
-      function canReadOrder() {
-        return isAdmin() || 
-               hasRole('Manager') || 
-               hasRole('Inventory') || 
-               hasRole('Delivery') || 
-               hasRole('Marketer') ||
-               resource.data.assignedToId == request.auth.uid;
-      }
-      allow read: if isStaff() && canReadOrder();
-      allow create: if isStaff();
-      allow update: if isStaff();
-      allow delete: if isAdmin();
+      allow list: if isSignedIn() && (resource.data.get('orgId', null) == getUserOrgId() || isSuperAdmin());
+      allow get: if belongsToUserOrg();
+      allow create: if isSuperAdmin() || (isSignedIn() && incoming().orgId == getUserOrgId());
+      allow update: if isSuperAdmin() || (belongsToUserOrg() && incoming().orgId == existing().orgId);
+      allow delete: if (belongsToUserOrg() && isAdmin()) || isSuperAdmin();
     }
 
     // 5. Tasks
     match /tasks/{taskId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSales();
-      allow update: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow delete: if isAdmin();
+      allow list: if isSignedIn() && (resource.data.get('orgId', null) == getUserOrgId() || isSuperAdmin());
+      allow get: if isSuperAdmin() || (belongsToUserOrg() && (existing().userId == request.auth.uid || isAdmin()));
+      allow create: if isSuperAdmin() || (isSignedIn() && incoming().orgId == getUserOrgId());
+      allow update: if isSuperAdmin() || (belongsToUserOrg() && (existing().userId == request.auth.uid || isAdmin()));
+      allow delete: if (belongsToUserOrg() && isAdmin()) || isSuperAdmin();
     }
 
-    // 6. Logs
+    // 6. Logs & Notifications
     match /logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn();
+      allow read: if (belongsToUserOrg() && isAdmin()) || isSuperAdmin();
+      allow create: if isSignedIn(); // Allow logging security events even during onboarding
     }
 
-    // 7. Notifications
     match /notifications/{notificationId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow write: if isSignedIn(); // System or agent can create/update
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if isSignedIn(); 
     }
 
-    // 8. Metadata (Counters)
     match /metadata/{id} {
-      allow read, write: if isStaff();
+      allow read: if isSignedIn() && (resource.data.orgId == getUserOrgId() || isSuperAdmin());
+      allow write: if isSignedIn() && (incoming().orgId == getUserOrgId() || isSuperAdmin());
     }
   }
 }

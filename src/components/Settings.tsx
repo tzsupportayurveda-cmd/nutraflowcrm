@@ -55,7 +55,7 @@ export function Settings() {
     }, 1000);
   };
 
-  const isAdmin = user?.role === 'Admin';
+  const isAdmin = user?.role === 'Admin' || user?.role === 'SuperAdmin';
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl">

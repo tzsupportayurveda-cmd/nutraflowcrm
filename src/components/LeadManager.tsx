@@ -111,6 +111,8 @@ export function LeadManager() {
   });
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const unsub = dataService.subscribeLeads(currentUser, (data) => {
       // Sort manually since we removed it from some queries to avoid index issues
       const sorted = [...data].sort((a, b) => {
@@ -125,35 +127,34 @@ export function LeadManager() {
       setLoading(false);
     });
 
-    dataService.getInventoryList().then(setInventory);
+    dataService.getInventoryList(currentUser.orgId || '').then(setInventory);
 
     // Also fetch team for assignment
     let teamUnsub = () => {};
-    const q = collection(db, 'users');
-    teamUnsub = onSnapshot(q, (snapshot) => {
-      setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    teamUnsub = dataService.subscribeUsersPresence(currentUser, (data) => {
+      setTeam(data);
     });
 
     return () => {
       unsub();
       teamUnsub();
     };
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   useEffect(() => {
-    if (selectedLead && isDetailOpen) {
+    if (selectedLead && isDetailOpen && currentUser?.orgId) {
       setEditableLead({ ...selectedLead });
       setHasChanges(false);
       
       // Fetch customer history
-      dataService.getCustomerHistory(selectedLead.phone, selectedLead.email)
+      dataService.getCustomerHistory(currentUser.orgId, selectedLead.phone, selectedLead.email)
         .then(setCustomerHistory);
     } else {
       setEditableLead(null);
       setHasChanges(false);
       setCustomerHistory({ leads: [], orders: [] });
     }
-  }, [selectedLead, isDetailOpen]);
+  }, [selectedLead, isDetailOpen, currentUser?.orgId]);
 
   const handleUpdateStatus = async (leadId: string, status: LeadStatus, extras: Partial<Lead> = {}) => {
     if (status === 'Call Back' && !extras.callbackTime) {
@@ -165,9 +166,9 @@ export function LeadManager() {
 
     try {
       const currentLead = leads.find(l => l.id === leadId);
-      if (!currentLead) return;
+      if (!currentLead || !currentUser?.orgId) return;
 
-      await dataService.updateLead(leadId, { status, ...extras });
+      await dataService.updateLead(currentUser.orgId, leadId, { status, ...extras });
       
       toast.success(`Status updated to ${status}`);
       
@@ -191,14 +192,16 @@ export function LeadManager() {
   const handleAssign = async (leadId: string, agent: User) => {
     try {
       const currentLead = leads.find(l => l.id === leadId);
-      await dataService.updateLead(leadId, { 
+      if (!currentUser?.orgId) return;
+
+      await dataService.updateLead(currentUser.orgId, leadId, { 
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
 
       // Log history
       if (currentUser && currentLead) {
-        await dataService.addLeadHistory(leadId, {
+        await dataService.addLeadHistory(currentUser.orgId, leadId, {
           type: 'assignment',
           from: currentLead.assignedTo || 'Unassigned',
           to: agent.name,
@@ -211,9 +214,10 @@ export function LeadManager() {
       
       // Send notification to the assigned agent
       await dataService.addNotification(
+        currentUser.orgId,
         agent.id,
         'New Lead Assigned',
-        `Lead ${currentLead.name} (#${currentLead.serialId}) has been assigned to you.`,
+        `Lead ${currentLead?.name} (#${currentLead?.serialId}) has been assigned to you.`,
         'info'
       );
 
@@ -227,16 +231,16 @@ export function LeadManager() {
   };
 
   const handleSaveChanges = async () => {
-    if (!editableLead || !selectedLead) return;
+    if (!editableLead || !selectedLead || !currentUser?.orgId) return;
     
     try {
       setLoading(true);
       const { id, history, ...updates } = editableLead;
-      await dataService.updateLead(id, updates);
+      await dataService.updateLead(currentUser.orgId, id, updates);
       
       // Log some major changes in history if needed
       if (currentUser) {
-        await dataService.addLeadHistory(id, {
+        await dataService.addLeadHistory(currentUser.orgId, id, {
           type: 'other',
           updatedBy: currentUser.name,
           updatedById: currentUser.id,
@@ -254,10 +258,10 @@ export function LeadManager() {
   };
 
   const handleAddLead = async (formData: any) => {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.orgId) return;
     
     try {
-      await dataService.addLead({
+      await dataService.addLead(currentUser.orgId, {
         ...formData,
         status: formData.paymentMode === 'Prepaid' ? 'Order Confirmed' : formData.status,
         assignedTo: formData.assignedTo || currentUser.name,
@@ -271,10 +275,10 @@ export function LeadManager() {
 
   const handleCreateOrder = async (lead: Lead) => {
     try {
-      if (!currentUser) return;
+      if (!currentUser || !currentUser.orgId) return;
       setLoading(true);
       
-      await dataService.handleOrderConfirmation(lead);
+      await dataService.handleOrderConfirmation(currentUser.orgId, lead);
       
       toast.success(`Order created and stock adjusted successfully!`);
       setIsDetailOpen(false);
@@ -288,7 +292,8 @@ export function LeadManager() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this lead?')) {
       try {
-        await dataService.deleteLead(id);
+        if (!currentUser?.orgId) return;
+        await dataService.deleteLead(currentUser.orgId, id);
         toast.success('Lead deleted');
       } catch (e) {
         toast.error('Delete failed');
@@ -297,7 +302,7 @@ export function LeadManager() {
   };
   
   const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string, isArchived?: boolean) => {
-    if (selectedLeads.length === 0) {
+    if (selectedLeads.length === 0 || !currentUser?.orgId) {
       toast.error('Pehle leads select karein');
       return;
     }
@@ -319,7 +324,7 @@ export function LeadManager() {
         }
       }
       
-      await dataService.bulkUpdateLeads(selectedLeads, updates);
+      await dataService.bulkUpdateLeads(currentUser.orgId, selectedLeads, updates);
       
       toast.success(`${selectedLeads.length} leads successfully ${isArchived ? 'bin mein move' : 'update'} ho gayi hain`);
       setSelectedLeads([]);
@@ -332,11 +337,11 @@ export function LeadManager() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedLeads.length === 0) return;
+    if (selectedLeads.length === 0 || !currentUser?.orgId) return;
     if (confirm(`Are you sure you want to delete ${selectedLeads.length} leads? This cannot be undone.`)) {
       try {
         setLoading(true);
-        await dataService.bulkDeleteLeads(selectedLeads);
+        await dataService.bulkDeleteLeads(currentUser.orgId, selectedLeads);
         toast.success(`Bulk deleted ${selectedLeads.length} leads`);
         setSelectedLeads([]);
       } catch (e) {
@@ -356,13 +361,16 @@ export function LeadManager() {
     }
 
     // 1. Role & Access Filter
-    const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales'].includes(currentUser?.role || '');
     const isOwner = lead.assignedToId === currentUser?.id;
+    const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned';
     
     // If it's archived, only Admin/Manager should see it in the bin
-    if (showArchived && !isAdmin) return false;
+    if (showArchived && !isSpecialist) return false;
     
-    if (!isAdmin && !isOwner) return false;
+    // Specialist sees everything in the org (already filtered by dataService),
+    // others only see their own assigned leads.
+    if (!isSpecialist && !isOwner) return false;
 
     // 2. Search Filter
     const matchesSearch = 
@@ -443,7 +451,7 @@ export function LeadManager() {
         </div>
         
         <div className="flex gap-2">
-          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+          {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
             <Button 
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)} 
@@ -455,7 +463,7 @@ export function LeadManager() {
           <Button onClick={() => setIsDialogOpen(true)} className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
             <Plus className="w-4 h-4" /> Register New
           </Button>
-          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+          {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
             <Button 
               variant="ghost"
               onClick={() => setShowArchived(!showArchived)} 
@@ -533,6 +541,17 @@ export function LeadManager() {
             <option value="All">INV: ALL ITEMS</option>
             {inventory.map(item => (
               <option key={item.id} value={item.name}>{item.name.toUpperCase()}</option>
+            ))}
+          </select>
+
+          <select 
+            value={filters.salesRep}
+            onChange={e => setFilters({...filters, salesRep: e.target.value})}
+            className="h-11 rounded-xl border border-slate-200 bg-white px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/10 neo-shadow"
+          >
+            <option value="All">REP: ALL AGENTS</option>
+            {team.map(member => (
+              <option key={member.id} value={member.id}>{member.name.toUpperCase()}</option>
             ))}
           </select>
 
@@ -713,7 +732,7 @@ export function LeadManager() {
                              </DropdownMenuItem>
                            ))}
                         </div>
-                        {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                        {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
                           <>
                             <DropdownMenuSeparator className="bg-slate-50" />
                             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-2">Transfer Ownership</DropdownMenuLabel>
@@ -812,7 +831,7 @@ export function LeadManager() {
             </div>
 
             <div className="flex items-center gap-3">
-              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+              {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -823,7 +842,7 @@ export function LeadManager() {
                 </Button>
               )}
 
-              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+              {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -856,7 +875,7 @@ export function LeadManager() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -962,7 +981,7 @@ export function LeadManager() {
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm ring-2 ring-white",
-                    member.role === 'Admin' ? 'bg-purple-500' : member.role === 'Manager' ? 'bg-blue-500' : 'bg-emerald-500'
+                    member.role === 'SuperAdmin' ? 'bg-amber-500' : member.role === 'Admin' ? 'bg-purple-500' : member.role === 'Manager' ? 'bg-blue-500' : 'bg-emerald-500'
                   )}>
                     {member.name[0]}
                   </div>

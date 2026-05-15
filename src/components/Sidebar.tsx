@@ -16,20 +16,20 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer'] },
-  { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales'] },
-  { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales'] },
-  { id: 'inventory', label: 'SKU REPOSITORY', icon: Package, roles: ['Admin', 'Manager', 'Inventory'] },
-  { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager'] },
-  { id: 'delivery', label: 'LOGISTICS CHAIN', icon: Truck, roles: ['Admin', 'Manager', 'Delivery'] },
-  { id: 'affiliate', label: 'MARKETING HUB', icon: TrendingUp, roles: ['Admin', 'Marketer'] },
-  { id: 'team', label: 'HUMAN RESOURCES', icon: ShieldCheck, roles: ['Admin'] },
-  { id: 'audit', label: 'AUDIT TRAIL', icon: History, roles: ['Admin', 'Manager'] },
-  { id: 'settings', label: 'SYSTEM CONFIG', icon: Settings, roles: ['Admin'] },
+  { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin'] },
+  { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin'] },
+  { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin'] },
+  { id: 'inventory', label: 'SKU REPOSITORY', icon: Package, roles: ['Admin', 'Manager', 'Inventory', 'SuperAdmin'] },
+  { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager', 'SuperAdmin'] },
+  { id: 'delivery', label: 'LOGISTICS CHAIN', icon: Truck, roles: ['Admin', 'Manager', 'Delivery', 'SuperAdmin'] },
+  { id: 'affiliate', label: 'MARKETING HUB', icon: TrendingUp, roles: ['Admin', 'Marketer', 'SuperAdmin'] },
+  { id: 'team', label: 'HUMAN RESOURCES', icon: ShieldCheck, roles: ['Admin', 'Manager', 'SuperAdmin'] },
+  { id: 'audit', label: 'AUDIT TRAIL', icon: History, roles: ['Admin', 'Manager', 'SuperAdmin'] },
+  { id: 'settings', label: 'SYSTEM CONFIG', icon: Settings, roles: ['Admin', 'SuperAdmin'] },
 ];
 
 export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: SidebarProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, organization } = useAuth();
   
   const filteredNavItems = navItems.filter(item => 
     !item.roles || (user && item.roles.includes(user.role))
@@ -45,13 +45,19 @@ export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: Si
         <div className="flex items-center gap-4 mb-6">
           <div className="relative group">
             <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity duration-300" />
-            <div className="relative p-2.5 bg-slate-900 border border-white/10 rounded-2xl shadow-xl">
-              <BrandLogo className="w-6 h-6 text-indigo-400 group-hover:text-white transition-colors" />
+            <div className="relative p-2.5 bg-slate-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden h-11 w-11 flex items-center justify-center">
+              {organization?.logo ? (
+                <img src={organization.logo} alt="" className="w-full h-full object-contain" />
+              ) : (
+                <BrandLogo className="w-6 h-6 text-indigo-400 group-hover:text-white transition-colors" />
+              )}
             </div>
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-none animate-in fade-in slide-in-from-left-2 duration-700">
-              <span className="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">TOZ FLOW</span>
+              <span className="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 uppercase truncate max-w-[150px]">
+                {organization?.name || 'TOZ FLOW'}
+              </span>
               <span className="text-[9px] font-black tracking-widest text-indigo-500/80 uppercase mt-1">Enterprise Command</span>
             </div>
           )}

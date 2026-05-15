@@ -40,17 +40,20 @@ export function ConfirmedLeads() {
 
   useEffect(() => {
     const unsub = dataService.subscribeLeads(currentUser, (data) => {
-      // Only show confirmed leads
-      setLeads(data.filter(l => l.status === 'Order Confirmed'));
+      // Only show confirmed leads, sorted by date DESC
+      const filtered = data.filter(l => l.status === 'Order Confirmed')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setLeads(filtered);
       setLoading(false);
     });
     return () => unsub();
   }, [currentUser]);
 
   const handleDispatch = async (lead: Lead) => {
+    if (!currentUser?.orgId) return;
     try {
       // 1. Create a real Order from this confirmed lead
-      await dataService.addOrder({
+      await dataService.addOrder(currentUser.orgId, {
         leadId: lead.id,
         customerId: lead.id,
         customerName: lead.name,
@@ -60,16 +63,17 @@ export function ConfirmedLeads() {
         pincode: lead.pincode || '',
         product: lead.product || 'Advanced Gel Formula',
         quantity: lead.quantity || 1,
-        status: 'Processing',
+        status: 'Processing' as any,
         total: lead.value,
         paymentMode: lead.paymentMode || 'COD',
         assignedToId: lead.assignedToId || '',
         assignedTo: lead.assignedTo || 'System',
-        commission: (lead.value * 0.05)
+        commission: (lead.value * 0.05),
+        orgId: currentUser.orgId
       });
 
       // 2. Update lead status to indicate it has been converted/dispatched
-      await dataService.updateLead(lead.id, { 
+      await dataService.updateLead(currentUser.orgId, lead.id, { 
         status: 'Dispatched', 
         notes: (lead.notes || '') + '\n[Dispatched to Orders]' 
       });

@@ -70,7 +70,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    if (leadId && open) {
+    if (leadId && open && currentUser?.orgId) {
       setLoading(true);
       // Fetch lead data
       const unsub = dataService.subscribeLeads(currentUser, (leads) => {
@@ -83,19 +83,18 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
           }
           
           // Fetch associations
-          dataService.getCustomerHistory(found.phone, found.email).then(setCustomerHistory);
+          dataService.getCustomerHistory(currentUser.orgId, found.phone, found.email).then(setCustomerHistory);
         }
         setLoading(false);
       });
 
-      dataService.getInventoryList().then(setInventory);
+      dataService.getInventoryList(currentUser.orgId).then(setInventory);
 
       // Fetch team for assignment
       let teamUnsub = () => {};
-      if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
-        const q = collection(db, 'users');
-        teamUnsub = onSnapshot(q, (snapshot) => {
-          setTeam(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+      if (['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '')) {
+        teamUnsub = dataService.subscribeUsersPresence(currentUser, (data) => {
+          setTeam(data);
         });
       }
 
@@ -107,9 +106,9 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   }, [leadId, open, currentUser]);
 
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
-    if (!editableLead) return;
+    if (!editableLead || !currentUser?.orgId) return;
     try {
-      await dataService.updateLead(editableLead.id, { 
+      await dataService.updateLead(currentUser.orgId, editableLead.id, { 
         status, 
         notes: (extras.notes !== undefined ? extras.notes : (editableLead.notes || '')),
         ...extras 
@@ -130,9 +129,9 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   };
 
   const handleAssignLead = async (agent: User) => {
-    if (!editableLead) return;
+    if (!editableLead || !currentUser?.orgId) return;
     try {
-      await dataService.updateLead(editableLead.id, { 
+      await dataService.updateLead(currentUser.orgId, editableLead.id, { 
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
@@ -146,11 +145,11 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   };
 
   const handleSaveChanges = async () => {
-    if (!editableLead) return;
+    if (!editableLead || !currentUser?.orgId) return;
     try {
       setLoading(true);
       const { id, history, ...updates } = editableLead;
-      await dataService.updateLead(id, updates);
+      await dataService.updateLead(currentUser.orgId, id, updates);
       setHasChanges(false);
       toast.success('Details saved');
     } catch (e) {
@@ -180,8 +179,9 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
   const handleCreateOrder = async (l: Lead) => {
     try {
+      if (!currentUser?.orgId) return;
       setLoading(true);
-      await dataService.handleOrderConfirmation(l);
+      await dataService.handleOrderConfirmation(currentUser.orgId, l);
       toast.success("Order created successfully");
       onOpenChange(false);
     } catch (e) {
@@ -215,13 +215,14 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
+                        if (!currentUser?.orgId) return;
                         handleSaveChanges(); // Save changes first
-                        dataService.updateLead(editableLead.id, { 
+                        dataService.updateLead(currentUser.orgId, editableLead.id, { 
                           isArchived: !editableLead.isArchived,
                           assignedToId: !editableLead.isArchived ? 'unassigned' : editableLead.assignedToId,
                           assignedTo: !editableLead.isArchived ? 'Unassigned' : editableLead.assignedTo
@@ -236,7 +237,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                     </Button>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-xs font-bold text-slate-500">Close</Button>
-                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && onDelete && (
+                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && onDelete && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -438,7 +439,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   </div>
 
                   {/* Assignment Section */}
-                  {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                  {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
                     <div className="mt-4 pt-4 border-t border-slate-100">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Assign Agent</label>
                       <select 
@@ -450,7 +451,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                         className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/10"
                       >
                         <option value="">Select Agent</option>
-                        {team.filter(t => t.role === 'Sales' || t.role === 'Manager').map(agent => (
+                        {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin'].includes(t.role)).map(agent => (
                           <option key={agent.id} value={agent.id}>{agent.name} ({agent.role})</option>
                         ))}
                       </select>

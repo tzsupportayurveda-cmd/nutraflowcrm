@@ -10,6 +10,7 @@ import {
   query, 
   where, 
   or,
+  and,
   orderBy, 
   onSnapshot,
   Timestamp,
@@ -17,29 +18,45 @@ import {
   arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '@/src/lib/firebase';
-import { Lead, InventoryItem, Order, User, HistoryItem, Task, AuditLog } from '@/src/types';
+import { Lead, InventoryItem, Order, User, HistoryItem, Task, AuditLog, OrderStatus, LeadStatus, Organization } from '@/src/types';
 
-// Generic error handler
-const handleFirestoreError = (error: any, operation: string, path: string | null = null) => {
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+  EXTRACT = 'extract'
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+  }
+}
+
+const handleFirestoreError = (error: any, operationType: OperationType | string, path: string | null) => {
   const user = auth.currentUser;
-  const errorInfo = {
-    error: error.message || 'Unknown error',
-    operationType: operation,
-    path: path,
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    operationType: operationType as OperationType,
+    path,
     authInfo: {
-      userId: user?.uid || 'anonymous',
-      email: user?.email || '',
-      emailVerified: user?.emailVerified || false,
-      isAnonymous: user?.isAnonymous || true,
-      providerInfo: user?.providerData.map(p => ({
-        providerId: p.providerId,
-        displayName: p.displayName || '',
-        email: p.email || ''
-      })) || []
+      userId: user?.uid || null,
+      email: user?.email || null,
+      emailVerified: user?.emailVerified || null,
+      isAnonymous: user?.isAnonymous || null,
     }
   };
-  console.error("Firestore Error:", JSON.stringify(errorInfo));
-  throw new Error(JSON.stringify(errorInfo));
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 };
 
 // Helper to remove undefined values for Firestore
@@ -51,6 +68,23 @@ const sanitize = <T extends object>(obj: T): T => {
     }
   });
   return result;
+};
+
+// Helper to get multi-tenant constraints
+const getOrgConstraints = (user: User | null | { orgId?: string, role?: string, email?: string }) => {
+  if (!user) return [where('orgId', '==', 'unauthenticated')];
+  
+  // SuperAdmin sees all
+  const isSuperAdmin = user.role === 'SuperAdmin' || 
+                       user.email === 'tzsupportayurveda@gmail.com' ||
+                       (auth.currentUser?.email === 'tzsupportayurveda@gmail.com');
+                       
+  if (isSuperAdmin) return [];
+  
+  // If org exists, filter by it
+  if (user.orgId) return [where('orgId', '==', user.orgId)];
+  
+  return [where('orgId', '==', 'none')];
 };
 
 export const dataService = {
@@ -80,11 +114,45 @@ export const dataService = {
     }
   },
 
-  // --- Utility for Sequential IDs ---
-  async getNextId(counterPath: string, startFrom: number): Promise<string> {
+  // --- Organizations ---
+  async createOrganization(name: string, ownerId: string): Promise<string> {
+    try {
+      const orgRef = await addDoc(collection(db, 'organizations'), {
+        name,
+        ownerId,
+        createdAt: new Date().toISOString(),
+        subscription: 'Free',
+        status: 'Active',
+        pincodeLookupEnabled: true
+      });
+      
+      // Update the user with the new Org ID and set them as Admin
+      await updateDoc(doc(db, 'users', ownerId), { 
+        orgId: orgRef.id,
+        role: 'Admin' 
+      });
+      
+      return orgRef.id;
+    } catch (e) {
+      return handleFirestoreError(e, 'create', 'organizations');
+    }
+  },
+
+  async getOrganization(orgId: string): Promise<Organization | null> {
+    try {
+      const snap = await getDoc(doc(db, 'organizations', orgId));
+      return snap.exists() ? { id: snap.id, ...snap.data() } as Organization : null;
+    } catch (e) {
+      return handleFirestoreError(e, 'get', `organizations/${orgId}`);
+    }
+  },
+
+  // --- Utility for Sequential IDs (Org-Scoped) ---
+  async getNextId(orgId: string, counterPath: string, startFrom: number): Promise<string> {
     try {
       const { runTransaction } = await import('firebase/firestore');
-      const counterRef = doc(db, 'metadata', 'counters');
+      // Org-specific counter path
+      const counterRef = doc(db, 'organizations', orgId, 'metadata', 'counters');
       const nextId = await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
         let count = startFrom;
@@ -110,9 +178,10 @@ export const dataService = {
   },
 
   // --- Notifications ---
-  async addNotification(userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
+  async addNotification(orgId: string, userId: string, title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
     try {
       await addDoc(collection(db, 'notifications'), {
+        orgId,
         userId,
         title,
         message,
@@ -125,9 +194,14 @@ export const dataService = {
     }
   },
 
-  async notifyStaff(roles: string[], title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
+  async notifyStaff(orgId: string, roles: string[], title: string, message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') {
     try {
-      const q = query(collection(db, 'users'), where('role', 'in', roles), where('status', '==', 'active'));
+      const q = query(
+        collection(db, 'users'), 
+        where('orgId', '==', orgId),
+        where('role', 'in', roles), 
+        where('status', '==', 'active')
+      );
       const snapshot = await getDocs(q);
       const { writeBatch } = await import('firebase/firestore');
       const batch = writeBatch(db);
@@ -136,6 +210,7 @@ export const dataService = {
       snapshot.docs.forEach(userDoc => {
         const notifRef = doc(collection(db, 'notifications'));
         batch.set(notifRef, {
+          orgId,
           userId: userDoc.id,
           title,
           message,
@@ -192,48 +267,65 @@ export const dataService = {
 
   // --- Leads ---
   subscribeLeads(user: User | null, callback: (leads: Lead[]) => void) {
-    if (!user) return () => {};
-    
-    let q;
-    if (['Admin', 'Manager', 'Marketer'].includes(user.role)) {
-      q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
-    } else {
-      // Sales reps see their leads + unassigned leads + new leads
-      q = query(
-        collection(db, 'leads'), 
-        or(
-          where('assignedToId', '==', user.id),
-          where('status', '==', 'New Lead'),
-          where('assignedToId', '==', ''),
-          where('assignedToId', '==', 'unassigned'),
-          where('assignedToId', '==', 'system'),
-          where('assignedToId', '==', 'CRM User'),
-          where('assignedToId', '==', null)
-        )
-      );
+    if (!user || !user.id) {
+      callback([]);
+      return () => {};
     }
     
-    return onSnapshot(q, 
-      (snapshot) => {
-        const leads = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Lead));
-        callback(leads);
-      },
-      (error) => {
-        console.error("Leads subscription error:", error);
-        callback([]);
+    let q;
+    const orgConstraints = getOrgConstraints(user);
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales', 'Inventory', 'Delivery'].includes(user.role) || user.email === 'tzsupportayurveda@gmail.com';
+
+    try {
+      if (isSpecialist) {
+        q = query(
+          collection(db, 'leads'), 
+          ...orgConstraints
+        );
+      } else {
+        q = query(
+          collection(db, 'leads'), 
+          ...orgConstraints,
+          where('assignedToId', '==', user.id)
+        );
       }
-    );
+      
+      const unsub = onSnapshot(q, 
+        (snapshot) => {
+          const leads = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Lead));
+          callback(leads);
+        },
+        (error) => {
+          console.error("Leads subscription error:", error);
+          if (error.message.includes('permission')) {
+            console.error("DEBUG: Leads query rejection. User:", JSON.stringify({
+              id: user.id,
+              role: user.role,
+              orgId: user.orgId,
+              email: user.email,
+              hasTokenEmail: !!(auth.currentUser?.email)
+            }));
+          }
+          callback([]);
+        }
+      );
+      return unsub;
+    } catch (e: any) {
+      console.error("Leads query/snapshot creation error:", e);
+      callback([]);
+      return () => {};
+    }
   },
 
-  async addLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>): Promise<string> {
+  async addLead(orgId: string, lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>): Promise<string> {
     try {
-      const serialId = await this.getNextId('leads', 1);
+      const serialId = await this.getNextId(orgId, 'leads', 1);
       let finalAffiliateId = lead.affiliateId;
       if (!finalAffiliateId) {
-        finalAffiliateId = await this.getNextId('affiliates', 101);
+        finalAffiliateId = await this.getNextId(orgId, 'affiliates', 101);
       }
 
       // Automatically assign if no assignment provided
@@ -241,7 +333,7 @@ export const dataService = {
       let finalAssignedToId = lead.assignedToId;
 
       if (!finalAssignedToId) {
-        const assignment = await this.assignLeadRoundRobin();
+        const assignment = await this.assignLeadRoundRobin(orgId);
         if (assignment) {
           finalAssignedTo = assignment.name;
           finalAssignedToId = assignment.id;
@@ -250,6 +342,7 @@ export const dataService = {
 
       const docRef = await addDoc(collection(db, 'leads'), {
         ...lead,
+        orgId,
         assignedTo: finalAssignedTo || 'Unassigned',
         assignedToId: finalAssignedToId || '',
         serialId,
@@ -264,10 +357,10 @@ export const dataService = {
     }
   },
 
-  async bulkAddLeads(leads: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history'>[]): Promise<void> {
+  async bulkAddLeads(orgId: string, leads: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'history' | 'orgId'>[]): Promise<void> {
     try {
       const { writeBatch, runTransaction } = await import('firebase/firestore');
-      const counterRef = doc(db, 'metadata', 'counters');
+      const counterRef = doc(db, 'organizations', orgId, 'metadata', 'counters');
       
       // Check if we need affiliate IDs
       const needsAffiliateCount = leads.filter(l => !l.affiliateId).length;
@@ -311,6 +404,7 @@ export const dataService = {
           
           batch.set(leadRef, {
             ...lead,
+            orgId,
             serialId,
             affiliateId: finalAffiliateId,
             createdAt: timestamp,
@@ -326,15 +420,20 @@ export const dataService = {
     }
   },
 
-  async assignLeadRoundRobin(): Promise<{ id: string; name: string } | null> {
+  async assignLeadRoundRobin(orgId: string): Promise<{ id: string; name: string } | null> {
     try {
-      const salesQuery = query(collection(db, 'users'), where('role', '==', 'Sales'), where('status', '==', 'active'));
+      const salesQuery = query(
+        collection(db, 'users'), 
+        where('orgId', '==', orgId),
+        where('role', '==', 'Sales'), 
+        where('status', '==', 'active')
+      );
       const snapshot = await getDocs(salesQuery);
       const salesMembers = snapshot.docs.map(d => ({ id: d.id, name: (d.data() as User).name }));
       
       if (salesMembers.length === 0) return null;
 
-      const counterRef = doc(db, 'metadata', 'round_robin');
+      const counterRef = doc(db, 'organizations', orgId, 'metadata', 'round_robin');
       const { runTransaction } = await import('firebase/firestore');
       
       const assignedMember = await runTransaction(db, async (transaction) => {
@@ -359,7 +458,7 @@ export const dataService = {
     }
   },
 
-  async bulkUpdateLeads(leadIds: string[], updates: Partial<Lead>): Promise<void> {
+  async bulkUpdateLeads(orgId: string, leadIds: string[], updates: Partial<Lead>): Promise<void> {
     try {
       const { writeBatch } = await import('firebase/firestore');
       const batch = writeBatch(db);
@@ -393,6 +492,7 @@ export const dataService = {
           
           const taskRef = doc(collection(db, 'tasks'));
           batch.set(taskRef, {
+            orgId,
             title: `Bulk Callback Task`,
             description: `Scheduled callback for lead.`,
             dueDate: callbackDate.toISOString(),
@@ -410,6 +510,7 @@ export const dataService = {
 
       if (updates.assignedToId) {
         await this.addNotification(
+          orgId,
           updates.assignedToId,
           'Bulk leads assigned',
           `${leadIds.length} leads have been assigned to you via bulk action.`,
@@ -421,20 +522,21 @@ export const dataService = {
     }
   },
 
-  async getCustomerHistory(phone?: string, email?: string): Promise<{ leads: Lead[], orders: Order[] }> {
+  async getCustomerHistory(orgId: string, phone?: string, email?: string): Promise<{ leads: Lead[], orders: Order[] }> {
     try {
       let leads: Lead[] = [];
       let orders: Order[] = [];
+      const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
 
       if (phone) {
-        const leadQ = query(collection(db, 'leads'), where('phone', '==', phone));
-        const orderQ = query(collection(db, 'orders'), where('phone', '==', phone));
+        const leadQ = query(collection(db, 'leads'), ...orgConstraints, where('phone', '==', phone));
+        const orderQ = query(collection(db, 'orders'), ...orgConstraints, where('phone', '==', phone));
         const [leadSnap, orderSnap] = await Promise.all([getDocs(leadQ), getDocs(orderQ)]);
         leads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() } as Lead));
         orders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       } else if (email) {
-        const leadQ = query(collection(db, 'leads'), where('email', '==', email));
-        const orderQ = query(collection(db, 'orders'), where('customerId', '==', email)); // Assuming customerId might be email
+        const leadQ = query(collection(db, 'leads'), ...orgConstraints, where('email', '==', email));
+        const orderQ = query(collection(db, 'orders'), ...orgConstraints, where('customerId', '==', email)); 
         const [leadSnap, orderSnap] = await Promise.all([getDocs(leadQ), getDocs(orderQ)]);
         leads = leadSnap.docs.map(d => ({ id: d.id, ...d.data() } as Lead));
         orders = orderSnap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
@@ -447,9 +549,11 @@ export const dataService = {
     }
   },
 
-  async getInventoryList(): Promise<InventoryItem[]> {
+  async getInventoryList(orgId: string): Promise<InventoryItem[]> {
     try {
-      const snapshot = await getDocs(collection(db, 'inventory'));
+      const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
+      const q = query(collection(db, 'inventory'), ...orgConstraints);
+      const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
     } catch (e) {
       return handleFirestoreError(e, 'list', 'inventory');
@@ -457,12 +561,13 @@ export const dataService = {
   },
 
   // --- Audit Logs ---
-  async addAuditLog(action: string, entityId: string, entityType: string, details: string) {
+  async addAuditLog(orgId: string, action: string, entityId: string, entityType: string, details: string) {
     try {
       const user = auth.currentUser;
       const userData = user ? await this.getUserProfile(user.uid) : null;
       
       await addDoc(collection(db, 'logs'), {
+        orgId,
         userId: user?.uid || 'system',
         userName: userData?.name || user?.email || 'System',
         userEmail: user?.email || '',
@@ -477,9 +582,11 @@ export const dataService = {
     }
   },
 
-  subscribeAuditLogs(callback: (logs: AuditLog[]) => void) {
+  subscribeAuditLogs(orgId: string, callback: (logs: AuditLog[]) => void) {
+    const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
     const q = query(
       collection(db, 'logs'),
+      ...orgConstraints,
       orderBy('timestamp', 'desc')
     );
     return onSnapshot(q, (snapshot) => {
@@ -497,9 +604,11 @@ export const dataService = {
     }
   },
 
-  subscribeTasks(userId: string, callback: (tasks: Task[]) => void) {
+  subscribeTasks(orgId: string, userId: string, callback: (tasks: Task[]) => void) {
+    const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
     const q = query(
       collection(db, 'tasks'), 
+      ...orgConstraints,
       where('userId', '==', userId),
       where('status', '==', 'pending'),
       orderBy('dueDate', 'asc')
@@ -545,14 +654,18 @@ export const dataService = {
   },
 
   // --- Lead Status Change with Stock & Tasks ---
-  async handleOrderConfirmation(lead: Lead) {
+  async handleOrderConfirmation(orgId: string, lead: Lead) {
     try {
       const { runTransaction } = await import('firebase/firestore');
       let lowStockAlert: { name: string; stock: number; minStock: number } | null = null;
       
       await runTransaction(db, async (transaction) => {
         // 1. Find the product in inventory
-        const invQuery = query(collection(db, 'inventory'), where('name', '==', lead.product));
+        const invQuery = query(
+          collection(db, 'inventory'), 
+          where('orgId', '==', lead.orgId),
+          where('name', '==', lead.product)
+        );
         const invSnapshot = await getDocs(invQuery);
         
         if (!invSnapshot.empty) {
@@ -572,6 +685,7 @@ export const dataService = {
         const commission = (lead.value * 0.05); // 5% Commission
         const orderRef = doc(collection(db, 'orders'));
         transaction.set(orderRef, {
+          orgId: lead.orgId,
           leadId: lead.id,
           customerId: lead.email || lead.phone,
           customerName: lead.name,
@@ -611,6 +725,7 @@ export const dataService = {
         
         const taskRef = doc(collection(db, 'tasks'));
         transaction.set(taskRef, {
+          orgId: lead.orgId,
           title: `Refill Reminder: ${lead.name}`,
           description: `Customer purchased ${lead.product} 25 days ago. Call for refill.`,
           dueDate: refillDate.toISOString(),
@@ -646,6 +761,7 @@ export const dataService = {
       // Notify outside transaction to avoid issues with retries and async writes
       if (lowStockAlert) {
         this.notifyStaff(
+          lead.orgId,
           ['Admin', 'Manager', 'Inventory'],
           'Critical Inventory Alert',
           `Low Stock: "${lowStockAlert.name}" is down to ${lowStockAlert.stock} units. (Thresh: ${lowStockAlert.minStock})`,
@@ -653,13 +769,13 @@ export const dataService = {
         );
       }
       
-      await this.addAuditLog('Order Confirmed', lead.id, 'Lead', `Order created and stock deducted for ${lead.name}`);
+      await this.addAuditLog(lead.orgId, 'Order Confirmed', lead.id, 'Lead', `Order created and stock deducted for ${lead.name}`);
     } catch (e) {
       handleFirestoreError(e, 'confirm_order', `leads/${lead.id}`);
     }
   },
 
-  async updateLead(id: string, updates: Partial<Lead>): Promise<void> {
+  async updateLead(orgId: string, id: string, updates: Partial<Lead>): Promise<void> {
     try {
       const docRef = doc(db, 'leads', id);
       const oldSnap = await getDoc(docRef);
@@ -707,7 +823,7 @@ export const dataService = {
         }));
 
         // Audit log for status change
-        await this.addAuditLog('Status Change', id, 'Lead', `Status: ${oldData.status} -> ${updates.status} (Lead: ${oldData.name})`);
+        await this.addAuditLog(oldData.orgId, 'Status Change', id, 'Lead', `Status: ${oldData.status} -> ${updates.status} (Lead: ${oldData.name})`);
       }
 
       // 2. Assignment Change
@@ -722,7 +838,7 @@ export const dataService = {
           timestamp,
           note: `Reassigned: ${oldData.assignedTo || 'Unassigned'} → ${updates.assignedTo || 'Unassigned'}`
         });
-        await this.addAuditLog('Reassigned', id, 'Lead', `Assigned: ${oldData.assignedTo} -> ${updates.assignedTo} (Lead: ${oldData.name})`);
+        await this.addAuditLog(oldData.orgId, 'Reassigned', id, 'Lead', `Assigned: ${oldData.assignedTo} -> ${updates.assignedTo} (Lead: ${oldData.name})`);
       }
 
       // 3. Other updates (General info)
@@ -752,6 +868,7 @@ export const dataService = {
 
         // Create the callback task
         await addDoc(collection(db, 'tasks'), {
+          orgId: oldData.orgId,
           title: `Callback: ${oldData.name}`,
           description: `Automatically created follow-up task for ${oldData.name}. Phone: ${oldData.phone}`,
           dueDate: callbackTime,
@@ -768,7 +885,7 @@ export const dataService = {
     }
   },
 
-  async addLeadHistory(id: string, historyItem: Omit<HistoryItem, 'id' | 'timestamp'>): Promise<void> {
+  async addLeadHistory(orgId: string, id: string, historyItem: Omit<HistoryItem, 'id' | 'timestamp'>): Promise<void> {
     try {
       const docRef = doc(db, 'leads', id);
       const newItem: HistoryItem = sanitize({
@@ -784,7 +901,7 @@ export const dataService = {
     }
   },
 
-  async deleteLead(id: string): Promise<void> {
+  async deleteLead(orgId: string, id: string): Promise<void> {
     try {
       const docRef = doc(db, 'leads', id);
       const snap = await getDoc(docRef);
@@ -794,6 +911,7 @@ export const dataService = {
 
       if (data) {
         await this.addAuditLog(
+          data.orgId,
           'Delete Lead', 
           id, 
           'Lead', 
@@ -805,7 +923,7 @@ export const dataService = {
     }
   },
 
-  async bulkDeleteLeads(leadIds: string[]): Promise<void> {
+  async bulkDeleteLeads(orgId: string, leadIds: string[]): Promise<void> {
     try {
       const { writeBatch } = await import('firebase/firestore');
       const batch = writeBatch(db);
@@ -816,15 +934,17 @@ export const dataService = {
         batch.delete(doc(db, 'leads', id));
       });
       await batch.commit();
-      await this.addAuditLog('Bulk Delete', 'multiple', 'Lead', `Purged ${leadIds.length} leads from database. IDs: ${leadIds.slice(0, 5).join(', ')}${leadIds.length > 5 ? '...' : ''}`);
+      await this.addAuditLog(orgId, 'Bulk Delete', 'multiple', 'Lead', `Purged ${leadIds.length} leads from database. IDs: ${leadIds.slice(0, 5).join(', ')}${leadIds.length > 5 ? '...' : ''}`);
     } catch (e) {
       handleFirestoreError(e, 'bulk_delete', 'leads');
     }
   },
 
   // --- Inventory ---
-  subscribeInventory(callback: (items: InventoryItem[]) => void) {
-    return onSnapshot(collection(db, 'inventory'), 
+  subscribeInventory(orgId: string | undefined, callback: (items: InventoryItem[]) => void) {
+    const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
+    const q = query(collection(db, 'inventory'), ...orgConstraints);
+    return onSnapshot(q, 
       (snapshot) => {
         const items = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -836,7 +956,7 @@ export const dataService = {
     );
   },
 
-  async updateStock(itemId: string, newStock: number): Promise<void> {
+  async updateStock(orgId: string, itemId: string, newStock: number): Promise<void> {
     try {
       const itemRef = doc(db, 'inventory', itemId);
       const itemSnap = await getDoc(itemRef);
@@ -846,6 +966,7 @@ export const dataService = {
 
         if (newStock <= itemData.minStock) {
           this.notifyStaff(
+            itemData.orgId,
             ['Admin', 'Manager', 'Inventory'],
             'Inventory Threshold Breached',
             `Manual adjustment: "${itemData.name}" is now at ${newStock} units.`,
@@ -858,7 +979,7 @@ export const dataService = {
     }
   },
 
-  async deleteInventoryItem(itemId: string): Promise<void> {
+  async deleteInventoryItem(orgId: string, itemId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'inventory', itemId));
     } catch (e) {
@@ -866,16 +987,19 @@ export const dataService = {
     }
   },
 
-  async addInventoryItem(item: Omit<InventoryItem, 'id'>): Promise<string> {
+  async addInventoryItem(orgId: string, item: Omit<InventoryItem, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, 'inventory'), item);
+      const docRef = await addDoc(collection(db, 'inventory'), {
+        ...item,
+        orgId
+      });
       return docRef.id;
     } catch (e) {
       return handleFirestoreError(e, 'create', 'inventory');
     }
   },
 
-  async updateOrderStatus(orderId: string, status: Order['status'], extras: Partial<Order> = {}): Promise<void> {
+  async updateOrderStatus(orgId: string, orderId: string, status: OrderStatus, extras: Partial<Order> = {}): Promise<void> {
     try {
       const orderRef = doc(db, 'orders', orderId);
       const orderSnap = await getDoc(orderRef);
@@ -913,7 +1037,7 @@ export const dataService = {
         }
       }
 
-      await this.addAuditLog('Order Update', orderId, 'Order', `Status updated to ${status}`);
+      await this.addAuditLog(orderData.orgId, 'Order Update', orderId, 'Order', `Status updated to ${status}`);
     } catch (e) {
       handleFirestoreError(e, 'update', `orders/${orderId}`);
     }
@@ -984,6 +1108,7 @@ export const dataService = {
 
       if (isNewBrowser || isNewDevice) {
         await this.addAuditLog(
+          userData.orgId || 'no-org',
           'Security Alert',
           uid,
           'User',
@@ -995,8 +1120,10 @@ export const dataService = {
     }
   },
 
-  subscribeUsersPresence(callback: (users: User[]) => void) {
-    const q = query(collection(db, 'users'));
+  subscribeUsersPresence(user: User | null, callback: (users: User[]) => void) {
+    if (!user) return () => {};
+    const orgConstraints = getOrgConstraints(user);
+    const q = query(collection(db, 'users'), ...orgConstraints);
     return onSnapshot(q, (snapshot) => {
       const now = new Date().getTime();
       const users = snapshot.docs.map(doc => {
@@ -1010,9 +1137,11 @@ export const dataService = {
     });
   },
 
-  async getTeamMembers(): Promise<User[]> {
+  async getTeamMembers(user: User | null): Promise<User[]> {
     try {
-      const q = query(collection(db, 'users'));
+      if (!user) return [];
+      const orgConstraints = getOrgConstraints(user);
+      const q = query(collection(db, 'users'), ...orgConstraints);
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
     } catch (e) {
@@ -1022,36 +1151,56 @@ export const dataService = {
 
   // --- Orders ---
   subscribeOrders(user: User | null, callback: (orders: Order[]) => void) {
-    if (!user) return () => {};
+    if (!user || !user.id) {
+      callback([]);
+      return () => {};
+    }
     
     let q;
-    if (['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer'].includes(user.role)) {
-      q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    } else {
-      q = query(collection(db, 'orders'), where('assignedToId', '==', user.id), orderBy('createdAt', 'desc'));
-    }
+    const orgConstraints = getOrgConstraints(user);
+    const isSpecialist = ['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer', 'SuperAdmin', 'Sales'].includes(user.role) || user.email === 'tzsupportayurveda@gmail.com';
 
-    return onSnapshot(q, 
-      (snapshot) => {
-        const orders = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as Order));
-        callback(orders);
-      },
-      (error) => {
-        console.error("Orders subscription error:", error);
-        callback([]);
+    try {
+      if (isSpecialist) {
+        q = query(
+          collection(db, 'orders'), 
+          ...orgConstraints
+        );
+      } else {
+        q = query(
+          collection(db, 'orders'), 
+          ...orgConstraints,
+          where('assignedToId', '==', user.id)
+        );
       }
-    );
+  
+      return onSnapshot(q, 
+        (snapshot) => {
+          const orders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Order));
+          callback(orders);
+        },
+        (error) => {
+          console.error("Orders subscription error:", error);
+          callback([]);
+        }
+      );
+    } catch (e) {
+      console.error("Orders query creation error:", e);
+      callback([]);
+      return () => {};
+    }
   },
 
-  async addOrder(order: Omit<Order, 'id' | 'createdAt'>): Promise<string> {
+  async addOrder(orgId: string, order: Omit<Order, 'id' | 'createdAt'>): Promise<string> {
     try {
-      const orderId = await this.getNextId('order_serial', 1);
+      const orderSerial = await this.getNextId(orgId, 'order_serial', 1);
       const docRef = await addDoc(collection(db, 'orders'), {
         ...order,
-        orderSerial: orderId, // Adding a unique sequential serial for orders
+        orgId,
+        orderSerial, // Adding a unique sequential serial for orders
         createdAt: new Date().toISOString()
       });
       return docRef.id;

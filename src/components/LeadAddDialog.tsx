@@ -47,9 +47,9 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    if (open) {
+    if (open && currentUser?.orgId) {
       setExistingHistory({ leads: [] });
-      dataService.getInventoryList().then(items => {
+      dataService.getInventoryList(currentUser.orgId).then(items => {
         setInventory(items);
         if (items.length > 0 && !formData.product) {
           setFormData(prev => ({ 
@@ -60,8 +60,8 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
         }
       });
 
-      if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') {
-        dataService.getTeamMembers().then(setTeam);
+      if (['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '')) {
+        dataService.getTeamMembers(currentUser).then(setTeam);
       }
     }
   }, [open, currentUser]);
@@ -69,10 +69,10 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   const handlePhoneChange = async (phone: string) => {
     setFormData(prev => ({ ...prev, phone }));
     
-    if (phone.length >= 10) {
+    if (phone.length >= 10 && currentUser?.orgId) {
       setCheckingDuplicates(true);
       try {
-        const history = await dataService.getCustomerHistory(phone);
+        const history = await dataService.getCustomerHistory(currentUser.orgId, phone);
         setExistingHistory({ leads: history.leads });
         if (history.leads.length > 0) {
           toast.info(`Customer already in CRM with ${history.leads.length} previous leads.`);
@@ -324,7 +324,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
             </select>
           </div>
 
-          {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+          {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign To Agent</Label>
               <select 
@@ -340,7 +340,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
                 className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
               >
                 <option value="">Auto-Assign (Round Robin)</option>
-                {team.filter(t => t.role === 'Sales').map(agent => (
+                {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin'].includes(t.role)).map(agent => (
                   <option key={agent.id} value={agent.id}>{agent.name}</option>
                 ))}
               </select>

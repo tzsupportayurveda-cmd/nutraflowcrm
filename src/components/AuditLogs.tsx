@@ -26,18 +26,22 @@ import { dataService } from '@/src/services/dataService';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
+import { useAuth } from '@/src/contexts/AuthContext';
+
 export function AuditLogs() {
+  const { user: currentUser } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const unsub = dataService.subscribeAuditLogs((data) => {
+    if (!currentUser) return;
+    const unsub = dataService.subscribeAuditLogs(currentUser.orgId || '', (data) => {
       setLogs(data);
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [currentUser?.orgId]);
 
   const filteredLogs = logs.filter(log => 
     log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||

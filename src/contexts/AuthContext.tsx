@@ -11,13 +11,14 @@ import {
 } from 'firebase/auth';
 import { auth, signInWithGoogle } from '@/src/lib/firebase';
 import { dataService } from '@/src/services/dataService';
-import { User } from '@/src/types';
+import { User, Organization } from '@/src/types';
 import { toast } from 'sonner';
 
 const ADMIN_EMAILS = ['tzsupportayurveda@gmail.com'];
 
 interface AuthContextType {
   user: User | null;
+  organization: Organization | null;
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   error: string | null;
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [impersonatedUser, setImpersonatedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,10 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (fbUser) {
           const isAdminUser = fbUser.email ? ADMIN_EMAILS.includes(fbUser.email.toLowerCase()) : false;
+          const isSuperAdmin = fbUser.email === 'tzsupportayurveda@gmail.com';
           
           const { doc, onSnapshot } = await import('firebase/firestore');
           const { db } = await import('@/src/lib/firebase');
 
+          // Org Detail subscription
+          let unsubOrg: (() => void) | null = null;
+          
           // Detect Browser and Device
           const ua = navigator.userAgent;
           let browser = "Unknown Browser";
@@ -84,9 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           unsubscribeProfile = onSnapshot(doc(db, 'users', fbUser.uid), (snapshot) => {
             if (snapshot.exists()) {
-              const profile = { id: snapshot.id, ...snapshot.data() } as User;
+              let profile = { id: snapshot.id, ...snapshot.data() } as User;
               
-              if (isAdminUser || profile.role === 'Admin') setAdminUser(profile);
+              // Force SuperAdmin role for the root admin email
+              if (isSuperAdmin) {
+                profile.role = 'SuperAdmin';
+              }
+              
+              if (isSuperAdmin || profile.role === 'SuperAdmin' || profile.role === 'Admin') setAdminUser(profile);
               setUser(profile);
 
               // Update session once per login/refresh
@@ -95,7 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 sessionUpdated = true;
               }
               
-              if (profile.role !== 'Admin' && profile.status !== 'active' && !isAdminUser) {
+              if (profile.orgId && !unsubOrg) {
+                unsubOrg = onSnapshot(doc(db, 'organizations', profile.orgId), (orgSnap) => {
+                  if (orgSnap.exists()) {
+                    setOrganization({ id: orgSnap.id, ...orgSnap.data() } as Organization);
+                  }
+                });
+              }
+
+              if (profile.role !== 'Admin' && profile.role !== 'SuperAdmin' && profile.status !== 'active' && !isSuperAdmin) {
                 setError('Account approval pending. Kripya admin se sampark karein.');
               }
             } else {
@@ -103,9 +122,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: fbUser.uid,
                 name: fbUser.displayName || fbUser.email?.split('@')[0] || 'CRM User',
                 email: fbUser.email || '',
-                role: isAdminUser ? 'Admin' : 'Sales',
+                role: isSuperAdmin ? 'SuperAdmin' : (isAdminUser ? 'Admin' : 'Sales'),
                 avatar: fbUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${fbUser.uid}`,
-                status: isAdminUser ? 'active' : 'pending',
+                status: (isAdminUser || isSuperAdmin) ? 'active' : 'pending',
                 createdAt: new Date().toISOString()
               };
               dataService.createUserProfile(defaultProfile);
@@ -132,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const impersonate = (targetUser: User | null) => {
-    if (adminUser?.role === 'Admin') {
+    if (adminUser?.role === 'Admin' || adminUser?.role === 'SuperAdmin') {
       setImpersonatedUser(targetUser);
     }
   };
@@ -241,7 +260,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       impersonate,
       isImpersonating: !!impersonatedUser,
-      adminUser
+      adminUser,
+      organization
     }}>
       {children}
     </AuthContext.Provider>

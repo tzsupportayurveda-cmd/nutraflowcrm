@@ -75,15 +75,19 @@ export function OrderManager() {
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const unsub = dataService.subscribeOrders(currentUser, (data) => {
-      setOrders(data);
+      const sorted = [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setOrders(sorted);
       setLoading(false);
     });
     return () => unsub();
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   const filteredOrders = orders.filter(order => {
-    if (currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'Inventory' || currentUser?.role === 'Delivery') return true;
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales', 'Inventory', 'Delivery'].includes(currentUser?.role || '');
+    if (isSpecialist) return true;
     return order.assignedToId === currentUser?.id;
   });
 
@@ -94,8 +98,9 @@ export function OrderManager() {
   });
 
   const handleDispatch = async (orderId: string) => {
+    if (!currentUser?.orgId) return;
     try {
-      await dataService.updateOrderStatus(orderId, 'Shipped', {
+      await dataService.updateOrderStatus(currentUser.orgId, orderId, 'Shipped', {
         trackingId: shipData.trackingId,
         courier: shipData.courier,
         deliveryNotes: shipData.notes
@@ -109,8 +114,9 @@ export function OrderManager() {
   };
 
   const handleSendToDelivery = async (orderId: string) => {
+    if (!currentUser?.orgId) return;
     try {
-      await dataService.updateOrderStatus(orderId, 'Dispatched');
+      await dataService.updateOrderStatus(currentUser.orgId, orderId, 'Dispatched');
       toast.success('Order sent to Delivery Portal successfully');
       setIsDetailsOpen(false);
     } catch (e) {
@@ -119,8 +125,9 @@ export function OrderManager() {
   };
 
   const handleStatusUpdate = async (orderId: string, status: any) => {
+    if (!currentUser?.orgId) return;
     try {
-      await dataService.updateOrderStatus(orderId, status);
+      await dataService.updateOrderStatus(currentUser.orgId, orderId, status);
       toast.success(`Order status updated to ${status}`);
     } catch (e) {
       toast.error('Status update failed');
@@ -139,7 +146,7 @@ export function OrderManager() {
           </div>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-tight">Lifecycle monitoring of confirmed commercial transactions.</p>
         </div>
-        {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+        {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && (
           <Button className="neo-shadow bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest h-10 px-4">
             <Truck className="w-4 h-4 text-blue-400" /> Batch Dispatch
           </Button>
@@ -178,7 +185,7 @@ export function OrderManager() {
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Fulfillment Date</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Financial Value</TableHead>
                 <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Status & Logistics</TableHead>
-                {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Assigned To</TableHead>}
+                {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && <TableHead className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] px-4">Assigned To</TableHead>}
                 <TableHead className="w-14 px-4"></TableHead>
               </TableRow>
             </TableHeader>
@@ -229,7 +236,7 @@ export function OrderManager() {
                         )}
                       </div>
                     </TableCell>
-                    {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                    {(currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && (
                       <TableCell className="px-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-white uppercase ring-2 ring-slate-100">
@@ -253,7 +260,7 @@ export function OrderManager() {
                         >
                           <Eye className="w-4.5 h-4.5" />
                         </Button>
-                        {['Pending', 'Dispatched'].includes(order.status) && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                        {['Pending', 'Dispatched'].includes(order.status) && (currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'SuperAdmin') && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -282,6 +289,9 @@ export function OrderManager() {
         order={selectedOrder} 
         open={isDetailsOpen} 
         onOpenChange={setIsDetailsOpen} 
+        onViewLead={(leadId) => {
+          setIsLeadDialogOpen(true);
+        }}
       />
 
       {/* Quick Action / Dispatch Dialog */}

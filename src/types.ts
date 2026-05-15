@@ -29,8 +29,20 @@ export interface HistoryItem {
   callDuration?: number;
 }
 
+export interface Organization {
+  id: string;
+  name: string;
+  ownerId: string;
+  createdAt: string;
+  logo?: string;
+  subscription: 'Free' | 'Pro' | 'Enterprise';
+  status: 'Active' | 'Suspended';
+  pincodeLookupEnabled?: boolean;
+}
+
 export interface InventoryItem {
   id: string;
+  orgId: string;
   sku: string;
   name: string;
   description?: string;
@@ -42,6 +54,7 @@ export interface InventoryItem {
 
 export interface Lead {
   id: string;
+  orgId: string;
   serialId?: string;
   name: string;
   email?: string;
@@ -71,6 +84,7 @@ export interface Lead {
 
 export interface Order {
   id: string;
+  orgId: string;
   orderSerial?: string;
   leadId: string;
   customerId: string;
@@ -99,6 +113,7 @@ export interface Order {
 
 export interface Task {
   id: string;
+  orgId: string;
   title: string;
   description: string;
   dueDate: string;
@@ -110,9 +125,10 @@ export interface Task {
 
 export interface User {
   id: string;
+  orgId?: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery';
+  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery' | 'SuperAdmin';
   status: 'active' | 'pending' | 'blocked';
   avatar?: string;
   createdAt: string;
@@ -131,6 +147,7 @@ export interface User {
 
 export interface AuditLog {
   id: string;
+  orgId: string;
   userId: string;
   userName: string;
   action: string;

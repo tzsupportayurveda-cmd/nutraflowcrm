@@ -1,10 +1,24 @@
 {
   "entities": {
+    "Organization": {
+      "title": "Organization",
+      "description": "Tenant business entity",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "subscription": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["name", "ownerId", "status"]
+    },
     "Lead": {
       "title": "Lead",
       "description": "Potential customer lead",
       "type": "object",
       "properties": {
+        "orgId": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
         "phone": { "type": "string" },
@@ -20,13 +34,14 @@
         "notes": { "type": "string" },
         "ltv": { "type": "number" }
       },
-      "required": ["name", "status", "assignedToId", "phone"]
+      "required": ["orgId", "name", "status", "assignedToId", "phone"]
     },
     "InventoryItem": {
       "title": "Inventory Item",
       "description": "Product in stock",
       "type": "object",
       "properties": {
+        "orgId": { "type": "string" },
         "name": { "type": "string" },
         "sku": { "type": "string" },
         "stock": { "type": "number" },
@@ -34,13 +49,14 @@
         "price": { "type": "number" },
         "category": { "type": "string" }
       },
-      "required": ["name", "sku", "stock", "price"]
+      "required": ["orgId", "name", "sku", "stock", "price"]
     },
     "Order": {
       "title": "Order",
       "description": "Customer purchase order",
       "type": "object",
       "properties": {
+        "orgId": { "type": "string" },
         "leadId": { "type": "string" },
         "customerId": { "type": "string" },
         "customerName": { "type": "string" },
@@ -55,13 +71,14 @@
         "courierPartner": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["customerId", "product", "quantity", "status", "total"]
+      "required": ["orgId", "customerId", "product", "quantity", "status", "total"]
     },
     "Task": {
       "title": "Task",
       "description": "Sales tasks and refills",
       "type": "object",
       "properties": {
+        "orgId": { "type": "string" },
         "title": { "type": "string" },
         "description": { "type": "string" },
         "dueDate": { "type": "string", "format": "date-time" },
@@ -70,13 +87,14 @@
         "status": { "type": "string" },
         "type": { "type": "string" }
       },
-      "required": ["title", "userId", "dueDate"]
+      "required": ["orgId", "title", "userId", "dueDate"]
     },
     "AuditLog": {
       "title": "Audit Log",
       "description": "System activity logs",
       "type": "object",
       "properties": {
+        "orgId": { "type": "string" },
         "userId": { "type": "string" },
         "userName": { "type": "string" },
         "action": { "type": "string" },
@@ -85,10 +103,14 @@
         "details": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "action", "timestamp"]
+      "required": ["orgId", "userId", "action", "timestamp"]
     }
   },
   "firestore": {
+    "/organizations/{orgId}": {
+      "schema": "Organization",
+      "description": "Tenant business data"
+    },
     "/leads/{leadId}": {
       "schema": "Lead",
       "description": "Sales leads collection"

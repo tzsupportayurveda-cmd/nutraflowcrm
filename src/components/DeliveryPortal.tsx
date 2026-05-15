@@ -64,6 +64,7 @@ export function DeliveryPortal() {
   });
 
   useEffect(() => {
+    if (!currentUser?.orgId) return;
     // Only fetch orders that are ready for delivery or handled by delivery
     const unsub = dataService.subscribeOrders(currentUser, (data) => {
       const relevant = data.filter(o => 
@@ -76,10 +77,10 @@ export function DeliveryPortal() {
   }, [currentUser]);
 
   const handleStatusUpdate = async () => {
-    if (!selectedOrder) return;
+    if (!selectedOrder || !currentUser?.orgId) return;
     try {
       setLoading(true);
-      await dataService.updateOrderStatus(selectedOrder.id, updateData.status, {
+      await dataService.updateOrderStatus(currentUser.orgId, selectedOrder.id, updateData.status, {
         trackingId: updateData.trackingId,
         courier: updateData.courier,
         deliveryNotes: updateData.notes

@@ -125,7 +125,8 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
       });
 
       if (leadsToImport.length > 0) {
-        await dataService.bulkAddLeads(leadsToImport);
+        if (!currentUser?.orgId) return;
+        await dataService.bulkAddLeads(currentUser.orgId, leadsToImport);
         toast.success(`Import Complete: ${leadsToImport.length} leads added successfully`);
         onOpenChange(false);
         resetInternal();

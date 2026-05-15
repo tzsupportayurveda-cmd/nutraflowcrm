@@ -32,9 +32,10 @@ interface OrderDetailDialogProps {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onViewLead?: (leadId: string) => void;
 }
 
-export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDialogProps) {
+export function OrderDetailDialog({ order, open, onOpenChange, onViewLead }: OrderDetailDialogProps) {
   if (!order) return null;
 
   const copyToClipboard = (text: string, label: string) => {
@@ -232,10 +233,26 @@ export function OrderDetailDialog({ order, open, onOpenChange }: OrderDetailDial
           </Button>
           <a 
             href={`tel:${order.phone}`}
-            className="flex items-center justify-center px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-100 transition-all font-black uppercase text-[10px] tracking-widest gap-2"
+            className="flex items-center justify-center px-8 bg-white border-2 border-slate-200 text-slate-900 rounded-2xl hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest gap-2"
           >
             <Phone className="w-4 h-4" /> Call Customer
           </a>
+          {order.leadId && (
+            <Button 
+              variant="outline"
+              className="px-8 bg-white border-2 border-slate-200 text-slate-900 rounded-2xl hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest gap-2 h-14"
+              onClick={() => {
+                if (onViewLead && order.leadId) {
+                  onViewLead(order.leadId);
+                  onOpenChange(false);
+                } else {
+                  toast.info("Associated lead ID not found");
+                }
+              }}
+            >
+              <ExternalLink className="w-4 h-4" /> View Lead
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

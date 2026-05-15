@@ -66,20 +66,20 @@ export function Dashboard() {
   const [loadingTasks, setLoadingTasks] = useState(true);
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
     const unsubLeads = dataService.subscribeLeads(currentUser, setLeads);
     const unsubOrders = dataService.subscribeOrders(currentUser, setOrders);
-    const unsubInv = dataService.subscribeInventory(setInventory);
+    const unsubInv = dataService.subscribeInventory(currentUser.orgId || '', setInventory);
 
     let unsubTasks = () => {};
-    if (currentUser) {
-      unsubTasks = dataService.subscribeTasks(currentUser.id, (data) => {
-        setTasks(data);
-        setLoadingTasks(false);
-      });
-    }
+    unsubTasks = dataService.subscribeTasks(currentUser.orgId || '', currentUser.id, (data) => {
+      setTasks(data);
+      setLoadingTasks(false);
+    });
 
-    if (currentUser?.role === 'Admin') {
-      dataService.getTeamMembers().then(setTeamMembers);
+    if (['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '')) {
+      dataService.getTeamMembers(currentUser).then(setTeamMembers);
     }
 
     return () => {
@@ -88,7 +88,7 @@ export function Dashboard() {
       unsubInv();
       unsubTasks();
     };
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   // Derived filtered data
   const filteredData = useMemo(() => {
@@ -96,14 +96,16 @@ export function Dashboard() {
     let resultOrders = [...orders];
 
     // 1. Role / Agent Filter
-    if (currentUser?.role !== 'Admin') {
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales'].includes(currentUser?.role || '');
+
+    if (!isSpecialist) {
       // Agents only see their data
       resultLeads = resultLeads.filter(l => l.assignedToId === currentUser?.id);
-      resultOrders = resultOrders.filter(o => o.agentId === currentUser?.id);
+      resultOrders = resultOrders.filter(o => o.assignedToId === currentUser?.id);
     } else if (selectedAgentId !== 'all') {
-      // Admin viewing specific agent
+      // Admin/Specialist viewing specific agent
       resultLeads = resultLeads.filter(l => l.assignedToId === selectedAgentId);
-      resultOrders = resultOrders.filter(o => o.agentId === selectedAgentId);
+      resultOrders = resultOrders.filter(o => o.assignedToId === selectedAgentId);
     }
 
     // 2. Date Filter
@@ -148,7 +150,7 @@ export function Dashboard() {
     const leaderMap: Record<string, { id: string, name: string, confirmed: number, revenue: number, avatar?: string }> = {};
 
     leads.forEach(l => {
-      if (l.status === 'Confirmed') {
+      if (l.status === 'Order Confirmed') {
         if (!leaderMap[l.assignedToId]) {
           leaderMap[l.assignedToId] = { id: l.assignedToId, name: l.assignedTo, confirmed: 0, revenue: 0 };
         }
@@ -207,9 +209,9 @@ export function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-4xl font-black tracking-tight text-slate-900">
-            {currentUser?.role === 'Admin' ? (selectedAgentId === 'all' ? 'Company Analytics' : `${selectedAgent?.name}'s Performance`) : 'My Sales Performance'}
+            {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') ? (selectedAgentId === 'all' ? 'Company Analytics' : `${selectedAgent?.name}'s Performance`) : 'My Sales Performance'}
           </h1>
-          {currentUser?.role === 'Admin' && selectedAgentId !== 'all' && (
+          {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && selectedAgentId !== 'all' && (
             <div className="flex items-center gap-2 mt-2">
               <span className="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-black rounded uppercase tracking-tighter">
                 ACTIVE AGENT ID
@@ -223,7 +225,7 @@ export function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
-          {currentUser?.role === 'Admin' && (
+          {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (
             <DropdownMenu>
               <DropdownMenuTrigger className="h-10 px-4 gap-2 border-r border-slate-100 rounded-none first:rounded-xl last:rounded-r-xl hover:bg-slate-50 transition-colors flex items-center outline-none">
                 <UserIcon className="w-4 h-4 text-emerald-500" />
@@ -694,8 +696,8 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* RTO Analysis (Only for Admin) */}
-      {currentUser?.role === 'Admin' && (
+      {/* RTO Analysis (Only for Admin/SuperAdmin) */}
+      {(currentUser?.role === 'Admin' || currentUser?.role === 'SuperAdmin') && (
         <Card className="border-none shadow-xl shadow-slate-200/50 overflow-hidden">
           <CardHeader className="bg-red-50/50 border-b border-red-100 flex flex-row items-center justify-between">
             <div>
@@ -827,8 +829,8 @@ export function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Stock Alerts (Only for Admin/Inventory) */}
-      {(currentUser?.role === 'Admin' || currentUser?.role === 'Inventory') && (
+      {/* Stock Alerts (Only for Admin/Inventory/SuperAdmin) */}
+      {(currentUser?.role === 'Admin' || currentUser?.role === 'Inventory' || currentUser?.role === 'SuperAdmin') && (
         <Card className="border-none shadow-xl shadow-slate-200/50">
           <CardHeader>
             <CardTitle className="text-lg font-black text-slate-900 flex items-center gap-2">

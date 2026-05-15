@@ -45,6 +45,8 @@ import { TaskReminderListener } from '@/src/components/TaskReminderListener';
 import { PresenceListener } from '@/src/components/PresenceListener';
 import { InventoryAlertListener } from '@/src/components/InventoryAlertListener';
 
+import { OrganizationSetup } from '@/src/components/OrganizationSetup';
+
 function CRMApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
@@ -53,6 +55,8 @@ function CRMApp() {
 
   useEffect(() => {
     if (user?.id) {
+      // In SaaS, we also want to filter notifications by orgId to be safe, 
+      // but userId is usually unique anyway. Still, let's stick to user.id for now.
       return dataService.subscribeNotifications(user.id, (data) => {
         setNotifications(data);
       });
@@ -78,7 +82,19 @@ function CRMApp() {
     );
   }
 
-  if (!user || (user.status !== 'active' && user.role !== 'Admin')) {
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  const isAdminEmail = user.email === 'tzsupportayurveda@gmail.com';
+
+  // SaaS Onboarding (Less strict for legacy users)
+  if (!user.orgId && user.status === 'active' && !isAdminEmail && !user.role) {
+    return <OrganizationSetup />;
+  }
+
+  // Admin bypasses approval
+  if (user.status !== 'active' && user.role !== 'Admin' && !isAdminEmail) {
     return <LandingPage />;
   }
 

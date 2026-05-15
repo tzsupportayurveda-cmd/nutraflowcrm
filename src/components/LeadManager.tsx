@@ -302,7 +302,8 @@ export function LeadManager() {
   };
   
   const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string, isArchived?: boolean) => {
-    if (selectedLeads.length === 0 || !currentUser?.orgId) {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (selectedLeads.length === 0 || (!currentUser?.orgId && !isSuperAdmin)) {
       toast.error('Pehle leads select karein');
       return;
     }
@@ -324,7 +325,7 @@ export function LeadManager() {
         }
       }
       
-      await dataService.bulkUpdateLeads(currentUser.orgId, selectedLeads, updates);
+      await dataService.bulkUpdateLeads(currentUser?.orgId || 'root-admin', selectedLeads, updates);
       
       toast.success(`${selectedLeads.length} leads successfully ${isArchived ? 'bin mein move' : 'update'} ho gayi hain`);
       setSelectedLeads([]);
@@ -337,11 +338,12 @@ export function LeadManager() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedLeads.length === 0 || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (selectedLeads.length === 0 || (!currentUser?.orgId && !isSuperAdmin)) return;
     if (confirm(`Are you sure you want to delete ${selectedLeads.length} leads? This cannot be undone.`)) {
       try {
         setLoading(true);
-        await dataService.bulkDeleteLeads(currentUser.orgId, selectedLeads);
+        await dataService.bulkDeleteLeads(currentUser?.orgId || 'root-admin', selectedLeads);
         toast.success(`Bulk deleted ${selectedLeads.length} leads`);
         setSelectedLeads([]);
       } catch (e) {
@@ -361,7 +363,7 @@ export function LeadManager() {
     }
 
     // 1. Role & Access Filter
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales'].includes(currentUser?.role || '');
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '');
     const isOwner = lead.assignedToId === currentUser?.id;
     const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned';
     

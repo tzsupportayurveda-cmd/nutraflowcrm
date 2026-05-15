@@ -96,7 +96,7 @@ export function Dashboard() {
     let resultOrders = [...orders];
 
     // 1. Role / Agent Filter
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales'].includes(currentUser?.role || '');
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '');
 
     if (!isSpecialist) {
       // Agents only see their data

@@ -86,7 +86,7 @@ export function OrderManager() {
   }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   const filteredOrders = orders.filter(order => {
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Sales', 'Inventory', 'Delivery'].includes(currentUser?.role || '');
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '');
     if (isSpecialist) return true;
     return order.assignedToId === currentUser?.id;
   });

@@ -331,71 +331,105 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Package / Product</label>
-                      {inventory.length > 0 ? (
-                        <select 
-                          value={editableLead.product || ''}
-                          onChange={e => {
-                            const prodName = e.target.value;
-                            if (prodName === 'custom') {
-                              setEditableLead({ ...editableLead, product: '' });
-                              setHasChanges(true);
-                              return;
-                            }
-                            const item = inventory.find(i => i.name === prodName);
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Select Product</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {inventory.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
                             setEditableLead({
                               ...editableLead, 
-                              product: prodName,
-                              value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
+                              product: item.name,
+                              value: item.price * (editableLead.quantity || 1)
                             });
                             setHasChanges(true);
                           }}
-                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
+                          className={cn(
+                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
+                            editableLead.product === item.name 
+                              ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/5" 
+                              : "border-slate-100 hover:border-slate-200 bg-white"
+                          )}
                         >
-                          <option value="">Select Product</option>
-                          {inventory.map(item => (
-                            <option key={item.id} value={item.name}>{item.name}</option>
-                          ))}
-                          <option value="custom">-- Custom / Other --</option>
-                        </select>
-                      ) : (
-                        <Input 
-                          value={editableLead.product || ''} 
-                          onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }}
-                          className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10 text-sm"
-                          placeholder="Product Name"
-                        />
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
-                      <Input 
-                        type="number" 
-                        min="1" 
-                        value={editableLead.quantity || 1} 
-                        onChange={e => {
-                          const qty = parseInt(e.target.value) || 1;
-                          const item = inventory.find(i => i.name === editableLead.product);
-                          const price = item ? item.price : (editableLead.value / (editableLead.quantity || 1));
-                          setEditableLead({...editableLead, quantity: qty, value: price * qty});
+                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{item.name}</span>
+                          <span className="text-[9px] font-bold text-emerald-600 font-mono">₹{item.price}</span>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditableLead({ ...editableLead, product: '' });
                           setHasChanges(true);
                         }}
-                        className="h-10 bg-slate-50 border-slate-200 rounded-xl font-bold" 
-                      />
+                        className={cn(
+                          "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed transition-all",
+                          editableLead.product === '' || !inventory.find(i => i.name === editableLead.product)
+                            ? "border-slate-400 bg-slate-50" 
+                            : "border-slate-100 hover:border-slate-300 bg-white"
+                        )}
+                      >
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Custom / Other</span>
+                      </button>
                     </div>
+
+                    {(editableLead.product === '' || !inventory.find(i => i.name === editableLead.product)) && (
+                      <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Name</label>
+                          <Input 
+                            value={editableLead.product || ''} 
+                            onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }}
+                            className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10 text-sm"
+                            placeholder="e.g. Special Pack"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            value={editableLead.quantity || 1} 
+                            onChange={e => {
+                              const qty = parseInt(e.target.value) || 1;
+                              const unitPrice = editableLead.value / (editableLead.quantity || 1);
+                              setEditableLead({...editableLead, quantity: qty, value: Math.round(unitPrice * qty)});
+                              setHasChanges(true);
+                            }}
+                            className="h-10 bg-slate-50 border-slate-200 rounded-xl font-bold" 
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {inventory.find(i => i.name === editableLead.product) && (
+                      <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-2 pl-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</label>
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            className="w-16 h-8 text-xs font-bold bg-white"
+                            value={editableLead.quantity || 1}
+                            onChange={e => {
+                              const qty = parseInt(e.target.value) || 1;
+                              const item = inventory.find(i => i.name === editableLead.product);
+                              if (item) {
+                                setEditableLead({...editableLead, quantity: qty, value: item.price * qty});
+                                setHasChanges(true);
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="h-4 w-px bg-slate-200" />
+                        <div className="flex-1">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selected: </span>
+                          <span className="text-xs font-black text-slate-900">{editableLead.product}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {inventory.length > 0 && !inventory.find(i => i.name === editableLead.product) && editableLead.product !== '' && (
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Custom Product Name (Not in Inventory)</label>
-                      <Input 
-                        value={editableLead.product} 
-                        onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }} 
-                        className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2">

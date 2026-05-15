@@ -279,53 +279,87 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package / Product</Label>
-              {inventory.length > 0 ? (
-                <select 
-                  value={formData.product}
-                  onChange={e => handleProductChange(e.target.value)}
-                  className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+          <div className="space-y-4">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Product</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {inventory.map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleProductChange(item.name)}
+                  className={cn(
+                    "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
+                    formData.product === item.name 
+                      ? "border-slate-900 bg-slate-50 ring-2 ring-slate-900/5" 
+                      : "border-slate-100 hover:border-slate-200 bg-white"
+                  )}
                 >
-                  <option value="">Select Product</option>
-                  {inventory.map(item => (
-                    <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
-                  ))}
-                  <option value="custom">-- Custom Product --</option>
-                </select>
-              ) : (
-                <Input 
-                  placeholder="e.g. Advanced Gel Formula" 
-                  value={formData.product}
-                  onChange={e => setFormData({...formData, product: e.target.value})}
-                />
-              )}
+                  <span className="text-[11px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{item.name}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 font-mono">₹{item.price}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => handleProductChange('custom')}
+                className={cn(
+                  "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed transition-all",
+                  formData.product === '' || !inventory.find(i => i.name === formData.product)
+                    ? "border-slate-400 bg-slate-50" 
+                    : "border-slate-100 hover:border-slate-300 bg-white"
+                )}
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom / Other</span>
+              </button>
             </div>
-            {formData.product === 'custom' && (
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom Product Name</Label>
-                <Input 
-                  placeholder="Enter product name..." 
-                  onChange={e => setFormData({...formData, product: e.target.value})}
-                />
+            
+            {(formData.product === '' || !inventory.find(i => i.name === formData.product)) && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Other Product Details</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input 
+                    placeholder="Enter product name..." 
+                    value={formData.product}
+                    onChange={e => setFormData({...formData, product: e.target.value})}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      className="w-20"
+                      value={formData.quantity}
+                      onChange={e => handleQtyChange(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             )}
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
-              <Input 
-                type="number" 
-                min="1" 
-                value={formData.quantity}
-                onChange={e => handleQtyChange(e.target.value)}
-              />
-            </div>
+            
+            {inventory.find(i => i.name === formData.product) && (
+               <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                  <div className="flex items-center gap-2 pl-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      className="w-16 h-8 text-xs font-bold"
+                      value={formData.quantity}
+                      onChange={e => handleQtyChange(e.target.value)}
+                    />
+                  </div>
+                  <div className="h-4 w-px bg-slate-200" />
+                  <div className="flex-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: </span>
+                    <span className="text-sm font-black text-slate-900 font-mono">₹{formData.value}</span>
+                  </div>
+               </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Value (INR)</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Override Value (INR)</Label>
                 <div className="flex gap-1">
                   {[2999, 2599, 2590].map(p => (
                     <button

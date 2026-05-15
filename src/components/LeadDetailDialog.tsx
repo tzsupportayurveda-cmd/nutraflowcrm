@@ -334,24 +334,40 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Package / Product</label>
-                      <select 
-                        value={editableLead.product || ''}
-                        onChange={e => {
-                          const prodName = e.target.value;
-                          const item = inventory.find(i => i.name === prodName);
-                          setEditableLead({
-                            ...editableLead, 
-                            product: prodName,
-                            value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
-                          });
-                          setHasChanges(true);
-                        }}
-                        className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
-                      >
-                        {inventory.map(item => (
-                          <option key={item.id} value={item.name}>{item.name}</option>
-                        ))}
-                      </select>
+                      {inventory.length > 0 ? (
+                        <select 
+                          value={editableLead.product || ''}
+                          onChange={e => {
+                            const prodName = e.target.value;
+                            if (prodName === 'custom') {
+                              setEditableLead({ ...editableLead, product: '' });
+                              setHasChanges(true);
+                              return;
+                            }
+                            const item = inventory.find(i => i.name === prodName);
+                            setEditableLead({
+                              ...editableLead, 
+                              product: prodName,
+                              value: item ? item.price * (editableLead.quantity || 1) : editableLead.value
+                            });
+                            setHasChanges(true);
+                          }}
+                          className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/10"
+                        >
+                          <option value="">Select Product</option>
+                          {inventory.map(item => (
+                            <option key={item.id} value={item.name}>{item.name}</option>
+                          ))}
+                          <option value="custom">-- Custom / Other --</option>
+                        </select>
+                      ) : (
+                        <Input 
+                          value={editableLead.product || ''} 
+                          onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }}
+                          className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10 text-sm"
+                          placeholder="Product Name"
+                        />
+                      )}
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
@@ -370,6 +386,16 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       />
                     </div>
                   </div>
+                  {inventory.length > 0 && !inventory.find(i => i.name === editableLead.product) && editableLead.product !== '' && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Custom Product Name (Not in Inventory)</label>
+                      <Input 
+                        value={editableLead.product} 
+                        onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }} 
+                        className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

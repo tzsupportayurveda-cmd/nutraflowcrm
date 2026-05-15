@@ -269,16 +269,35 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package / Product</Label>
-              <select 
-                value={formData.product}
-                onChange={e => handleProductChange(e.target.value)}
-                className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
-              >
-                {inventory.map(item => (
-                  <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
-                ))}
-              </select>
+              {inventory.length > 0 ? (
+                <select 
+                  value={formData.product}
+                  onChange={e => handleProductChange(e.target.value)}
+                  className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+                >
+                  <option value="">Select Product</option>
+                  {inventory.map(item => (
+                    <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                  ))}
+                  <option value="custom">-- Custom Product --</option>
+                </select>
+              ) : (
+                <Input 
+                  placeholder="e.g. Advanced Gel Formula" 
+                  value={formData.product}
+                  onChange={e => setFormData({...formData, product: e.target.value})}
+                />
+              )}
             </div>
+            {formData.product === 'custom' && (
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom Product Name</Label>
+                <Input 
+                  placeholder="Enter product name..." 
+                  onChange={e => setFormData({...formData, product: e.target.value})}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
               <Input 

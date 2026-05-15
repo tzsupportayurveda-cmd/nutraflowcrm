@@ -698,9 +698,14 @@ export function LeadManager() {
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-slate-900 leading-none font-mono">₹{lead.value.toLocaleString()}</span>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mt-1.5">
-                          {lead.paymentMode} • {lead.quantity}U
-                        </span>
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1.5">
+                          <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-1.5 py-0.5 rounded">
+                            {lead.product || 'NO PRODUCT'}
+                          </span>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                            {lead.paymentMode} • {lead.quantity}U
+                          </span>
+                        </div>
                       </div>
                       <a 
                         href={`tel:${lead.phone}`} 

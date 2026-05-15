@@ -208,7 +208,12 @@ export function OrderManager() {
                     <TableCell className="px-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{order.customerName}</span>
-                        <span className="text-[10px] font-bold text-slate-500 font-mono tracking-tight">{order.phone || 'NO_PHONE'}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded">
+                             {order.product || 'NO PRODUCT'}
+                           </span>
+                           <span className="text-[10px] font-bold text-slate-500 font-mono tracking-tight">{order.phone || 'NO_PHONE'}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="px-4">

@@ -286,7 +286,10 @@ export const dataService = {
         q = query(
           collection(db, 'leads'), 
           ...orgConstraints,
-          where('assignedToId', '==', user.id)
+          or(
+            where('assignedToId', '==', user.id),
+            where('assignedToId', 'in', ['', 'unassigned', 'CRM User', 'system', null])
+          ) as any
         );
       }
       
@@ -1173,7 +1176,10 @@ export const dataService = {
         q = query(
           collection(db, 'orders'), 
           ...orgConstraints,
-          where('assignedToId', '==', user.id)
+          or(
+            where('assignedToId', '==', user.id),
+            where('assignedToId', 'in', ['', 'unassigned', 'CRM User', 'system', null])
+          ) as any
         );
       }
   

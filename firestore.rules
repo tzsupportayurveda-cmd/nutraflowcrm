@@ -37,11 +37,11 @@ service cloud.firestore {
     }
     
     function getUserOrgId() {
-      return getUserField('orgId', 'none');
+      return getUserField('orgId', 'root-admin');
     }
 
     function getUserRole() {
-      return getUserField('role', 'none');
+      return getUserField('role', 'Agent');
     }
 
     function isSameOrg(orgId) {
@@ -49,7 +49,7 @@ service cloud.firestore {
     }
 
     function belongsToUserOrg() {
-      return isSignedIn() && (isSuperAdmin() || resource.data.get('orgId', null) == getUserOrgId());
+      return isSignedIn() && (isSuperAdmin() || resource.data.get('orgId', 'root-admin') == getUserOrgId());
     }
 
     // Role helpers
@@ -102,9 +102,9 @@ service cloud.firestore {
 
     // 1. User Profiles
     match /users/{userId} {
-      allow read: if isSignedIn() && (isOwner(userId) || (isSameOrg(resource.data.get('orgId', null)) && (isAdmin() || hasRole('Manager'))) || isSuperAdmin());
+      allow read: if isSignedIn() && (isOwner(userId) || (isSameOrg(resource.data.get('orgId', 'root-admin')) && (isAdmin() || hasRole('Manager'))) || isSuperAdmin());
       allow create: if isSignedIn(); 
-      allow update: if isOwner(userId) || (isSameOrg(existing().get('orgId', null)) && isAdmin()) || isSuperAdmin();
+      allow update: if isOwner(userId) || (isSameOrg(existing().get('orgId', 'root-admin')) && isAdmin()) || isSuperAdmin();
     }
 
     // 2. Leads
@@ -112,7 +112,7 @@ service cloud.firestore {
       function canReadLead() {
         return isSuperAdmin() || 
                (isSameOrg(resource.data.orgId) && (
-                 getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery'] ||
+                 getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery', 'Sales'] ||
                  resource.data.assignedToId == request.auth.uid ||
                  resource.data.status == 'New Lead' ||
                  resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
@@ -121,7 +121,7 @@ service cloud.firestore {
 
       allow list: if isSignedIn() && (
         isSuperAdmin() || 
-        resource.data.get('orgId', null) == getUserOrgId()
+        resource.data.get('orgId', 'root-admin') == getUserOrgId()
       );
       allow get: if canReadLead();
       

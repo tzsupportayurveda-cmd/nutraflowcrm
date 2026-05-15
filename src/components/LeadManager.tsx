@@ -376,16 +376,16 @@ export function LeadManager() {
     }
 
     // 1. Role & Access Filter
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     const isOwner = lead.assignedToId === currentUser?.id;
-    const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned';
+    const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned' || lead.assignedToId === 'CRM User' || lead.assignedToId === '';
     
     // If it's archived, only Admin/Manager should see it in the bin
     if (showArchived && !isSpecialist) return false;
     
     // Specialist sees everything in the org (already filtered by dataService),
-    // others only see their own assigned leads.
-    if (!isSpecialist && !isOwner) return false;
+    // others only see their own assigned leads OR unassigned leads if we want to allow pickup
+    if (!isSpecialist && !isOwner && !isUnassigned) return false;
 
     // 2. Search Filter
     const matchesSearch = 

@@ -96,12 +96,15 @@ export function Dashboard() {
     let resultOrders = [...orders];
 
     // 1. Role / Agent Filter
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
 
     if (!isSpecialist) {
-      // Agents only see their data
-      resultLeads = resultLeads.filter(l => l.assignedToId === currentUser?.id);
-      resultOrders = resultOrders.filter(o => o.assignedToId === currentUser?.id);
+      // Agents only see their data + unassigned (to see potential new work)
+      const isMyLead = (l: Lead) => l.assignedToId === currentUser?.id || !l.assignedToId || l.assignedToId === 'unassigned' || l.assignedToId === 'CRM User';
+      const isMyOrder = (o: Order) => o.assignedToId === currentUser?.id || !o.assignedToId || o.assignedToId === 'unassigned';
+      
+      resultLeads = resultLeads.filter(isMyLead);
+      resultOrders = resultOrders.filter(isMyOrder);
     } else if (selectedAgentId !== 'all') {
       // Admin/Specialist viewing specific agent
       resultLeads = resultLeads.filter(l => l.assignedToId === selectedAgentId);

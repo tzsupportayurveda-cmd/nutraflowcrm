@@ -88,7 +88,9 @@ export function OrderManager() {
   const filteredOrders = orders.filter(order => {
     const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     if (isSpecialist) return true;
-    return order.assignedToId === currentUser?.id;
+    const isOwner = order.assignedToId === currentUser?.id;
+    const isUnassigned = !order.assignedToId || order.assignedToId === 'unassigned' || order.assignedToId === 'CRM User' || order.assignedToId === '';
+    return isOwner || isUnassigned;
   });
 
   const [shipData, setShipData] = useState({

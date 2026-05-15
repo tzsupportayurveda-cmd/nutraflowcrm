@@ -125,22 +125,35 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   };
 
   const handleProductChange = (productName: string) => {
+    if (productName === 'custom') {
+      setFormData(prev => ({ 
+        ...prev, 
+        product: '', 
+      }));
+      return;
+    }
     const item = inventory.find(i => i.name === productName);
     if (item) {
-      const qty = formData.quantity;
-      setFormData({ 
-        ...formData, 
+      setFormData(prev => ({ 
+        ...prev, 
         product: productName, 
-        value: item.price * qty 
-      });
+        value: item.price * (prev.quantity || 1)
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, product: productName }));
     }
   };
 
   const handleQtyChange = (val: string) => {
     const qty = parseInt(val) || 1;
     const item = inventory.find(i => i.name === formData.product);
-    const price = item ? item.price : 2999;
-    setFormData({ ...formData, quantity: qty, value: price * qty });
+    if (item) {
+      setFormData(prev => ({ ...prev, quantity: qty, value: item.price * qty }));
+    } else {
+      // If custom product, try to keep unit price consistent
+      const currentUnitPrice = formData.value / (formData.quantity || 1);
+      setFormData(prev => ({ ...prev, quantity: qty, value: Math.round(currentUnitPrice * qty) }));
+    }
   };
 
   const handlePincodeChange = async (pincode: string) => {

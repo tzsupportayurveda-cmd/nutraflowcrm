@@ -98,6 +98,10 @@ service cloud.firestore {
       allow create: if isSignedIn(); // Allow anyone to register an org
       allow update: if (isSameOrg(orgId) && isAdmin()) || isSuperAdmin();
       allow delete: if isSuperAdmin();
+
+      match /metadata/{id} {
+        allow read, write: if isSameOrg(orgId) || isSuperAdmin();
+      }
     }
 
     // 1. User Profiles
@@ -173,11 +177,6 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow write: if isSignedIn(); 
-    }
-
-    match /metadata/{id} {
-      allow read: if isSignedIn() && (resource.data.orgId == getUserOrgId() || isSuperAdmin());
-      allow write: if isSignedIn() && (incoming().orgId == getUserOrgId() || isSuperAdmin());
     }
   }
 }

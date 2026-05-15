@@ -125,17 +125,35 @@ export function LeadImportDialog({ open, onOpenChange }: LeadImportDialogProps) 
       });
 
       if (leadsToImport.length > 0) {
-        if (!currentUser?.orgId) return;
-        await dataService.bulkAddLeads(currentUser.orgId, leadsToImport);
+        const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+        if (!currentUser?.orgId && !isSuperAdmin) {
+          toast.error('Organization ID missing');
+          return;
+        }
+        await dataService.bulkAddLeads(currentUser?.orgId || 'root-admin', leadsToImport);
         toast.success(`Import Complete: ${leadsToImport.length} leads added successfully`);
         onOpenChange(false);
         resetInternal();
       } else {
         toast.error('No valid leads found in file');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error('Bulk import failed. Please check your data format.');
+      let errorMessage = 'Bulk import failed. Please check your data format.';
+      
+      try {
+        const parsedError = JSON.parse(err.message);
+        if (parsedError.error?.toLowerCase().includes('permission') || parsedError.error?.toLowerCase().includes('insufficient')) {
+          errorMessage = 'Security Permission Denied. Aapke paas is action ki permission nahi hai.';
+        }
+      } catch (e) {
+        // Not a JSON error message, use fallback
+        if (err.message?.toLowerCase().includes('permission')) {
+           errorMessage = 'Security Permission Denied. Aapke paas is action ki permission nahi hai.';
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setImporting(false);
     }

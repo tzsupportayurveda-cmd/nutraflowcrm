@@ -44,7 +44,11 @@ export function LandingPage() {
     }
   };
 
-  if (user && user.status !== 'active') {
+  const isAdminEmail = user?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+  const isSuperAdminRole = user?.role === 'SuperAdmin';
+  const hasRootAccess = isAdminEmail || isSuperAdminRole;
+
+  if (user && user.status !== 'active' && !hasRootAccess) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 selection:bg-emerald-500/30 overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">

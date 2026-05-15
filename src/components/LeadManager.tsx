@@ -316,7 +316,7 @@ export function LeadManager() {
     }
 
     if (!currentUser?.orgId && !isSuperAdmin) {
-      toast.error('Galti: Organization ID missing or Permission Denied');
+      toast.error('Galti: Organization ID missing (Permission Denied)');
       return;
     }
     
@@ -375,7 +375,7 @@ export function LeadManager() {
     }
 
     // 1. Role & Access Filter
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '');
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     const isOwner = lead.assignedToId === currentUser?.id;
     const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned';
     

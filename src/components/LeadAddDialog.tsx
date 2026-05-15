@@ -47,7 +47,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     if (open && (currentUser?.orgId || isSuperAdmin)) {
       setExistingHistory({ leads: [] });
       dataService.getInventoryList(currentUser?.orgId || '').then(items => {

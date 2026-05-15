@@ -76,8 +76,8 @@ const getOrgConstraints = (user: User | null | { orgId?: string, role?: string, 
   
   // SuperAdmin sees all
   const isSuperAdmin = user.role === 'SuperAdmin' || 
-                       user.email === 'tzsupportayurveda@gmail.com' ||
-                       (auth.currentUser?.email === 'tzsupportayurveda@gmail.com');
+                       user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com' ||
+                       (auth.currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com');
                        
   if (isSuperAdmin) return [];
   

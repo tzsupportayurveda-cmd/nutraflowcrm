@@ -61,8 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         if (fbUser) {
-          const isAdminUser = fbUser.email ? ADMIN_EMAILS.includes(fbUser.email.toLowerCase()) : false;
-          const isSuperAdmin = fbUser.email === 'tzsupportayurveda@gmail.com';
+          const isRootEmail = fbUser.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+          const isAdminUser = fbUser.email ? ADMIN_EMAILS.map(e => e.toLowerCase()).includes(fbUser.email.toLowerCase()) : false;
+          const isSuperAdmin = isRootEmail;
           
           const { doc, onSnapshot } = await import('firebase/firestore');
           const { db } = await import('@/src/lib/firebase');
@@ -92,9 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (snapshot.exists()) {
               let profile = { id: snapshot.id, ...snapshot.data() } as User;
               
-              // Force SuperAdmin role for the root admin email
+              // Force SuperAdmin role and active status for the root admin email
               if (isSuperAdmin) {
                 profile.role = 'SuperAdmin';
+                profile.status = 'active';
               }
               
               if (isSuperAdmin || profile.role === 'SuperAdmin' || profile.role === 'Admin') setAdminUser(profile);

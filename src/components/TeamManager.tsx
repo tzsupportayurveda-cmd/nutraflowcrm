@@ -49,7 +49,7 @@ export function TeamManager() {
 
   useEffect(() => {
     if (!activeUser) return;
-    const isSuperAdmin = activeUser.role === 'SuperAdmin' || activeUser.email === 'tzsupportayurveda@gmail.com';
+    const isSuperAdmin = activeUser.role === 'SuperAdmin' || activeUser.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     if (!activeUser.orgId && !isSuperAdmin) return;
 
     // 1. Live presence subscription

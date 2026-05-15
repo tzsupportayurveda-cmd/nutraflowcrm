@@ -86,15 +86,17 @@ function CRMApp() {
     return <LandingPage />;
   }
 
-  const isAdminEmail = user.email === 'tzsupportayurveda@gmail.com';
+  const isAdminEmail = user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+  const isSuperAdminRole = user.role === 'SuperAdmin';
+  const hasAccess = user.status === 'active' || isSuperAdminRole || isAdminEmail;
 
   // SaaS Onboarding (Less strict for legacy users)
-  if (!user.orgId && user.status === 'active' && !isAdminEmail && !user.role) {
+  if (!user.orgId && hasAccess && !user.role && !isAdminEmail) {
     return <OrganizationSetup />;
   }
 
   // Admin bypasses approval
-  if (user.status !== 'active' && user.role !== 'Admin' && !isAdminEmail) {
+  if (!hasAccess) {
     return <LandingPage />;
   }
 

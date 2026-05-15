@@ -31,8 +31,11 @@ const navItems = [
 export function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed }: SidebarProps) {
   const { signOut, user, organization } = useAuth();
   
+  const isAdminEmail = user?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+  const isSuperAdminRole = user?.role === 'SuperAdmin';
+  
   const filteredNavItems = navItems.filter(item => 
-    !item.roles || (user && item.roles.includes(user.role))
+    isAdminEmail || isSuperAdminRole || !item.roles || (user && item.roles.includes(user.role))
   );
 
   return (

@@ -70,7 +70,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     if (leadId && open && (currentUser?.orgId || isSuperAdmin)) {
       setLoading(true);
       // Fetch lead data

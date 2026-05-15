@@ -84,7 +84,7 @@ const getOrgConstraints = (user: User | null | { orgId?: string, role?: string, 
   // If org exists, filter by it
   if (user.orgId) return [where('orgId', '==', user.orgId)];
   
-  return [where('orgId', '==', 'none')];
+  return [where('orgId', '==', 'root-admin')];
 };
 
 export const dataService = {
@@ -274,7 +274,7 @@ export const dataService = {
     
     let q;
     const orgConstraints = getOrgConstraints(user);
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(user.role) || user.email === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
 
     try {
       if (isSpecialist) {
@@ -526,7 +526,8 @@ export const dataService = {
     try {
       let leads: Lead[] = [];
       let orders: Order[] = [];
-      const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
+      const effectiveOrgId = orgId || 'root-admin';
+      const orgConstraints = [where('orgId', '==', effectiveOrgId)];
 
       if (phone) {
         const leadQ = query(collection(db, 'leads'), ...orgConstraints, where('phone', '==', phone));
@@ -551,7 +552,8 @@ export const dataService = {
 
   async getInventoryList(orgId: string): Promise<InventoryItem[]> {
     try {
-      const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
+      const effectiveOrgId = orgId || 'root-admin';
+      const orgConstraints = [where('orgId', '==', effectiveOrgId)];
       const q = query(collection(db, 'inventory'), ...orgConstraints);
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
@@ -583,7 +585,8 @@ export const dataService = {
   },
 
   subscribeAuditLogs(orgId: string, callback: (logs: AuditLog[]) => void) {
-    const orgConstraints = orgId ? [where('orgId', '==', orgId)] : [];
+    const effectiveOrgId = orgId || 'root-admin';
+    const orgConstraints = [where('orgId', '==', effectiveOrgId)];
     const q = query(
       collection(db, 'logs'),
       ...orgConstraints,
@@ -1158,7 +1161,7 @@ export const dataService = {
     
     let q;
     const orgConstraints = getOrgConstraints(user);
-    const isSpecialist = ['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer', 'SuperAdmin'].includes(user.role) || user.email === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer', 'SuperAdmin'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
 
     try {
       if (isSpecialist) {

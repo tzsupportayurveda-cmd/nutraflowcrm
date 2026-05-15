@@ -262,10 +262,11 @@ export function LeadManager() {
   };
 
   const handleAddLead = async (formData: any) => {
-    if (!currentUser || !currentUser.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    if (!currentUser || (!currentUser.orgId && !isSuperAdmin)) return;
     
     try {
-      await dataService.addLead(currentUser.orgId, {
+      await dataService.addLead(currentUser.orgId || 'root-admin', {
         ...formData,
         status: formData.paymentMode === 'Prepaid' ? 'Order Confirmed' : formData.status,
         assignedTo: formData.assignedTo || currentUser.name,

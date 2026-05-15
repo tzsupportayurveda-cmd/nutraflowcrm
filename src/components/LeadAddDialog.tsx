@@ -324,7 +324,21 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Value (INR)</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Value (INR)</Label>
+                <div className="flex gap-1">
+                  {[2999, 2599, 2590].map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setFormData({...formData, value: p})}
+                      className="text-[8px] font-bold bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded transition-colors"
+                    >
+                      ₹{p}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Input 
                 type="number" 
                 value={formData.value}

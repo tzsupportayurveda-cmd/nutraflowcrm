@@ -526,7 +526,24 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   <h3 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Order Entry</h3>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col flex-1">
-                      <span className="text-[10px] font-bold text-emerald-700/60 uppercase">Order Value (₹)</span>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-emerald-700/60 uppercase">Order Value (₹)</span>
+                        <div className="flex gap-1">
+                          {[2999, 2599, 2590].map(p => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => {
+                                setEditableLead({ ...editableLead, value: p });
+                                setHasChanges(true);
+                              }}
+                              className="text-[9px] font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-600 px-2 py-1 rounded transition-colors"
+                            >
+                              ₹{p}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       <div className="flex items-center mt-1">
                         <span className="text-xl font-black text-emerald-600 mr-2">₹</span>
                         <Input 

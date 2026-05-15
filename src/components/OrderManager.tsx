@@ -86,7 +86,7 @@ export function OrderManager() {
   }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   const filteredOrders = orders.filter(order => {
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '');
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '') || currentUser?.email === 'tzsupportayurveda@gmail.com';
     if (isSpecialist) return true;
     return order.assignedToId === currentUser?.id;
   });
@@ -98,9 +98,10 @@ export function OrderManager() {
   });
 
   const handleDispatch = async (orderId: string) => {
-    if (!currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
     try {
-      await dataService.updateOrderStatus(currentUser.orgId, orderId, 'Shipped', {
+      await dataService.updateOrderStatus(currentUser?.orgId || 'root-admin', orderId, 'Shipped', {
         trackingId: shipData.trackingId,
         courier: shipData.courier,
         deliveryNotes: shipData.notes
@@ -114,9 +115,10 @@ export function OrderManager() {
   };
 
   const handleSendToDelivery = async (orderId: string) => {
-    if (!currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
     try {
-      await dataService.updateOrderStatus(currentUser.orgId, orderId, 'Dispatched');
+      await dataService.updateOrderStatus(currentUser?.orgId || 'root-admin', orderId, 'Dispatched');
       toast.success('Order sent to Delivery Portal successfully');
       setIsDetailsOpen(false);
     } catch (e) {
@@ -125,9 +127,10 @@ export function OrderManager() {
   };
 
   const handleStatusUpdate = async (orderId: string, status: any) => {
-    if (!currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
     try {
-      await dataService.updateOrderStatus(currentUser.orgId, orderId, status);
+      await dataService.updateOrderStatus(currentUser?.orgId || 'root-admin', orderId, status);
       toast.success(`Order status updated to ${status}`);
     } catch (e) {
       toast.error('Status update failed');

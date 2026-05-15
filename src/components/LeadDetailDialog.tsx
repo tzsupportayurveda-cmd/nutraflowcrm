@@ -70,7 +70,8 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    if (leadId && open && currentUser?.orgId) {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (leadId && open && (currentUser?.orgId || isSuperAdmin)) {
       setLoading(true);
       // Fetch lead data
       const unsub = dataService.subscribeLeads(currentUser, (leads) => {
@@ -106,9 +107,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   }, [leadId, open, currentUser]);
 
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
-    if (!editableLead || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!editableLead || (!currentUser?.orgId && !isSuperAdmin)) return;
     try {
-      await dataService.updateLead(currentUser.orgId, editableLead.id, { 
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', editableLead.id, { 
         status, 
         notes: (extras.notes !== undefined ? extras.notes : (editableLead.notes || '')),
         ...extras 
@@ -129,9 +131,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   };
 
   const handleAssignLead = async (agent: User) => {
-    if (!editableLead || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!editableLead || (!currentUser?.orgId && !isSuperAdmin)) return;
     try {
-      await dataService.updateLead(currentUser.orgId, editableLead.id, { 
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', editableLead.id, { 
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
@@ -145,11 +148,12 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   };
 
   const handleSaveChanges = async () => {
-    if (!editableLead || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!editableLead || (!currentUser?.orgId && !isSuperAdmin)) return;
     try {
       setLoading(true);
       const { id, history, ...updates } = editableLead;
-      await dataService.updateLead(currentUser.orgId, id, updates);
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', id, updates);
       setHasChanges(false);
       toast.success('Details saved');
     } catch (e) {
@@ -179,9 +183,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
   const handleCreateOrder = async (l: Lead) => {
     try {
-      if (!currentUser?.orgId) return;
+      const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+      if (!currentUser?.orgId && !isSuperAdmin) return;
       setLoading(true);
-      await dataService.handleOrderConfirmation(currentUser.orgId, l);
+      await dataService.handleOrderConfirmation(currentUser?.orgId || 'root-admin', l);
       toast.success("Order created successfully");
       onOpenChange(false);
     } catch (e) {
@@ -220,9 +225,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       variant="ghost" 
                       size="sm" 
                       onClick={() => {
-                        if (!currentUser?.orgId) return;
+                        const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+                        if (!currentUser?.orgId && !isSuperAdmin) return;
                         handleSaveChanges(); // Save changes first
-                        dataService.updateLead(currentUser.orgId, editableLead.id, { 
+                        dataService.updateLead(currentUser?.orgId || 'root-admin', editableLead.id, { 
                           isArchived: !editableLead.isArchived,
                           assignedToId: !editableLead.isArchived ? 'unassigned' : editableLead.assignedToId,
                           assignedTo: !editableLead.isArchived ? 'Unassigned' : editableLead.assignedTo

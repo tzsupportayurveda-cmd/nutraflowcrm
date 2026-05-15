@@ -142,12 +142,13 @@ export function LeadManager() {
   }, [currentUser?.id, currentUser?.orgId, currentUser?.role]);
 
   useEffect(() => {
-    if (selectedLead && isDetailOpen && currentUser?.orgId) {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (selectedLead && isDetailOpen && (currentUser?.orgId || isSuperAdmin)) {
       setEditableLead({ ...selectedLead });
       setHasChanges(false);
       
       // Fetch customer history
-      dataService.getCustomerHistory(currentUser.orgId, selectedLead.phone, selectedLead.email)
+      dataService.getCustomerHistory(currentUser?.orgId || 'root-admin', selectedLead.phone, selectedLead.email)
         .then(setCustomerHistory);
     } else {
       setEditableLead(null);
@@ -166,9 +167,10 @@ export function LeadManager() {
 
     try {
       const currentLead = leads.find(l => l.id === leadId);
-      if (!currentLead || !currentUser?.orgId) return;
+      const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+      if (!currentLead || (!currentUser?.orgId && !isSuperAdmin)) return;
 
-      await dataService.updateLead(currentUser.orgId, leadId, { status, ...extras });
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', leadId, { status, ...extras });
       
       toast.success(`Status updated to ${status}`);
       
@@ -192,16 +194,17 @@ export function LeadManager() {
   const handleAssign = async (leadId: string, agent: User) => {
     try {
       const currentLead = leads.find(l => l.id === leadId);
-      if (!currentUser?.orgId) return;
+      const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+      if (!currentUser?.orgId && !isSuperAdmin) return;
 
-      await dataService.updateLead(currentUser.orgId, leadId, { 
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', leadId, { 
         assignedTo: agent.name, 
         assignedToId: agent.id 
       });
 
       // Log history
       if (currentUser && currentLead) {
-        await dataService.addLeadHistory(currentUser.orgId, leadId, {
+        await dataService.addLeadHistory(currentUser?.orgId || 'root-admin', leadId, {
           type: 'assignment',
           from: currentLead.assignedTo || 'Unassigned',
           to: agent.name,
@@ -214,7 +217,7 @@ export function LeadManager() {
       
       // Send notification to the assigned agent
       await dataService.addNotification(
-        currentUser.orgId,
+        currentUser?.orgId || 'root-admin',
         agent.id,
         'New Lead Assigned',
         `Lead ${currentLead?.name} (#${currentLead?.serialId}) has been assigned to you.`,
@@ -231,16 +234,17 @@ export function LeadManager() {
   };
 
   const handleSaveChanges = async () => {
-    if (!editableLead || !selectedLead || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!editableLead || !selectedLead || (!currentUser?.orgId && !isSuperAdmin)) return;
     
     try {
       setLoading(true);
       const { id, history, ...updates } = editableLead;
-      await dataService.updateLead(currentUser.orgId, id, updates);
+      await dataService.updateLead(currentUser?.orgId || 'root-admin', id, updates);
       
       // Log some major changes in history if needed
       if (currentUser) {
-        await dataService.addLeadHistory(currentUser.orgId, id, {
+        await dataService.addLeadHistory(currentUser?.orgId || 'root-admin', id, {
           type: 'other',
           updatedBy: currentUser.name,
           updatedById: currentUser.id,
@@ -275,10 +279,11 @@ export function LeadManager() {
 
   const handleCreateOrder = async (lead: Lead) => {
     try {
-      if (!currentUser || !currentUser.orgId) return;
+      const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+      if (!currentUser || (!currentUser.orgId && !isSuperAdmin)) return;
       setLoading(true);
       
-      await dataService.handleOrderConfirmation(currentUser.orgId, lead);
+      await dataService.handleOrderConfirmation(currentUser?.orgId || 'root-admin', lead);
       
       toast.success(`Order created and stock adjusted successfully!`);
       setIsDetailOpen(false);
@@ -292,8 +297,9 @@ export function LeadManager() {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this lead?')) {
       try {
-        if (!currentUser?.orgId) return;
-        await dataService.deleteLead(currentUser.orgId, id);
+        const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+        if (!currentUser?.orgId && !isSuperAdmin) return;
+        await dataService.deleteLead(currentUser?.orgId || 'root-admin', id);
         toast.success('Lead deleted');
       } catch (e) {
         toast.error('Delete failed');
@@ -303,8 +309,14 @@ export function LeadManager() {
   
   const handleBulkUpdate = async (status?: LeadStatus, agentId?: string, agentName?: string, isArchived?: boolean) => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
-    if (selectedLeads.length === 0 || (!currentUser?.orgId && !isSuperAdmin)) {
-      toast.error('Pehle leads select karein');
+    
+    if (selectedLeads.length === 0) {
+      toast.error('Pehle leads select karein (Please select leads first)');
+      return;
+    }
+
+    if (!currentUser?.orgId && !isSuperAdmin) {
+      toast.error('Galti: Organization ID missing or Permission Denied');
       return;
     }
     

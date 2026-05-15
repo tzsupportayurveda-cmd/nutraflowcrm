@@ -47,9 +47,10 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    if (open && currentUser?.orgId) {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (open && (currentUser?.orgId || isSuperAdmin)) {
       setExistingHistory({ leads: [] });
-      dataService.getInventoryList(currentUser.orgId).then(items => {
+      dataService.getInventoryList(currentUser?.orgId || '').then(items => {
         setInventory(items);
         if (items.length > 0 && !formData.product) {
           setFormData(prev => ({ 
@@ -69,10 +70,11 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   const handlePhoneChange = async (phone: string) => {
     setFormData(prev => ({ ...prev, phone }));
     
-    if (phone.length >= 10 && currentUser?.orgId) {
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (phone.length >= 10 && (currentUser?.orgId || isSuperAdmin)) {
       setCheckingDuplicates(true);
       try {
-        const history = await dataService.getCustomerHistory(currentUser.orgId, phone);
+        const history = await dataService.getCustomerHistory(currentUser?.orgId || '', phone);
         setExistingHistory({ leads: history.leads });
         if (history.leads.length > 0) {
           toast.info(`Customer already in CRM with ${history.leads.length} previous leads.`);

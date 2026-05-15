@@ -82,11 +82,12 @@ export function InventoryManager() {
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
     try {
-      await dataService.addInventoryItem(currentUser.orgId, {
+      await dataService.addInventoryItem(currentUser?.orgId || 'root-admin', {
         ...newItem,
-        orgId: currentUser.orgId
+        orgId: currentUser?.orgId || 'root-admin'
       });
       toast.success('Successfully added to catalog');
       setIsAddOpen(false);
@@ -97,9 +98,10 @@ export function InventoryManager() {
   };
 
   const handleUpdateStock = async () => {
-    if (!selectedItem || !currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!selectedItem || (!currentUser?.orgId && !isSuperAdmin)) return;
     try {
-      await dataService.updateStock(currentUser.orgId, selectedItem.id, newStock);
+      await dataService.updateStock(currentUser?.orgId || 'root-admin', selectedItem.id, newStock);
       toast.success('Inventory ledger updated');
       setIsUpdateOpen(false);
     } catch (err) {
@@ -108,10 +110,11 @@ export function InventoryManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!currentUser?.orgId) return;
+    const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+    if (!currentUser?.orgId && !isSuperAdmin) return;
     if (confirm('Are you sure? This item will be purged from catalog.')) {
       try {
-        await dataService.deleteInventoryItem(currentUser.orgId, id);
+        await dataService.deleteInventoryItem(currentUser?.orgId || 'root-admin', id);
         toast.success('Item removed');
       } catch (e) {
         toast.error('Deletion failed');

@@ -274,7 +274,7 @@ export const dataService = {
     
     let q;
     const orgConstraints = getOrgConstraints(user);
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery', 'Sales'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
 
     try {
       if (isSpecialist) {

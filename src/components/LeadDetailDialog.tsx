@@ -331,136 +331,81 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       />
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Primary Products (Auto Rate)</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { name: 'Advanced Gel Formula', price: 2999 },
-                        { name: 'Zosh Tablets (30 Caps)', price: 2999 },
-                        { name: 'Booster 3X Pills', price: 2599 },
-                        { name: 'Booster Cream', price: 2590 }
-                      ].map(p => (
-                        <button
-                          key={p.name}
-                          type="button"
-                          onClick={() => {
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Selection</label>
+                    <select 
+                      value={editableLead.product || ''}
+                      onChange={e => {
+                        const prodName = e.target.value;
+                        const mainProducts = [
+                          { name: 'Advanced Gel Formula', price: 2999 },
+                          { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                          { name: 'Booster 3X Pills', price: 2599 },
+                          { name: 'Booster Cream', price: 2590 }
+                        ];
+                        const selected = mainProducts.find(p => p.name === prodName) || inventory.find(i => i.name === prodName);
+                        
+                        setEditableLead({
+                          ...editableLead, 
+                          product: prodName,
+                          value: selected ? selected.price * (editableLead.quantity || 1) : editableLead.value
+                        });
+                        setHasChanges(true);
+                      }}
+                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                    >
+                      <option value="">Select a Product...</option>
+                      <optgroup label="Primary Products">
+                        <option value="Advanced Gel Formula">Advanced Gel Formula - ₹2,999</option>
+                        <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps) - ₹2,999</option>
+                        <option value="Booster 3X Pills">Booster 3X Pills - ₹2,599</option>
+                        <option value="Booster Cream">Booster Cream - ₹2,590</option>
+                      </optgroup>
+                      {inventory.length > 0 && (
+                        <optgroup label="Inventory Catalog">
+                          {inventory
+                            .filter(i => !['Advanced Gel Formula', 'Zosh Tablets (30 Caps)', 'Booster 3X Pills', 'Booster Cream'].includes(i.name))
+                            .map(item => (
+                              <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                            ))
+                          }
+                        </optgroup>
+                      )}
+                    </select>
+
+                    <div className="flex items-center gap-4 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100">
+                      <div className="flex items-center gap-2 pl-2">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Qty</label>
+                        <Input 
+                          type="number" 
+                          min="1" 
+                          className="w-16 h-8 text-xs font-bold bg-white"
+                          value={editableLead.quantity || 1}
+                          onChange={e => {
+                            const qty = parseInt(e.target.value) || 1;
+                            const mainProducts = [
+                              { name: 'Advanced Gel Formula', price: 2999 },
+                              { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                              { name: 'Booster 3X Pills', price: 2599 },
+                              { name: 'Booster Cream', price: 2590 }
+                            ];
+                            const selected = mainProducts.find(p => p.name === editableLead.product) || inventory.find(i => i.name === editableLead.product);
+                            
                             setEditableLead({
                               ...editableLead, 
-                              product: p.name,
-                              value: p.price * (editableLead.quantity || 1)
+                              quantity: qty, 
+                              value: selected ? selected.price * qty : (editableLead.value / (editableLead.quantity || 1)) * qty
                             });
                             setHasChanges(true);
                           }}
-                          className={cn(
-                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
-                            editableLead.product === p.name 
-                              ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/5" 
-                              : "border-slate-100 hover:border-slate-200 bg-white"
-                          )}
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{p.name}</span>
-                          <span className="text-[9px] font-bold text-emerald-600 font-mono">₹{p.price}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="h-px bg-slate-100 my-2" />
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Inventory Items</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {inventory.map(item => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => {
-                            setEditableLead({
-                              ...editableLead, 
-                              product: item.name,
-                              value: item.price * (editableLead.quantity || 1)
-                            });
-                            setHasChanges(true);
-                          }}
-                          className={cn(
-                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
-                            editableLead.product === item.name 
-                              ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/5" 
-                              : "border-slate-100 hover:border-slate-200 bg-white"
-                          )}
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{item.name}</span>
-                          <span className="text-[9px] font-bold text-emerald-600 font-mono">₹{item.price}</span>
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditableLead({ ...editableLead, product: '' });
-                          setHasChanges(true);
-                        }}
-                        className={cn(
-                          "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed transition-all",
-                          editableLead.product === '' || !inventory.find(i => i.name === editableLead.product)
-                            ? "border-slate-400 bg-slate-50" 
-                            : "border-slate-100 hover:border-slate-300 bg-white"
-                        )}
-                      >
-                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Custom / Other</span>
-                      </button>
-                    </div>
-
-                    {(editableLead.product === '' || !inventory.find(i => i.name === editableLead.product)) && (
-                      <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Name</label>
-                          <Input 
-                            value={editableLead.product || ''} 
-                            onChange={e => { setEditableLead({...editableLead, product: e.target.value}); setHasChanges(true); }}
-                            className="bg-slate-50 border-slate-200 rounded-xl font-bold h-10 text-sm"
-                            placeholder="e.g. Special Pack"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            value={editableLead.quantity || 1} 
-                            onChange={e => {
-                              const qty = parseInt(e.target.value) || 1;
-                              const unitPrice = editableLead.value / (editableLead.quantity || 1);
-                              setEditableLead({...editableLead, quantity: qty, value: Math.round(unitPrice * qty)});
-                              setHasChanges(true);
-                            }}
-                            className="h-10 bg-slate-50 border-slate-200 rounded-xl font-bold" 
-                          />
-                        </div>
+                        />
                       </div>
-                    )}
-
-                    {inventory.find(i => i.name === editableLead.product) && (
-                      <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        <div className="flex items-center gap-2 pl-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</label>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            className="w-16 h-8 text-xs font-bold bg-white"
-                            value={editableLead.quantity || 1}
-                            onChange={e => {
-                              const qty = parseInt(e.target.value) || 1;
-                              const item = inventory.find(i => i.name === editableLead.product);
-                              if (item) {
-                                setEditableLead({...editableLead, quantity: qty, value: item.price * qty});
-                                setHasChanges(true);
-                              }
-                            }}
-                          />
-                        </div>
-                        <div className="h-4 w-px bg-slate-200" />
-                        <div className="flex-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selected: </span>
-                          <span className="text-xs font-black text-slate-900">{editableLead.product}</span>
-                        </div>
+                      <div className="h-4 w-px bg-emerald-200" />
+                      <div className="flex-1">
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Selected Cost: </span>
+                        <span className="text-sm font-black text-emerald-900 font-mono">₹{editableLead.value}</span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
 

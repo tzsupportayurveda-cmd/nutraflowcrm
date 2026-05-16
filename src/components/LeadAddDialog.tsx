@@ -279,114 +279,64 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
             </div>
           </div>
 
-          <div className="space-y-4">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Main Products (Auto Price)</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { name: 'Advanced Gel Formula', price: 2999 },
-                { name: 'Zosh Tablets (30 Caps)', price: 2999 },
-                { name: 'Booster 3X Pills', price: 2599 },
-                { name: 'Booster Cream', price: 2590 }
-              ].map(p => (
-                <button
-                  key={p.name}
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      product: p.name, 
-                      value: p.price * (prev.quantity || 1) 
-                    }));
-                  }}
-                  className={cn(
-                    "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left group",
-                    formData.product === p.name 
-                      ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/10" 
-                      : "border-slate-100 hover:border-slate-200 bg-white"
-                  )}
-                >
-                  <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1 group-hover:text-emerald-700">{p.name}</span>
-                  <span className="text-xs font-black text-emerald-600 font-mono">₹{p.price}</span>
-                </button>
-              ))}
-            </div>
-            
-            <div className="h-px bg-slate-100 my-2" />
-            
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Full Inventory Catalog</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {inventory.map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleProductChange(item.name)}
-                  className={cn(
-                    "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
-                    formData.product === item.name 
-                      ? "border-slate-900 bg-slate-50 ring-2 ring-slate-900/5" 
-                      : "border-slate-100 hover:border-slate-200 bg-white"
-                  )}
-                >
-                  <span className="text-[11px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{item.name}</span>
-                  <span className="text-[10px] font-bold text-emerald-600 font-mono">₹{item.price}</span>
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => handleProductChange('custom')}
-                className={cn(
-                  "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed transition-all",
-                  formData.product === '' || !inventory.find(i => i.name === formData.product)
-                    ? "border-slate-400 bg-slate-50" 
-                    : "border-slate-100 hover:border-slate-300 bg-white"
-                )}
-              >
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Custom / Other</span>
-              </button>
-            </div>
-            
-            {(formData.product === '' || !inventory.find(i => i.name === formData.product)) && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Other Product Details</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input 
-                    placeholder="Enter product name..." 
-                    value={formData.product}
-                    onChange={e => setFormData({...formData, product: e.target.value})}
-                  />
-                  <div className="flex items-center gap-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</Label>
-                    <Input 
-                      type="number"
-                      min="1"
-                      className="w-20"
-                      value={formData.quantity}
-                      onChange={e => handleQtyChange(e.target.value)}
-                    />
-                  </div>
-                </div>
+          <div className="space-y-3">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Product</Label>
+            <select 
+              value={formData.product}
+              onChange={e => {
+                const prodName = e.target.value;
+                const mainProducts = [
+                  { name: 'Advanced Gel Formula', price: 2999 },
+                  { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                  { name: 'Booster 3X Pills', price: 2599 },
+                  { name: 'Booster Cream', price: 2590 }
+                ];
+                const selected = mainProducts.find(p => p.name === prodName) || inventory.find(i => i.name === prodName);
+                
+                setFormData(prev => ({ 
+                  ...prev, 
+                  product: prodName, 
+                  value: selected ? selected.price * (prev.quantity || 1) : prev.value
+                }));
+              }}
+              className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+            >
+              <option value="">Select a Product...</option>
+              <optgroup label="Main Products">
+                <option value="Advanced Gel Formula">Advanced Gel Formula - ₹2,999</option>
+                <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps) - ₹2,999</option>
+                <option value="Booster 3X Pills">Booster 3X Pills - ₹2,599</option>
+                <option value="Booster Cream">Booster Cream - ₹2,590</option>
+              </optgroup>
+              {inventory.length > 0 && (
+                <optgroup label="Inventory Catalog">
+                  {inventory
+                    .filter(i => !['Advanced Gel Formula', 'Zosh Tablets (30 Caps)', 'Booster 3X Pills', 'Booster Cream'].includes(i.name))
+                    .map(item => (
+                      <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                    ))
+                  }
+                </optgroup>
+              )}
+            </select>
+
+            <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <div className="flex items-center gap-2 pl-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  className="w-16 h-8 text-xs font-bold bg-white"
+                  value={formData.quantity}
+                  onChange={e => handleQtyChange(e.target.value)}
+                />
               </div>
-            )}
-            
-            {inventory.find(i => i.name === formData.product) && (
-               <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                  <div className="flex items-center gap-2 pl-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
-                    <Input 
-                      type="number" 
-                      min="1" 
-                      className="w-16 h-8 text-xs font-bold"
-                      value={formData.quantity}
-                      onChange={e => handleQtyChange(e.target.value)}
-                    />
-                  </div>
-                  <div className="h-4 w-px bg-slate-200" />
-                  <div className="flex-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total: </span>
-                    <span className="text-sm font-black text-slate-900 font-mono">₹{formData.value}</span>
-                  </div>
-               </div>
-            )}
+              <div className="h-4 w-px bg-slate-200" />
+              <div className="flex-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Value: </span>
+                <span className="text-sm font-black text-slate-900 font-mono">₹{formData.value}</span>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

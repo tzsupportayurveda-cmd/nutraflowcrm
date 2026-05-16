@@ -385,11 +385,13 @@ export function LeadManager() {
     if (showArchived && !isSpecialist) return false;
     
     // Specialist sees everything in the org.
-    // Agents see only their own assigned leads OR unassigned leads.
-    if (!isSpecialist && !isAgent && !isOwner && !isUnassigned) return false;
-    
-    // If it's an agent, they ONLY see their own + unassigned (as requested by user)
-    if (isAgent && !isOwner && !isUnassigned && !isSpecialist) return false;
+    // Agents see ONLY their own assigned leads.
+    if (isAgent) {
+      if (!isOwner) return false;
+    } else if (!isSpecialist && !isOwner && !isUnassigned) {
+      // Other roles (if any) see assigned/unassigned
+      return false;
+    }
 
     // 2. Search Filter
     const matchesSearch = 

@@ -98,7 +98,18 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
 
     setLoading(true);
     try {
-      await onAdd(formData);
+      const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+      const isAdmin = ['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || isSuperAdmin;
+      
+      let finalStatus = formData.status;
+      if (formData.status === 'Order Confirmed' && !isAdmin) {
+        finalStatus = 'Pending Verification';
+      }
+
+      await onAdd({
+        ...formData,
+        status: finalStatus
+      });
       onOpenChange(false);
       setFormData({
         name: '',
@@ -375,16 +386,32 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Mode</Label>
-            <select 
-              value={formData.paymentMode}
-              onChange={e => setFormData({...formData, paymentMode: e.target.value as any})}
-              className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
-            >
-              <option value="COD">COD (Delhivery)</option>
-              <option value="Prepaid">Prepaid (PhonePe)</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Mode</Label>
+              <select 
+                value={formData.paymentMode}
+                onChange={e => setFormData({...formData, paymentMode: e.target.value as any})}
+                className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+              >
+                <option value="COD">COD (Delhivery)</option>
+                <option value="Prepaid">Prepaid (PhonePe)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Initial Status</Label>
+              <select 
+                value={formData.status}
+                onChange={e => setFormData({...formData, status: e.target.value as any})}
+                className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
+              >
+                <option value="New Lead">New Lead</option>
+                <option value="Interested">Interested</option>
+                <option value="Order Confirmed">{['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') ? 'Order Confirmed' : 'Confirm Order (Needs Verification)'}</option>
+                <option value="Call Back">Call Back</option>
+                <option value="No Answer">No Answer</option>
+              </select>
+            </div>
           </div>
 
           {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') && (

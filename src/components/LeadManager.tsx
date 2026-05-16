@@ -62,6 +62,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const statusColors: Record<LeadStatus, string> = {
   'New Lead': 'bg-blue-50 text-blue-700 border-blue-200',
   'Interested': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Pending Verification': 'bg-amber-600 text-white border-amber-600',
   'Order Confirmed': 'bg-emerald-600 text-white border-emerald-600',
   'Dispatched': 'bg-blue-600 text-white border-blue-600',
   'Shipped': 'bg-cyan-600 text-white border-cyan-600',
@@ -507,6 +508,7 @@ export function LeadManager() {
           { label: 'No Answer', status: 'No Answer', icon: Phone, color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
           { label: 'Call Back', status: 'Call Back', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
           { label: 'Interested', status: 'Interested', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+          { label: 'Pending', status: 'Pending Verification', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
           { label: 'Confirmed', status: 'Order Confirmed', icon: CheckCircle, color: 'text-emerald-700', bg: 'bg-emerald-600/10', border: 'border-emerald-200' },
         ].map((bucket) => (
           <div 

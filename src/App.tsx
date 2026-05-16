@@ -4,6 +4,7 @@ import { Dashboard } from '@/src/components/Dashboard';
 import { LeadManager } from '@/src/components/LeadManager';
 import { InventoryManager } from '@/src/components/InventoryManager';
 import { OrderManager } from '@/src/components/OrderManager';
+import { VerificationQueue } from '@/src/components/VerificationQueue';
 import { TeamManager } from '@/src/components/TeamManager';
 import { ConfirmedLeads } from '@/src/components/ConfirmedLeads';
 import { Settings } from '@/src/components/Settings';
@@ -104,6 +105,7 @@ function CRMApp() {
     switch (activeTab) {
       case 'dashboard': return <Dashboard />;
       case 'leads': return <LeadManager />;
+      case 'verification': return <VerificationQueue />;
       case 'confirmed': return <ConfirmedLeads />;
       case 'inventory': return <InventoryManager />;
       case 'orders': return <OrderManager />;

@@ -1,6 +1,7 @@
 export type LeadStatus = 
   | 'New Lead' 
   | 'Interested' 
+  | 'Pending Verification'
   | 'Order Confirmed' 
   | 'Dispatched'
   | 'Shipped'

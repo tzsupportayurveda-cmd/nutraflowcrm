@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 const statusColors: Record<string, string> = {
   'New Lead': 'bg-blue-50 text-blue-700 border-blue-200',
   'Interested': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Pending Verification': 'bg-amber-600 text-white border-amber-600',
   'Order Confirmed': 'bg-emerald-600 text-white border-emerald-600',
   'Dispatched': 'bg-blue-600 text-white border-blue-600',
   'Shipped': 'bg-cyan-600 text-white border-cyan-600',
@@ -108,14 +109,21 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
-    if (!editableLead || (!currentUser?.orgId && !isSuperAdmin)) return;
+    const isAdmin = ['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || isSuperAdmin;
+    
+    // If it's a "Confirm" action and the user is NOT an admin, it goes to Pending Verification
+    let finalStatus = status;
+    if (status === 'Order Confirmed' && !isAdmin) {
+      finalStatus = 'Pending Verification';
+    }
+
     try {
       await dataService.updateLead(currentUser?.orgId || 'root-admin', editableLead.id, { 
-        status, 
+        status: finalStatus, 
         notes: (extras.notes !== undefined ? extras.notes : (editableLead.notes || '')),
         ...extras 
       });
-      toast.success(`Status updated to ${status}`);
+      toast.success(`Status updated to ${finalStatus}`);
     } catch (e) {
       toast.error('Failed to update status');
     }
@@ -451,7 +459,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                     </Button>
                     {statusOpen && (
                       <div className="absolute bottom-full left-0 mb-2 w-[300px] p-2 bg-white z-[1200] rounded-xl shadow-2xl border border-slate-200 grid grid-cols-2 gap-1">
-                        {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Order Confirmed', 'Duplicate', 'Wrong Number', 'Fake/Spam', 'RTO/Cancelled'].map(s => (
+                        {['Call Back', 'No Answer', 'Interested', 'Not Interested', 'Order Confirmed', 'Pending Verification', 'Duplicate', 'Wrong Number', 'Fake/Spam', 'RTO/Cancelled'].map(s => (
                           <button 
                             key={s} 
                             onClick={() => {
@@ -560,10 +568,19 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                       </div>
                     </div>
                     <Button 
-                      onClick={() => handleCreateOrder(editableLead)}
+                      onClick={() => {
+                        const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
+                        const isAdmin = ['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || isSuperAdmin;
+                        
+                        if (isAdmin) {
+                          handleCreateOrder(editableLead);
+                        } else {
+                          handleUpdateStatus('Pending Verification');
+                        }
+                      }}
                       className="bg-emerald-600 text-white font-black uppercase text-[10px] h-12 px-8 rounded-xl shadow-lg hover:shadow-emerald-200 transition-all hover:bg-emerald-700 mt-4 sm:mt-0"
                     >
-                      Confirm Order
+                      {['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || (currentUser?.email === 'tzsupportayurveda@gmail.com') ? 'Confirm Order' : 'Submit for Verification'}
                     </Button>
                   </div>
                 </div>

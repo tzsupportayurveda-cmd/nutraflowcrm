@@ -18,6 +18,7 @@ interface SidebarProps {
 const navItems = [
   { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'] },
   { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'] },
+  { id: 'verification', label: 'VERIFICATION QUEUE', icon: ShieldCheck, roles: ['Admin', 'Manager', 'SuperAdmin'] },
   { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin', 'Marketer'] },
   { id: 'inventory', label: 'SKU REPOSITORY', icon: Package, roles: ['Admin', 'Manager', 'Inventory', 'SuperAdmin'] },
   { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager', 'SuperAdmin', 'Inventory', 'Delivery'] },

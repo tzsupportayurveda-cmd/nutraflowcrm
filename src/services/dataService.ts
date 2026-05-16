@@ -227,18 +227,31 @@ export const dataService = {
   },
 
   subscribeNotifications(userId: string, callback: (notifications: any[]) => void) {
+    if (!userId) {
+      callback([]);
+      return () => {};
+    }
     const q = query(
       collection(db, 'notifications'),
-      where('userId', '==', userId),
-      orderBy('timestamp', 'desc')
+      where('userId', '==', userId)
     );
     return onSnapshot(q, 
       (snapshot) => {
         const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        callback(notifications);
+        // Client-side sort to avoid index requirement
+        const sorted = notifications.sort((a: any, b: any) => {
+          return new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime();
+        });
+        callback(sorted);
       },
       (error) => {
         console.error("Notifications subscription error:", error);
+        // Not throwing to avoid crashing the top-level app, but let's at least log more
+        try {
+          handleFirestoreError(error, OperationType.LIST, 'notifications');
+        } catch (e) {
+          // just for logging
+        }
         callback([]);
       }
     );
@@ -589,12 +602,13 @@ export const dataService = {
     const orgConstraints = [where('orgId', '==', effectiveOrgId)];
     const q = query(
       collection(db, 'logs'),
-      ...orgConstraints,
-      orderBy('timestamp', 'desc')
+      ...orgConstraints
     );
     return onSnapshot(q, (snapshot) => {
       const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
-      callback(logs);
+      // Client-side sort
+      const sorted = logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      callback(sorted);
     });
   },
 
@@ -613,13 +627,14 @@ export const dataService = {
       collection(db, 'tasks'), 
       ...orgConstraints,
       where('userId', '==', userId),
-      where('status', '==', 'pending'),
-      orderBy('dueDate', 'asc')
+      where('status', '==', 'pending')
     );
     return onSnapshot(q, 
       (snapshot) => {
         const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-        callback(tasks);
+        // Client-side sort
+        const sorted = tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        callback(sorted);
       },
       (error) => {
         console.error("Tasks subscription error:", error);
@@ -1202,24 +1217,14 @@ export const dataService = {
     
     let q;
     const orgConstraints = getOrgConstraints(user);
-    const isSpecialist = ['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer', 'SuperAdmin'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Inventory', 'Delivery', 'Marketer', 'SuperAdmin'].includes(user.role || '') || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isAgent = user.role === 'Sales' || user.role === 'Agent';
 
     try {
-      if (isSpecialist) {
-        q = query(
-          collection(db, 'orders'), 
-          ...orgConstraints
-        );
-      } else {
-        q = query(
-          collection(db, 'orders'), 
-          ...orgConstraints,
-          or(
-            where('assignedToId', '==', user.id),
-            where('assignedToId', 'in', ['', 'unassigned', 'CRM User', 'system', null])
-          ) as any
-        );
-      }
+      q = query(
+        collection(db, 'orders'), 
+        ...orgConstraints
+      );
   
       return onSnapshot(q, 
         (snapshot) => {
@@ -1227,7 +1232,19 @@ export const dataService = {
             id: doc.id,
             ...doc.data()
           } as Order));
-          callback(orders);
+          
+          let filteredOrders = orders;
+          if (!isSpecialist && isAgent) {
+            filteredOrders = orders.filter(order => {
+              const isOwner = order.assignedToId === user.id;
+              const isUnassigned = !order.assignedToId || ['unassigned', 'CRM User', 'system', '', null].includes(order.assignedToId);
+              return isOwner || isUnassigned;
+            });
+          }
+
+          // Sort by createdAt DESC
+          const sorted = filteredOrders.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          callback(sorted);
         },
         (error) => {
           console.error("Orders subscription error:", error);

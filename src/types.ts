@@ -129,7 +129,7 @@ export interface User {
   orgId?: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery' | 'SuperAdmin';
+  role: 'Admin' | 'Manager' | 'Sales' | 'Inventory' | 'Marketer' | 'Delivery' | 'SuperAdmin' | 'Agent';
   status: 'active' | 'pending' | 'blocked';
   avatar?: string;
   createdAt: string;

@@ -274,26 +274,16 @@ export const dataService = {
     
     let q;
     const orgConstraints = getOrgConstraints(user);
-    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(user.role) || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(user.role || '') || user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSalesAgent = user.role === 'Sales' || user.role === 'Agent';
 
     try {
-      if (isSpecialist) {
-        q = query(
-          collection(db, 'leads'), 
-          ...orgConstraints,
-          orderBy('createdAt', 'desc')
-        );
-      } else {
-        q = query(
-          collection(db, 'leads'), 
-          ...orgConstraints,
-          or(
-            where('assignedToId', '==', user.id),
-            where('status', '==', 'New Lead'),
-            where('assignedToId', 'in', ['', 'unassigned', 'system', 'CRM User', 'CRM user', null])
-          ) as any
-        );
-      }
+      // Use a simpler query to avoid complex index requirements that might error out for agents
+      // We will filter the results on the client side for consistency
+      q = query(
+        collection(db, 'leads'), 
+        ...orgConstraints,
+      );
       
       const unsub = onSnapshot(q, 
         (snapshot) => {
@@ -302,8 +292,19 @@ export const dataService = {
             ...doc.data()
           } as Lead));
           
-          // Secondary sort for consistency especially with 'or' queries
-          const sorted = leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          // Client-side filtering based on role
+          let filteredLeads = leads;
+          if (!isSpecialist && isSalesAgent) {
+            filteredLeads = leads.filter(lead => {
+              const isOwner = lead.assignedToId === user.id;
+              const isNew = lead.status === 'New Lead';
+              const isUnassigned = !lead.assignedToId || ['unassigned', 'system', 'CRM User', 'CRM user', '', null].includes(lead.assignedToId);
+              return isOwner || isNew || isUnassigned;
+            });
+          }
+
+          // Sort by createdAt DESC
+          const sorted = filteredLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           callback(sorted);
         },
         (error) => {

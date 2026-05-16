@@ -61,6 +61,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const [lead, setLead] = useState<Lead | null>(null);
   const [editableLead, setEditableLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [team, setTeam] = useState<User[]>([]);
@@ -72,8 +73,12 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
   useEffect(() => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    const isSpecialist = ['Admin', 'Manager', 'SuperAdmin', 'Marketer'].includes(currentUser?.role || '') || isSuperAdmin;
+    const isAgent = currentUser?.role === 'Sales' || currentUser?.role === 'Agent';
+
     if (leadId && open) {
       setLoading(true);
+      setError(null);
       // Faster, single-lead subscription
       const unsub = dataService.subscribeLead(leadId, (found) => {
         if (found) {
@@ -88,6 +93,8 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
         } else {
           setLead(null);
           setEditableLead(null);
+          // If we see it in the list but can't fetch it, it's likely a permission issue
+          setError("Lead data unreachable. Aapke paas is lead ko dekhne ki permission nahi hai.");
         }
         setLoading(false);
       });
@@ -112,6 +119,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
   const handleUpdateStatus = async (status: LeadStatus, extras: Partial<Lead> = {}) => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email === 'tzsupportayurveda@gmail.com';
     const isAdmin = ['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || isSuperAdmin;
+    const isAgent = ['Sales', 'Agent'].includes(currentUser?.role || '');
     
     // If it's a "Confirm" action and the user is NOT an admin, it goes to Pending Verification
     let finalStatus = status;
@@ -213,6 +221,14 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
           <div className="flex flex-col items-center justify-center p-20 gap-4">
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
             <p className="text-slate-500 font-medium">Loading lead details...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center p-20 gap-4 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+              <X className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-red-600 font-bold max-w-xs">{error}</p>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Close View</Button>
           </div>
         ) : editableLead ? (
           <div className="flex h-[85vh] overflow-hidden">

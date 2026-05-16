@@ -389,9 +389,9 @@ export function LeadManager() {
 
     // 1. Role & Access Filter
     const isSpecialist = ['Admin', 'Manager', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'].includes(currentUser?.role || '') || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
-    const isAgent = currentUser?.role === 'Sales';
+    const isAgent = currentUser?.role === 'Sales' || currentUser?.role === 'Agent';
     const isOwner = lead.assignedToId === currentUser?.id;
-    const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned' || lead.assignedToId === 'CRM User' || lead.assignedToId === '';
+    const isUnassigned = !lead.assignedToId || lead.assignedToId === 'unassigned' || lead.assignedToId === 'CRM User' || lead.assignedToId === 'CRM user' || lead.assignedToId === '';
     
     // If it's archived, only Admin/Manager should see it in the bin
     if (showArchived && !isSpecialist) return false;

@@ -333,45 +333,36 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                   </div>
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Selection (Restricted)</label>
-                    <select 
-                      value={editableLead.product || ''}
-                      onChange={e => {
-                        const prodName = e.target.value;
-                        const mainProducts = [
-                          { name: 'Advanced Gel Formula', price: 2999 },
-                          { name: 'Zosh Tablets (30 Caps)', price: 2999 },
-                          { name: 'Booster 3X Pills', price: 2599 },
-                          { name: 'Booster Cream', price: 2590 }
-                        ];
-                        const selected = mainProducts.find(p => p.name === prodName) || inventory.find(i => i.name === prodName);
-                        
-                        setEditableLead({
-                          ...editableLead, 
-                          product: prodName,
-                          value: selected ? selected.price * (editableLead.quantity || 1) : editableLead.value
-                        });
-                        setHasChanges(true);
-                      }}
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-black focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all font-mono"
-                    >
-                      <option value="">Select a Product...</option>
-                      <optgroup label="Primary Products">
+                    <div className="relative">
+                      <select 
+                        value={editableLead.product || ''}
+                        onChange={e => {
+                          const prodName = e.target.value;
+                          const mainProducts = [
+                            { name: 'Advanced Gel Formula', price: 2999 },
+                            { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                            { name: 'Booster 3X Pills', price: 2599 },
+                            { name: 'Booster Cream', price: 2590 }
+                          ];
+                          const selected = mainProducts.find(p => p.name === prodName);
+                          
+                          setEditableLead({
+                            ...editableLead, 
+                            product: prodName,
+                            value: selected ? selected.price * (editableLead.quantity || 1) : editableLead.value
+                          });
+                          setHasChanges(true);
+                        }}
+                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-black focus:ring-2 focus:ring-emerald-500/10 outline-none appearance-none transition-all font-mono"
+                      >
+                        <option value="">-- Choose Product --</option>
                         <option value="Advanced Gel Formula">Advanced Gel Formula - ₹2,999</option>
                         <option value="Zosh Tablets (30 Caps)">Zosh Tablets (30 Caps) - ₹2,999</option>
                         <option value="Booster 3X Pills">Booster 3X Pills - ₹2,599</option>
                         <option value="Booster Cream">Booster Cream - ₹2,590</option>
-                      </optgroup>
-                      {inventory.length > 0 && (
-                        <optgroup label="Inventory Catalog">
-                          {inventory
-                            .filter(i => !['Advanced Gel Formula', 'Zosh Tablets (30 Caps)', 'Booster 3X Pills', 'Booster Cream'].includes(i.name))
-                            .map(item => (
-                              <option key={item.id} value={item.name}>{item.name.toUpperCase()} - ₹{item.price}</option>
-                            ))
-                          }
-                        </optgroup>
-                      )}
-                    </select>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
 
                     <div className="flex items-center gap-4 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
                       <div className="flex items-center gap-3 pl-2">

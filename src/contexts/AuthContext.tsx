@@ -155,6 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const impersonate = (targetUser: User | null) => {
     if (adminUser?.role === 'Admin' || adminUser?.role === 'SuperAdmin') {
       setImpersonatedUser(targetUser);
+      if (targetUser) {
+        toast.success(`Active Session: Switched to ${targetUser.name}`, {
+          description: "Aap ab is agent ke view mein hain.",
+          icon: "🔐"
+        });
+      } else {
+        toast.info("Session Reset: Back to Administrator view");
+      }
     }
   };
 

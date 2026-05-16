@@ -206,36 +206,84 @@ export function TeamManager() {
                           )}
                         </div>
                         {member.id !== adminUser?.id ? (
-                          <div className="mt-1.5 w-fit">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-lg flex items-center gap-1.5 uppercase tracking-[0.1em] hover:bg-indigo-600 hover:text-white transition-all cursor-pointer outline-none">
-                                {member.role} <ChevronDown className="w-2.5 h-2.5 opacity-50" />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" className="w-40 p-2 rounded-xl shadow-2xl border-slate-100">
-                                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-1">Change Clearance</DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-slate-50" />
-                                {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Delivery', 'Admin', 'SuperAdmin'] as const).map(r => (
-                                  <DropdownMenuItem 
-                                    key={r}
-                                    onClick={async () => {
-                                      try {
-                                        await dataService.updateUserRole(member.id, r);
-                                        toast.success(`Role updated: ${member.name} is now ${r}`);
-                                      } catch (err) {
-                                        toast.error(`Failed to update role for ${member.name}`);
-                                      }
-                                    }}
-                                    className={cn(
-                                      "rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors",
-                                      member.role === r ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
-                                    )}
-                                  >
-                                    <ShieldCheck className={cn("w-3.5 h-3.5 mr-2", member.role === r ? "text-indigo-500" : "text-slate-300")} />
-                                    {r}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                          <div className="mt-2 flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={async () => {
+                                  try {
+                                    await dataService.updateUserRole(member.id, 'Sales');
+                                    toast.success(`${member.name} ko SALES role de diya gaya hai`);
+                                  } catch (e) {
+                                    toast.error("Role update failed");
+                                  }
+                                }}
+                                className={cn("h-7 px-2 text-[8px] font-black uppercase tracking-tighter rounded-lg", member.role === 'Sales' ? "bg-indigo-600 text-white border-indigo-600" : "text-slate-400 hover:text-indigo-600")}
+                              >
+                                SET SALES
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={async () => {
+                                  try {
+                                    await dataService.updateUserRole(member.id, 'Manager');
+                                    toast.success(`${member.name} ko MANAGER role de diya gaya hai`);
+                                  } catch (e) {
+                                    toast.error("Role update failed");
+                                  }
+                                }}
+                                className={cn("h-7 px-2 text-[8px] font-black uppercase tracking-tighter rounded-lg", member.role === 'Manager' ? "bg-purple-600 text-white border-purple-600" : "text-slate-400 hover:text-purple-600")}
+                              >
+                                SET MANAGER
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={async () => {
+                                  try {
+                                    await dataService.updateUserRole(member.id, 'Marketer');
+                                    toast.success(`${member.name} ko MARKETER role de diya gaya hai`);
+                                  } catch (e) {
+                                    toast.error("Role update failed");
+                                  }
+                                }}
+                                className={cn("h-7 px-2 text-[8px] font-black uppercase tracking-tighter rounded-lg", member.role === 'Marketer' ? "bg-blue-600 text-white border-blue-600" : "text-slate-400 hover:text-blue-600")}
+                              >
+                                SET MARKETER
+                              </Button>
+                              
+                              <DropdownMenu>
+                                <DropdownMenuTrigger className="h-7 px-2 text-[8px] font-black text-slate-400 bg-slate-50 border border-slate-100 rounded-lg flex items-center gap-1 uppercase tracking-tighter hover:bg-slate-100 transition-all cursor-pointer outline-none">
+                                  {member.role} <ChevronDown className="w-2 h-2 opacity-50" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-40 p-2 rounded-xl shadow-2xl border-slate-100">
+                                  <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-1">More Clearances</DropdownMenuLabel>
+                                  <DropdownMenuSeparator className="bg-slate-50" />
+                                  {(['Sales', 'Manager', 'Inventory', 'Marketer', 'Delivery', 'Admin', 'SuperAdmin'] as const).map(r => (
+                                    <DropdownMenuItem 
+                                      key={r}
+                                      onClick={async () => {
+                                        try {
+                                          await dataService.updateUserRole(member.id, r);
+                                          toast.success(`Role updated: ${member.name} is now ${r}`);
+                                        } catch (err) {
+                                          toast.error(`Failed to update role for ${member.name}`);
+                                        }
+                                      }}
+                                      className={cn(
+                                        "rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors",
+                                        member.role === r ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
+                                      )}
+                                    >
+                                      <ShieldCheck className={cn("w-3.5 h-3.5 mr-2", member.role === r ? "text-indigo-500" : "text-slate-300")} />
+                                      {r}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         ) : (
                           <Badge variant="outline" className="text-[9px] font-black text-emerald-600 bg-emerald-50/50 border-emerald-100 px-2 py-1 rounded-lg w-fit mt-1.5 uppercase tracking-widest ring-1 ring-emerald-100/50">SYSTEM_ROOT {member.role}</Badge>
@@ -294,7 +342,7 @@ export function TeamManager() {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                    <div className="flex items-center justify-end gap-2 opacity-100 transition-all transform group-hover:translate-x-0">
                       {member.id !== adminUser?.id && (
                         <Button 
                           variant="ghost" 
@@ -302,7 +350,7 @@ export function TeamManager() {
                           onClick={() => impersonate(member)}
                           className="h-10 px-4 gap-2 font-black text-[10px] uppercase tracking-widest text-indigo-600 hover:text-white hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-800 transition-all shadow-md"
                         >
-                          <Users className="w-3.5 h-3.5" /> Initialize Terminal
+                          <Lock className="w-3.5 h-3.5" /> Login as Agent
                         </Button>
                       )}
                       

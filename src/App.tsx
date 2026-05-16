@@ -86,9 +86,9 @@ function CRMApp() {
     return <LandingPage />;
   }
 
-  const isAdminEmail = user.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
-  const isSuperAdminRole = user.role === 'SuperAdmin';
-  const hasAccess = user.status === 'active' || isSuperAdminRole || isAdminEmail;
+  const isAdminEmail = user?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+  const isSuperAdminRole = user?.role === 'SuperAdmin';
+  const hasAccess = user?.status === 'active' || isSuperAdminRole || isAdminEmail || isImpersonating;
 
   // SaaS Onboarding (Less strict for legacy users)
   if (!user.orgId && hasAccess && !user.role && !isAdminEmail) {

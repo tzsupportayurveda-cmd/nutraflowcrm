@@ -309,10 +309,7 @@ export const dataService = {
           let filteredLeads = leads;
           if (!isSpecialist && isSalesAgent) {
             filteredLeads = leads.filter(lead => {
-              const isOwner = lead.assignedToId === user.id;
-              const isNew = lead.status === 'New Lead';
-              const isUnassigned = !lead.assignedToId || ['unassigned', 'system', 'CRM User', 'CRM user', '', null].includes(lead.assignedToId);
-              return isOwner || isNew || isUnassigned;
+              return lead.assignedToId === user.id;
             });
           }
 
@@ -1235,11 +1232,7 @@ export const dataService = {
           
           let filteredOrders = orders;
           if (!isSpecialist && isAgent) {
-            filteredOrders = orders.filter(order => {
-              const isOwner = order.assignedToId === user.id;
-              const isUnassigned = !order.assignedToId || ['unassigned', 'CRM User', 'system', '', null].includes(order.assignedToId);
-              return isOwner || isUnassigned;
-            });
+            filteredOrders = orders.filter(order => order.assignedToId === user.id);
           }
 
           // Sort by createdAt DESC

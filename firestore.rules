@@ -116,10 +116,8 @@ service cloud.firestore {
       function canReadLead() {
         return isSuperAdmin() || 
                (isSameOrg(resource.data.get('orgId', 'root-admin')) && (
-                 getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery', 'Sales', 'Agent'] ||
-                 resource.data.get('assignedToId', null) == request.auth.uid ||
-                 resource.data.status == 'New Lead' ||
-                 resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
+                 getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery'] ||
+                 resource.data.get('assignedToId', null) == request.auth.uid
                ));
       }
 

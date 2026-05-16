@@ -286,10 +286,7 @@ export const dataService = {
         q = query(
           collection(db, 'leads'), 
           ...orgConstraints,
-          or(
-            where('assignedToId', '==', user.id),
-            where('assignedToId', 'in', ['', 'unassigned', 'CRM User', 'system', null])
-          ) as any
+          where('assignedToId', '==', user.id)
         );
       }
       
@@ -1094,12 +1091,13 @@ export const dataService = {
     }
   },
 
-  async updateUserPresence(uid: string): Promise<void> {
+  async updateUserPresence(uid: string, context?: string): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
       await updateDoc(doc(db, 'users', uid), { 
         lastSeen: timestamp,
-        isOnline: true
+        isOnline: true,
+        currentAction: context || 'Active'
       });
     } catch (e) {
       // Don't throw for presence to avoid disrupting experience

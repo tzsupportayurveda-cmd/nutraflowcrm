@@ -9,17 +9,20 @@ export function PresenceListener() {
     if (!user?.id) return;
 
     // Initial check-in
-    dataService.updateUserPresence(user.id);
+    const update = () => {
+      const page = document.title || window.location.pathname;
+      dataService.updateUserPresence(user.id, page);
+    };
+
+    update();
 
     // Heartbeat every 2 minutes
-    const interval = setInterval(() => {
-      dataService.updateUserPresence(user.id);
-    }, 2 * 60 * 1000);
+    const interval = setInterval(update, 2 * 60 * 1000);
 
-    // Set offline when tab closes (not perfectly reliable in Firestore but good practice)
+    // Set offline when tab closes
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        dataService.updateUserPresence(user.id);
+        update();
       }
     };
 

@@ -197,7 +197,12 @@ export function TeamManager() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{member.name}</span>
                           {member.isOnline && (
-                            <span className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1 rounded-sm ring-1 ring-emerald-100">Online Now</span>
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1 rounded-sm ring-1 ring-emerald-100 w-fit">Online Now</span>
+                              <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[120px]">
+                                Tracking: {member.currentAction || 'Dashboard'}
+                              </span>
+                            </div>
                           )}
                         </div>
                         {member.id !== adminUser?.id ? (

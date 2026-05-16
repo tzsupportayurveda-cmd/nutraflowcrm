@@ -125,14 +125,14 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
   };
 
   const handleProductChange = (productName: string) => {
-    if (productName === 'custom') {
-      setFormData(prev => ({ 
-        ...prev, 
-        product: '', 
-      }));
-      return;
-    }
-    const item = inventory.find(i => i.name === productName);
+    if (productName === '') return;
+    const mainProducts = [
+      { name: 'Advanced Gel Formula', price: 2999 },
+      { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+      { name: 'Booster 3X Pills', price: 2599 },
+      { name: 'Booster Cream', price: 2590 }
+    ];
+    const item = mainProducts.find(p => p.name === productName) || inventory.find(i => i.name === productName);
     if (item) {
       setFormData(prev => ({ 
         ...prev, 
@@ -280,7 +280,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
           </div>
 
           <div className="space-y-3">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Product</Label>
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Product (Required)</Label>
             <select 
               value={formData.product}
               onChange={e => {
@@ -299,7 +299,8 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
                   value: selected ? selected.price * (prev.quantity || 1) : prev.value
                 }));
               }}
-              className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all"
+              required
+              className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all font-mono"
             >
               <option value="">Select a Product...</option>
               <optgroup label="Main Products">
@@ -313,28 +314,28 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
                   {inventory
                     .filter(i => !['Advanced Gel Formula', 'Zosh Tablets (30 Caps)', 'Booster 3X Pills', 'Booster Cream'].includes(i.name))
                     .map(item => (
-                      <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                      <option key={item.id} value={item.name}>{item.name.toUpperCase()} - ₹{item.price}</option>
                     ))
                   }
                 </optgroup>
               )}
             </select>
 
-            <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-              <div className="flex items-center gap-2 pl-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quantity</Label>
+            <div className="flex items-center gap-4 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
+              <div className="flex items-center gap-3 pl-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Quantity</Label>
                 <Input 
                   type="number" 
                   min="1" 
-                  className="w-16 h-8 text-xs font-bold bg-white"
+                  className="w-20 h-9 text-xs font-black bg-white"
                   value={formData.quantity}
                   onChange={e => handleQtyChange(e.target.value)}
                 />
               </div>
-              <div className="h-4 w-px bg-slate-200" />
+              <div className="h-5 w-px bg-emerald-200" />
               <div className="flex-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Value: </span>
-                <span className="text-sm font-black text-slate-900 font-mono">₹{formData.value}</span>
+                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Pricing Calculation: </span>
+                <span className="text-sm font-black text-emerald-900 font-mono">₹{formData.value}</span>
               </div>
             </div>
           </div>
@@ -405,7 +406,7 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
                 className="w-full h-10 border border-slate-200 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100"
               >
                 <option value="">Auto-Assign (Round Robin)</option>
-                {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin'].includes(t.role)).map(agent => (
+                {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin', 'Marketer', 'Inventory', 'Delivery'].includes(t.role)).map(agent => (
                   <option key={agent.id} value={agent.id}>{agent.name}</option>
                 ))}
               </select>

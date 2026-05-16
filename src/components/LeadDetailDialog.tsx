@@ -332,7 +332,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Selection</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Selection (Restricted)</label>
                     <select 
                       value={editableLead.product || ''}
                       onChange={e => {
@@ -352,7 +352,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                         });
                         setHasChanges(true);
                       }}
-                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all"
+                      className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-black focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all font-mono"
                     >
                       <option value="">Select a Product...</option>
                       <optgroup label="Primary Products">
@@ -366,20 +366,20 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                           {inventory
                             .filter(i => !['Advanced Gel Formula', 'Zosh Tablets (30 Caps)', 'Booster 3X Pills', 'Booster Cream'].includes(i.name))
                             .map(item => (
-                              <option key={item.id} value={item.name}>{item.name} - ₹{item.price}</option>
+                              <option key={item.id} value={item.name}>{item.name.toUpperCase()} - ₹{item.price}</option>
                             ))
                           }
                         </optgroup>
                       )}
                     </select>
 
-                    <div className="flex items-center gap-4 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100">
-                      <div className="flex items-center gap-2 pl-2">
+                    <div className="flex items-center gap-4 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50">
+                      <div className="flex items-center gap-3 pl-2">
                         <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Qty</label>
                         <Input 
                           type="number" 
                           min="1" 
-                          className="w-16 h-8 text-xs font-bold bg-white"
+                          className="w-20 h-9 text-xs font-black bg-white"
                           value={editableLead.quantity || 1}
                           onChange={e => {
                             const qty = parseInt(e.target.value) || 1;
@@ -400,9 +400,9 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                           }}
                         />
                       </div>
-                      <div className="h-4 w-px bg-emerald-200" />
+                      <div className="h-5 w-px bg-emerald-200" />
                       <div className="flex-1">
-                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Selected Cost: </span>
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Calculated Cost: </span>
                         <span className="text-sm font-black text-emerald-900 font-mono">₹{editableLead.value}</span>
                       </div>
                     </div>
@@ -494,7 +494,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                         className="w-full h-10 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500/10"
                       >
                         <option value="">Select Agent</option>
-                        {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin'].includes(t.role)).map(agent => (
+                        {team.filter(t => ['Sales', 'Manager', 'Admin', 'SuperAdmin', 'Marketer', 'Inventory', 'Delivery'].includes(t.role)).map(agent => (
                           <option key={agent.id} value={agent.id}>{agent.name} ({agent.role})</option>
                         ))}
                       </select>

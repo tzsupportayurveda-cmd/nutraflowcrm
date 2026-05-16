@@ -153,7 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const impersonate = (targetUser: User | null) => {
-    if (adminUser?.role === 'Admin' || adminUser?.role === 'SuperAdmin') {
+    const isRootAdmin = firebaseUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
+    if (isRootAdmin || adminUser?.role === 'Admin' || adminUser?.role === 'SuperAdmin') {
       setImpersonatedUser(targetUser);
       if (targetUser) {
         toast.success(`Active Session: Switched to ${targetUser.name}`, {

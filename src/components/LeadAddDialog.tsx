@@ -13,7 +13,7 @@ import { Lead, InventoryItem, User, LeadStatus } from '@/src/types';
 import { toast } from 'sonner';
 import { dataService } from '@/src/services/dataService';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { History, AlertCircle, Calendar, User as UserIcon } from 'lucide-react';
+import { History, AlertCircle, Calendar, User as UserIcon, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LeadAddDialogProps {

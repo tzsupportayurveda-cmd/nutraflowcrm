@@ -16,11 +16,11 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin'] },
-  { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin'] },
-  { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin'] },
+  { id: 'dashboard', label: 'SYSTEM OVERVIEW', icon: LayoutDashboard, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'] },
+  { id: 'leads', label: 'LEAD REGISTRY', icon: Users, roles: ['Admin', 'Manager', 'Sales', 'Marketer', 'SuperAdmin', 'Inventory', 'Delivery'] },
+  { id: 'confirmed', label: 'CONFIRMED SLOTS', icon: CheckCircle2, roles: ['Admin', 'Manager', 'Sales', 'SuperAdmin', 'Marketer'] },
   { id: 'inventory', label: 'SKU REPOSITORY', icon: Package, roles: ['Admin', 'Manager', 'Inventory', 'SuperAdmin'] },
-  { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager', 'SuperAdmin'] },
+  { id: 'orders', label: 'FULFILLMENT OPS', icon: ShoppingCart, roles: ['Admin', 'Manager', 'SuperAdmin', 'Inventory', 'Delivery'] },
   { id: 'delivery', label: 'LOGISTICS CHAIN', icon: Truck, roles: ['Admin', 'Manager', 'Delivery', 'SuperAdmin'] },
   { id: 'affiliate', label: 'MARKETING HUB', icon: TrendingUp, roles: ['Admin', 'Marketer', 'SuperAdmin'] },
   { id: 'team', label: 'HUMAN RESOURCES', icon: ShieldCheck, roles: ['Admin', 'Manager', 'SuperAdmin'] },

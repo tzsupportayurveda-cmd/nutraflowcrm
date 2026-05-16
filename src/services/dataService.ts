@@ -1110,7 +1110,11 @@ export const dataService = {
           callback(null);
         }
       },
-      (error) => handleFirestoreError(error, 'get', `leads/${leadId}`)
+      (error) => {
+        console.error("Single lead subscription error:", error);
+        // Safely call callback with null to allow UI to exit loading state
+        callback(null);
+      }
     );
   },
 

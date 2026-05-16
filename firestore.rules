@@ -115,9 +115,9 @@ service cloud.firestore {
     match /leads/{leadId} {
       function canReadLead() {
         return isSuperAdmin() || 
-               (isSameOrg(resource.data.orgId) && (
+               (isSameOrg(resource.data.get('orgId', 'root-admin')) && (
                  getUserRole() in ['Admin', 'Manager', 'Marketer', 'Inventory', 'Delivery', 'Sales'] ||
-                 resource.data.assignedToId == request.auth.uid ||
+                 resource.data.get('assignedToId', null) == request.auth.uid ||
                  resource.data.status == 'New Lead' ||
                  resource.data.get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
                ));
@@ -131,16 +131,16 @@ service cloud.firestore {
       
       allow create: if isSignedIn() && isValidLead(incoming()) && isValidId(leadId);
 
-      allow update: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().orgId) && (
+      allow update: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().get('orgId', 'root-admin')) && (
         isAdmin() || 
         hasRole('Manager') ||
-        (existing().assignedToId == request.auth.uid || 
+        (existing().get('assignedToId', null) == request.auth.uid || 
          existing().status == 'New Lead' ||
          existing().get('assignedToId', 'unassigned') in ["", "unassigned", "system", "CRM User", "CRM user", null]
         )
-      ) && incoming().orgId == existing().orgId && isValidLead(incoming()))); 
+      ) && incoming().get('orgId', 'root-admin') == existing().get('orgId', 'root-admin') && isValidLead(incoming()))); 
       
-      allow delete: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().orgId) && isAdmin()));
+      allow delete: if (isSuperAdmin() || (isSignedIn() && isSameOrg(existing().get('orgId', 'root-admin')) && isAdmin()));
     }
 
     // 3. Inventory

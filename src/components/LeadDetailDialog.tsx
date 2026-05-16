@@ -72,7 +72,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
 
   useEffect(() => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
-    if (leadId && open && (currentUser?.orgId || isSuperAdmin)) {
+    if (leadId && open) {
       setLoading(true);
       // Faster, single-lead subscription
       const unsub = dataService.subscribeLead(leadId, (found) => {
@@ -84,7 +84,10 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
           }
           
           // Fetch associations
-          dataService.getCustomerHistory(currentUser.orgId || found.orgId, found.phone, found.email).then(setCustomerHistory);
+          dataService.getCustomerHistory(currentUser?.orgId || found.orgId || 'root-admin', found.phone, found.email).then(setCustomerHistory);
+        } else {
+          setLead(null);
+          setEditableLead(null);
         }
         setLoading(false);
       });

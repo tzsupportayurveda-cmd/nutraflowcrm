@@ -332,7 +332,39 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Select Product</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Primary Products (Auto Rate)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { name: 'Advanced Gel Formula', price: 2999 },
+                        { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                        { name: 'Booster 3X Pills', price: 2599 },
+                        { name: 'Booster Cream', price: 2590 }
+                      ].map(p => (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => {
+                            setEditableLead({
+                              ...editableLead, 
+                              product: p.name,
+                              value: p.price * (editableLead.quantity || 1)
+                            });
+                            setHasChanges(true);
+                          }}
+                          className={cn(
+                            "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left",
+                            editableLead.product === p.name 
+                              ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/5" 
+                              : "border-slate-100 hover:border-slate-200 bg-white"
+                          )}
+                        >
+                          <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1">{p.name}</span>
+                          <span className="text-[9px] font-bold text-emerald-600 font-mono">₹{p.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-px bg-slate-100 my-2" />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Inventory Items</label>
                     <div className="grid grid-cols-2 gap-2">
                       {inventory.map(item => (
                         <button

@@ -280,7 +280,40 @@ export function LeadAddDialog({ open, onOpenChange, onAdd }: LeadAddDialogProps)
           </div>
 
           <div className="space-y-4">
-            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Product</Label>
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Main Products (Auto Price)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { name: 'Advanced Gel Formula', price: 2999 },
+                { name: 'Zosh Tablets (30 Caps)', price: 2999 },
+                { name: 'Booster 3X Pills', price: 2599 },
+                { name: 'Booster Cream', price: 2590 }
+              ].map(p => (
+                <button
+                  key={p.name}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      product: p.name, 
+                      value: p.price * (prev.quantity || 1) 
+                    }));
+                  }}
+                  className={cn(
+                    "flex flex-col items-start p-3 rounded-xl border-2 transition-all text-left group",
+                    formData.product === p.name 
+                      ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-500/10" 
+                      : "border-slate-100 hover:border-slate-200 bg-white"
+                  )}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-none mb-1 group-hover:text-emerald-700">{p.name}</span>
+                  <span className="text-xs font-black text-emerald-600 font-mono">₹{p.price}</span>
+                </button>
+              ))}
+            </div>
+            
+            <div className="h-px bg-slate-100 my-2" />
+            
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Full Inventory Catalog</Label>
             <div className="grid grid-cols-2 gap-2">
               {inventory.map(item => (
                 <button

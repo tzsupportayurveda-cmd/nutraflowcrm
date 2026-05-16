@@ -280,13 +280,18 @@ export const dataService = {
       if (isSpecialist) {
         q = query(
           collection(db, 'leads'), 
-          ...orgConstraints
+          ...orgConstraints,
+          orderBy('createdAt', 'desc')
         );
       } else {
         q = query(
           collection(db, 'leads'), 
           ...orgConstraints,
-          where('assignedToId', '==', user.id)
+          or(
+            where('assignedToId', '==', user.id),
+            where('status', '==', 'New Lead'),
+            where('assignedToId', 'in', ['', 'unassigned', 'system', 'CRM User', 'CRM user', null])
+          ) as any
         );
       }
       
@@ -296,20 +301,14 @@ export const dataService = {
             id: doc.id,
             ...doc.data()
           } as Lead));
-          callback(leads);
+          
+          // Secondary sort for consistency especially with 'or' queries
+          const sorted = leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          callback(sorted);
         },
         (error) => {
           console.error("Leads subscription error:", error);
-          if (error.message.includes('permission')) {
-            console.error("DEBUG: Leads query rejection. User:", JSON.stringify({
-              id: user.id,
-              role: user.role,
-              orgId: user.orgId,
-              email: user.email,
-              hasTokenEmail: !!(auth.currentUser?.email)
-            }));
-          }
-          callback([]);
+          handleFirestoreError(error, 'list', 'leads');
         }
       );
       return unsub;
@@ -1058,10 +1057,14 @@ export const dataService = {
     }
   },
 
-  async toggleUserStatus(uid: string, currentStatus: string): Promise<void> {
+  async toggleUserStatus(uid: string, currentStatus: string, orgId?: string): Promise<void> {
     try {
       const newStatus = currentStatus === 'active' ? 'pending' : 'active';
-      await updateDoc(doc(db, 'users', uid), { status: newStatus });
+      const updates: any = { status: newStatus };
+      if (newStatus === 'active' && orgId) {
+        updates.orgId = orgId;
+      }
+      await updateDoc(doc(db, 'users', uid), updates);
     } catch (e) {
       handleFirestoreError(e, 'update', `users/${uid}`);
     }
@@ -1075,9 +1078,11 @@ export const dataService = {
     }
   },
 
-  async updateUserRole(uid: string, role: User['role']): Promise<void> {
+  async updateUserRole(uid: string, role: User['role'], orgId?: string): Promise<void> {
     try {
-      await updateDoc(doc(db, 'users', uid), { role });
+      const updates: any = { role };
+      if (orgId) updates.orgId = orgId;
+      await updateDoc(doc(db, 'users', uid), updates);
     } catch (e) {
       handleFirestoreError(e, 'update', `users/${uid}`);
     }
@@ -1089,6 +1094,24 @@ export const dataService = {
     } catch (e) {
       handleFirestoreError(e, 'update', `users/${uid}`);
     }
+  },
+
+  subscribeLead(leadId: string, callback: (lead: Lead | null) => void) {
+    if (!leadId) {
+      callback(null);
+      return () => {};
+    }
+    const docRef = doc(db, 'leads', leadId);
+    return onSnapshot(docRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          callback({ id: snapshot.id, ...snapshot.data() } as Lead);
+        } else {
+          callback(null);
+        }
+      },
+      (error) => handleFirestoreError(error, 'get', `leads/${leadId}`)
+    );
   },
 
   async updateUserPresence(uid: string, context?: string): Promise<void> {

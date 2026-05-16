@@ -74,9 +74,8 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
     if (leadId && open && (currentUser?.orgId || isSuperAdmin)) {
       setLoading(true);
-      // Fetch lead data
-      const unsub = dataService.subscribeLeads(currentUser, (leads) => {
-        const found = leads.find(l => l.id === leadId);
+      // Faster, single-lead subscription
+      const unsub = dataService.subscribeLead(leadId, (found) => {
         if (found) {
           setLead(found);
           setEditableLead({ ...found });
@@ -85,7 +84,7 @@ export function LeadDetailDialog({ leadId, open, onOpenChange, onDelete }: LeadD
           }
           
           // Fetch associations
-          dataService.getCustomerHistory(currentUser.orgId, found.phone, found.email).then(setCustomerHistory);
+          dataService.getCustomerHistory(currentUser.orgId || found.orgId, found.phone, found.email).then(setCustomerHistory);
         }
         setLoading(false);
       });

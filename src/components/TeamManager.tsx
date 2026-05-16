@@ -80,9 +80,9 @@ export function TeamManager() {
     };
   }, [activeUser]);
 
-  const handleToggleStatus = async (uid: string, currentStatus: string) => {
+  const handleToggleStatus = async (uid: string, currentStatus: string, orgId?: string) => {
     try {
-      await dataService.toggleUserStatus(uid, currentStatus);
+      await dataService.toggleUserStatus(uid, currentStatus, orgId);
       toast.success(`User status updated to ${currentStatus === 'active' ? 'Pending' : 'Active'}`);
     } catch (error) {
       toast.error("Failed to update user status");
@@ -213,7 +213,7 @@ export function TeamManager() {
                                 size="sm" 
                                 onClick={async () => {
                                   try {
-                                    await dataService.updateUserRole(member.id, 'Sales');
+                                    await dataService.updateUserRole(member.id, 'Sales', activeUser?.orgId);
                                     toast.success(`${member.name} ko SALES role de diya gaya hai`);
                                   } catch (e) {
                                     toast.error("Role update failed");
@@ -228,7 +228,7 @@ export function TeamManager() {
                                 size="sm" 
                                 onClick={async () => {
                                   try {
-                                    await dataService.updateUserRole(member.id, 'Manager');
+                                    await dataService.updateUserRole(member.id, 'Manager', activeUser?.orgId);
                                     toast.success(`${member.name} ko MANAGER role de diya gaya hai`);
                                   } catch (e) {
                                     toast.error("Role update failed");
@@ -243,7 +243,7 @@ export function TeamManager() {
                                 size="sm" 
                                 onClick={async () => {
                                   try {
-                                    await dataService.updateUserRole(member.id, 'Marketer');
+                                    await dataService.updateUserRole(member.id, 'Marketer', activeUser?.orgId);
                                     toast.success(`${member.name} ko MARKETER role de diya gaya hai`);
                                   } catch (e) {
                                     toast.error("Role update failed");
@@ -266,7 +266,7 @@ export function TeamManager() {
                                       key={r}
                                       onClick={async () => {
                                         try {
-                                          await dataService.updateUserRole(member.id, r);
+                                          await dataService.updateUserRole(member.id, r, activeUser?.orgId);
                                           toast.success(`Role updated: ${member.name} is now ${r}`);
                                         } catch (err) {
                                           toast.error(`Failed to update role for ${member.name}`);
@@ -363,7 +363,7 @@ export function TeamManager() {
                             ? "hover:bg-amber-50 hover:text-amber-600 bg-white text-slate-900 border-2 border-slate-100" 
                             : "bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-xl shadow-emerald-500/20"
                         )}
-                        onClick={() => handleToggleStatus(member.id, member.status)}
+                        onClick={() => handleToggleStatus(member.id, member.status, activeUser?.orgId)}
                         disabled={member.email === 'tzsupportayurveda@gmail.com'}
                       >
                         {member.status === 'active' ? 'Revoke' : 'Provision'}

@@ -264,12 +264,23 @@ export function LeadManager() {
 
   const handleAddLead = async (formData: any) => {
     const isSuperAdmin = currentUser?.role === 'SuperAdmin' || currentUser?.email?.toLowerCase() === 'tzsupportayurveda@gmail.com';
-    if (!currentUser || (!currentUser.orgId && !isSuperAdmin)) return;
+    const isAdmin = ['Admin', 'Manager', 'SuperAdmin'].includes(currentUser?.role || '') || isSuperAdmin;
+    
+    if (!currentUser || (!currentUser.orgId && !isSuperAdmin)) {
+      toast.error("Organization ID missing. Kripya admin se sampark karein.");
+      return;
+    }
     
     try {
+      // Ensure agents don't skip verification even if they try to bypass UI
+      let finalStatus = formData.status;
+      if (finalStatus === 'Order Confirmed' && !isAdmin) {
+        finalStatus = 'Pending Verification';
+      }
+
       await dataService.addLead(currentUser.orgId || 'root-admin', {
         ...formData,
-        status: formData.paymentMode === 'Prepaid' ? 'Order Confirmed' : formData.status,
+        status: finalStatus,
         assignedTo: formData.assignedTo || currentUser.name,
         assignedToId: formData.assignedToId || currentUser.id,
       });
@@ -386,9 +397,9 @@ export function LeadManager() {
     if (showArchived && !isSpecialist) return false;
     
     // Specialist sees everything in the org.
-    // Agents see ONLY their own assigned leads.
+    // Agents see assigned leads, unassigned leads, or new leads.
     if (isAgent) {
-      if (!isOwner) return false;
+      if (!isOwner && lead.status !== 'New Lead' && !isUnassigned) return false;
     } else if (!isSpecialist && !isOwner && !isUnassigned) {
       // Other roles (if any) see assigned/unassigned
       return false;

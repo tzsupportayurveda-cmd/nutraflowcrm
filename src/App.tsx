@@ -19,6 +19,7 @@ import {
   Search, 
   HelpCircle,
   User as UserIcon,
+  ShieldCheck,
   ChevronDown,
   Loader2,
   LogOut,
@@ -98,7 +99,31 @@ function CRMApp() {
 
   // Admin bypasses approval
   if (!hasAccess) {
-    return <LandingPage />;
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-900 text-white p-6">
+        <div className="max-w-md w-full bg-slate-800 border border-white/5 rounded-[2.5rem] p-10 text-center neo-shadow animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-indigo-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 ring-1 ring-indigo-500/30">
+            <ShieldCheck className="w-10 h-10 text-indigo-400 animate-pulse" />
+          </div>
+          <h1 className="text-3xl font-black uppercase tracking-tight mb-4">Access Restricted</h1>
+          <p className="text-slate-400 font-bold text-sm leading-relaxed mb-10">
+            Verification required. Aapka account abhi "Pending" status mein hai. Kripya apne SuperAdmin se approval ke liye sampark karein.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => signOut()}
+              className="h-12 border-white/10 hover:bg-white/5 rounded-2xl font-black uppercase tracking-widest text-[10px]"
+            >
+              Sign Out & Try Another Identity
+            </Button>
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mt-4 italic opacity-50">
+              System ID: {user.id}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const renderContent = () => {
